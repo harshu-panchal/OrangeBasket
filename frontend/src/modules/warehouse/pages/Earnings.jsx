@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Card from "@shared/components/ui/Card";
 import Badge from "@shared/components/ui/Badge";
 import Button from "@shared/components/ui/Button";
@@ -29,7 +29,7 @@ import ShimmerButton from "@/components/ui/shimmer-button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { exportToCSV } from "@/lib/exportUtils";
-import { useSellerEarnings } from "../context/SellerEarningsContext";
+import { useSellerEarnings } from "../../seller/context/SellerEarningsContext";
 
 const Earnings = () => {
   const navigate = useNavigate();

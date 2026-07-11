@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     User, MapPin, Package, CreditCard, Wallet, ChevronRight,
-    LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell
+    LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell, ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
@@ -78,6 +78,14 @@ const ProfilePage = () => {
                             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Personal Account</p>
                         </div>
                         <div className="divide-y divide-slate-100">
+                            <MenuItem
+                                icon={ShoppingCart}
+                                label="My Cart"
+                                sub="View your added products"
+                                path="/cart"
+                                color="#f59e0b"
+                                bg="rgba(245,158,11,0.10)"
+                            />
                             <MenuItem
                                 icon={Package}
                                 label="Your Orders"

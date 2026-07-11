@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Card from '@shared/components/ui/Card';
 import Badge from '@shared/components/ui/Badge';
 import Button from '@shared/components/ui/Button';
@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BlurFade } from "@/components/ui/blur-fade";
 import { warehouseApi } from "../services/warehouseApi";
 import { toast } from "sonner";
-import { useSellerEarnings } from "../context/SellerEarningsContext";
+import { useSellerEarnings } from "../../seller/context/SellerEarningsContext";
 import Pagination from "@shared/components/ui/Pagination";
 
 const Withdrawals = () => {

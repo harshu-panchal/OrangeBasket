@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Card from "@shared/components/ui/Card";
 import Badge from "@shared/components/ui/Badge";
 import Input from "@shared/components/ui/Input";
@@ -24,7 +24,7 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import { MagicCard } from "@/components/ui/magic-card";
 import { toast } from "sonner";
 import { exportToCSV } from "@/lib/exportUtils";
-import { useSellerEarnings } from "../context/SellerEarningsContext";
+import { useSellerEarnings } from "../../seller/context/SellerEarningsContext";
 import Pagination from "@shared/components/ui/Pagination";
 
 const Transactions = () => {
