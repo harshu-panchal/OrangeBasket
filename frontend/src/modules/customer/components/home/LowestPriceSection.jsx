@@ -7,10 +7,7 @@ const LowestPriceSection = ({ products, onSeeAll }) => {
 
   return (
     <div className="-mt-[40px] mb-4 md:-mt-[40px] md:mb-8">
-      <div className="relative overflow-hidden bg-linear-to-br from-primary/10 via-primary/5 to-transparent pt-7 pb-2 md:pt-16 md:pb-4 border-y border-primary/10 shadow-sm md:shadow-[inset_0_-10px_40px_rgba(0,0,0,0.02)]">
-        {/* Background Decoration */}
-        <div className="absolute -top-10 -right-10 h-40 w-40 md:h-80 md:w-80 bg-primary/10 rounded-full blur-3xl opacity-60" />
-        <div className="absolute -bottom-10 -left-10 h-40 w-40 md:h-80 md:w-80 bg-yellow-400/10 rounded-full blur-3xl opacity-60" />
+      <div className="relative overflow-hidden bg-white pt-7 pb-2 md:pt-16 md:pb-4 border-b border-gray-100">
 
         <div className="container mx-auto px-4 md:px-8 lg:px-[50px] relative z-10">
           <div className="flex justify-between items-center mb-6 md:mb-10 px-1">

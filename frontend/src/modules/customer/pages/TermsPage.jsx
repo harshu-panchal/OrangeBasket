@@ -9,7 +9,7 @@ const TermsPage = () => {
     const appName = settings?.appName || 'App';
     const companyName = settings?.companyName || appName;
     return (
-        <div className="min-h-screen bg-slate-50 font-sans pb-10">
+        <div className="min-h-screen bg-white font-sans pb-10">
             {/* Header */}
             <div className="bg-white sticky top-0 z-30 px-4 py-3 flex items-center gap-1 shadow-sm">
                 <button

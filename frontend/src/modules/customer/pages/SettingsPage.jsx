@@ -3,7 +3,7 @@ import { Bell, Lock, User, Globe, ChevronRight, ToggleRight, LogOut } from 'luci
 
 const SettingsPage = () => {
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 font-sans">
+        <div className="min-h-screen bg-white pb-24 font-sans">
             {/* Header */}
             <div className="bg-gradient-to-br from-primary to-[#149d29] px-5 pt-10 pb-20 relative z-10 rounded-b-[2.5rem] shadow-lg overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-32 pointer-events-none" />

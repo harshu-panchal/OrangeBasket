@@ -62,14 +62,14 @@ const NotificationsPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-24 font-['Outfit',_sans-serif]">
+        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
             <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <button

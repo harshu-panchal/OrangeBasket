@@ -8,7 +8,7 @@ const AboutPage = () => {
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
     return (
-        <div className="min-h-screen bg-slate-50 font-sans pb-24">
+        <div className="min-h-screen bg-white font-sans pb-24">
             <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}

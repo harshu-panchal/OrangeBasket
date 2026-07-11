@@ -4,17 +4,17 @@ import { useCart } from '../context/CartContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
 
-const CartPage = () => {
+const CartPage = ({ asOverlay = false, onClose }) => {
     const { cart, cartTotal } = useCart();
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-white pb-28 font-sans">
+        <div className={`bg-white font-sans ${asOverlay ? 'h-full overflow-y-auto relative pb-28' : 'min-h-screen pb-28'}`}>
             {/* Header */}
-            <div className="sticky top-0 z-30 bg-white px-4 py-4 flex items-center">
+            <div className="sticky top-0 z-30 bg-white px-4 py-4 flex items-center border-b border-gray-100/50">
                 <button
-                    onClick={() => navigate(-1)}
-                    className="p-1 -ml-1"
+                    onClick={() => (asOverlay && onClose ? onClose() : navigate(-1))}
+                    className="p-1 -ml-1 hover:bg-gray-100 rounded-full transition-colors"
                 >
                     <ChevronLeft size={24} className="text-gray-900" />
                 </button>
@@ -92,9 +92,10 @@ const CartPage = () => {
 
             {/* Bottom Fixed Checkout Button */}
             {cart.length > 0 && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white z-40">
+                <div className={`${asOverlay ? 'absolute' : 'fixed'} bottom-0 left-0 right-0 p-4 bg-white z-40 border-t border-gray-100`}>
                     <Link
                         to="/checkout"
+                        onClick={onClose}
                         className="flex w-full items-center justify-center bg-[#f97316] hover:bg-[#ea580c] transition-colors text-white text-[17px] font-bold py-4 rounded-xl shadow-lg shadow-orange-500/20"
                     >
                         Proceed to Checkout

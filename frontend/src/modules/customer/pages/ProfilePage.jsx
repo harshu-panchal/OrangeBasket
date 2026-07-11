@@ -8,6 +8,7 @@ import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
 import { customerApi } from '../services/customerApi';
 import { toast } from 'sonner';
+import CartPage from './CartPage';
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ const ProfilePage = () => {
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+    const [isCartOpen, setIsCartOpen] = React.useState(false);
 
     const formatIndiaPhone = (value) => {
         const raw = String(value || '').trim();
@@ -27,7 +29,7 @@ const ProfilePage = () => {
 
     return (
         <>
-            <div className="min-h-screen bg-slate-50 pb-20 font-['Outfit',_sans-serif]">
+            <div className="min-h-screen bg-white pb-20 font-['Outfit',_sans-serif]">
             <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
@@ -82,7 +84,7 @@ const ProfilePage = () => {
                                 icon={ShoppingCart}
                                 label="My Cart"
                                 sub="View your added products"
-                                path="/cart"
+                                onClick={() => setIsCartOpen(true)}
                                 color="#f59e0b"
                                 bg="rgba(245,158,11,0.10)"
                             />
@@ -207,12 +209,40 @@ const ProfilePage = () => {
                 </div>
             </div>
         )}
+
+        {/* Cart Overlay (Bottom Sheet on Mobile, Centered Modal on Desktop) */}
+        {isCartOpen && (
+            <div className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center items-center bg-slate-900/60 backdrop-blur-sm m-0 p-0 sm:p-4">
+                {/* Click outside to close */}
+                <div className="absolute inset-0" onClick={() => setIsCartOpen(false)}></div>
+                <div 
+                    className="relative w-full sm:max-w-md h-[90vh] sm:h-auto sm:max-h-[85vh] bg-white rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl transition-transform"
+                    style={{ animation: 'slideUp 0.3s ease-out' }}
+                >
+                    <CartPage asOverlay onClose={() => setIsCartOpen(false)} />
+                </div>
+                <style dangerouslySetInnerHTML={{__html: `
+                    @keyframes slideUp {
+                        from { transform: translateY(100%); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    @media (min-width: 640px) {
+                        @keyframes slideUp {
+                            from { transform: scale(0.95); opacity: 0; }
+                            to { transform: scale(1); opacity: 1; }
+                        }
+                    }
+                `}} />
+            </div>
+        )}
     </>
     );
 };
 
-const MenuItem = ({ icon: Icon, label, sub, path, color = '#334155', bg = 'rgba(148,163,184,0.12)' }) => (
-    <Link to={path || '#'} className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors group">
+const MenuItem = ({ icon: Icon, label, sub, path, onClick, color = '#334155', bg = 'rgba(148,163,184,0.12)' }) => {
+    const Component = onClick ? 'button' : Link;
+    return (
+    <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors group">
         <div className="flex items-center gap-3">
             <div
                 className="h-10 w-10 rounded-lg flex items-center justify-center"
@@ -232,8 +262,9 @@ const MenuItem = ({ icon: Icon, label, sub, path, color = '#334155', bg = 'rgba(
         <div className="p-1.5 rounded-md group-hover:bg-slate-100 transition-colors">
             <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-all group-hover:translate-x-0.5" />
         </div>
-    </Link>
-);
+    </Component>
+    );
+};
 
 export default ProfilePage;
 

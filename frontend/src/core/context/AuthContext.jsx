@@ -136,8 +136,13 @@ export const AuthProvider = ({ children }) => {
                     setUser(response.data.result);
                 } catch (error) {
                     console.error('Failed to fetch profile:', error);
-                    // Preserve stored tokens on request failures; only manual logout clears auth storage.
-                    setUser(null);
+                    if (error.response?.status === 404 || error.response?.status === 401) {
+                        console.warn('User not found or token invalid, logging out automatically.');
+                        logout();
+                    } else {
+                        // Preserve stored tokens on network failures or server errors
+                        setUser(null);
+                    }
                 } finally {
                     setIsLoading(false);
                 }

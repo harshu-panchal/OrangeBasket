@@ -18,12 +18,8 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="w-full mb-5 mt-2 md:mt-4 overflow-hidden relative group z-20">
-      <div className="relative overflow-hidden bg-transparent">
-
-
-
-        {/* Left Scroll Button */}
+    <div className="w-full mb-5 -mt-1 md:-mt-2 overflow-hidden relative group z-20 bg-white">
+      <div className="relative overflow-hidden">        {/* Left Scroll Button */}
         <div className="absolute left-4 lg:left-10 top-[58%] -translate-y-1/2 z-20 hidden md:flex">
           <button
             onClick={() => scroll("left")}
