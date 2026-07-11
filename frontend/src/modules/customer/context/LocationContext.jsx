@@ -307,14 +307,17 @@ export const LocationProvider = ({ children }) => {
         { persist: false, updateSavedHome: false },
       );
     } else {
-      // If no location is stored (or TTL expired), persist the default
-      // immediately so subsequent reads have something to anchor on.
-      updateLocation(currentLocation, {
-        persist: true,
-        updateSavedHome: false,
+      // Auto-fetch live location immediately on first load
+      fetchAndCacheLocation().then((result) => {
+        // If the browser blocks it or an error occurs, fallback to default location
+        if (!result.ok) {
+          updateLocation(currentLocation, {
+            persist: true,
+            updateSavedHome: false,
+          });
+        }
       });
     }
-    // Live fetch happens only when user taps location pill or "Use current location"
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
