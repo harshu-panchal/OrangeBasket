@@ -307,7 +307,7 @@ const MainLocationHeader = ({
             opacity: bgOpacity,
             backgroundColor: baseHeaderColor,
           }}
-          className="px-4 shadow-[0_4px_20px_rgba(0,0,0,0.15)] overflow-hidden transform-gpu will-change-transform">
+          className="px-4 overflow-visible transform-gpu will-change-transform">
           {/* Subtle Glow Overlay */}
           <div className="absolute inset-0 bg-white/8 pointer-events-none" />
 
@@ -437,81 +437,53 @@ const MainLocationHeader = ({
             <motion.div className="relative z-10 mb-3 flex items-center justify-between">
 
               <div className="flex items-center gap-3">
-                {/* Logo */}
+                {/* Profile Icon */}
                 <div
-                  onClick={() => navigate("/")}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 shrink-0 overflow-hidden cursor-pointer shadow-sm"
+                  onClick={() => navigate("/profile")}
+                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden cursor-pointer shadow-sm"
                 >
-                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                  <AccountCircleOutlinedIcon sx={{ color: "var(--primary)", fontSize: 32 }} />
                 </div>
 
                 {/* Location */}
                 <div className="flex flex-col cursor-pointer" onClick={() => setIsLocationOpen(true)}>
-                  <div className="text-[10px] font-bold tracking-wide opacity-80" style={{ color: headerFontColor }}>
+                  <div className="text-[11px] font-medium tracking-wide text-white/90">
                     Deliver to
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[13px] font-bold max-w-[180px] truncate leading-tight" style={{ color: headerFontColor }}>
+                    <span className="text-[14px] font-bold max-w-[180px] truncate leading-tight text-white">
                       {isFetchingLocation ? "Detecting location..." : currentLocation.name}
                     </span>
-                    <ChevronDownIcon sx={{ fontSize: 16, color: headerFontColor, opacity: 0.8 }} />
+                    <ChevronDownIcon sx={{ fontSize: 18, color: "white", opacity: 0.9 }} />
                   </div>
                 </div>
               </div>
 
-              {/* Profile Icon */}
+              {/* Close (X) Icon */}
               <div
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate(-1)}
                 className="w-9 h-9 rounded-full bg-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
               >
-                <AccountCircleOutlinedIcon sx={{ color: baseHeaderColor || "#f97316", fontSize: 24 }} />
+                <span className="text-slate-400 font-bold text-lg leading-none mb-0.5">✕</span>
               </div>
 
             </motion.div>
           </div>
 
-          {/* Categories Navigation - Smooth Collapse */}
-          {categories.length > 0 && (
-            <motion.div
-              layout
-              transition={{
-                layout: {
-                  type: "spring",
-                  stiffness: 420,
-                  damping: 34,
-                  mass: 0.6,
-                },
-              }}
-              className="relative flex items-end md:justify-center gap-0 overflow-x-auto no-scrollbar -mx-2 px-2 md:mx-0 md:px-0 z-10 snap-x pt-1 min-h-[68px] md:min-h-[76px] pb-0.5 mt-2">
-              {categories.slice(0, 10).map((cat) => {
-                const isActive = activeCategory?.id === cat.id;
-                return (
-                  <CategoryNavColumn
-                    key={cat.id}
-                    cat={cat}
-                    isActive={isActive}
-                    categoryAccent={categoryAccent}
-                    onCategorySelect={onCategorySelect}
-                    headerFontColor={headerFontColor}
-                    headerIconColor={headerIconColor}
-                  />
-                );
-              })}
-            </motion.div>
-          )}
+          {/* Categories Navigation - Removed */}
 
           {/* Search Bar (MOBILE ONLY) */}
-          <div className="relative z-10 mt-2 mb-1 flex items-center gap-2 md:hidden">
+          <div className="relative z-10 mt-3 -mb-6 pb-0 flex items-center gap-2 md:hidden">
             <motion.div
               onClick={handleSearchClick}
               whileTap={{ scale: 0.98 }}
-              className="bg-white flex-1 rounded-[10px] px-3 h-10 shadow-md flex items-center border border-white/50 transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 cursor-pointer">
-              <SearchIcon sx={{ color: "#000000", fontSize: 18 }} />
+              className="bg-white flex-1 rounded-2xl px-3 h-12 flex items-center border border-slate-100 shadow-md transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 cursor-pointer">
+              <SearchIcon sx={{ color: "#000000", fontSize: 20 }} />
               <input
                 type="text"
-                placeholder={searchPlaceholder || "Search Products..."}
+                placeholder="Search for 'Milk, Apples, Brinjal'"
                 readOnly
-                className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-semibold placeholder:text-black text-[14px] cursor-pointer"
+                className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-semibold placeholder:text-black/40 text-[14px] cursor-pointer"
               />
               <div className="flex items-center gap-2 border-l border-slate-100 pl-2.5">
                 <MicIcon sx={{ color: "#000000", fontSize: 18 }} />

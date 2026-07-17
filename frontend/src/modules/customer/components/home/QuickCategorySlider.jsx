@@ -18,7 +18,7 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="w-full mb-5 -mt-1 md:-mt-2 overflow-hidden relative group z-20 bg-white">
+    <div className="w-full mb-5 -mt-1 md:-mt-2 overflow-hidden relative group z-20 bg-transparent">
       <div className="relative overflow-hidden">        {/* Left Scroll Button */}
         <div className="absolute left-4 lg:left-10 top-[58%] -translate-y-1/2 z-20 hidden md:flex">
           <button
@@ -37,9 +37,9 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
               <div
                 key={cat.id}
                 onClick={() => onCategoryClick(cat.id)}
-                className="flex flex-col items-center gap-1 min-w-[72px] md:min-w-[96px] cursor-pointer group/item snap-start transition-transform active:scale-95">
+                className="flex flex-col items-center gap-1.5 min-w-[100px] md:min-w-[120px] cursor-pointer group/item snap-start transition-transform active:scale-95">
                 <div
-                  className="relative w-[64px] h-[64px] md:w-[84px] md:h-[84px] bg-transparent flex items-center justify-center p-1 transition-all duration-300 group-hover/item:-translate-y-1">
+                  className="relative w-[100px] h-[100px] md:w-[120px] md:h-[120px] bg-transparent flex items-center justify-center transition-all duration-300 group-hover/item:-translate-y-1">
                   <img
                     src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_150")}
                     alt={cat.name}
@@ -47,8 +47,8 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
                     className="w-full h-full object-contain drop-shadow-sm mix-blend-multiply group-hover/item:scale-110 transition-transform duration-500"
                   />
                 </div>
-                <div className="text-center w-full px-0.5">
-                  <span className="block text-[10px] md:text-[11px] font-semibold text-[#1f2b20] leading-tight whitespace-nowrap overflow-hidden text-ellipsis group-hover/item:text-primary transition-colors">
+                <div className="text-center w-full px-0.5 mt-1">
+                  <span className="block text-[13px] md:text-[15px] font-extrabold text-[#1f2b20] leading-tight whitespace-nowrap overflow-hidden text-ellipsis group-hover/item:text-primary transition-colors">
                     {cat.name}
                   </span>
                 </div>

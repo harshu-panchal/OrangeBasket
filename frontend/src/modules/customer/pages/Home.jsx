@@ -405,7 +405,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pt-[190px] md:pt-[250px] bg-white">
+    <div className="min-h-screen pt-[95px] md:pt-[95px] bg-white">
       <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
         <MainLocationHeader categories={categories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>

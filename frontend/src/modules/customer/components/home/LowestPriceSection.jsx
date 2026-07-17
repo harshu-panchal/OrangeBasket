@@ -13,12 +13,12 @@ const LowestPriceSection = ({ products, onSeeAll }) => {
           <div className="flex justify-between items-center mb-6 md:mb-10 px-1">
             <div className="flex flex-col">
               <h3 className="text-base md:text-xl font-black text-[#1A1A1A] tracking-tight uppercase leading-none pt-[25px]">
-                Lowest Price <span className="text-primary">ever</span>
+                New <span className="text-primary">Products</span>
               </h3>
               <div className="flex items-center gap-1.5 md:gap-2 mt-1.5 md:mt-3">
                 <div className="h-1 w-1 md:h-2 md:w-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(12,131,31,0.5)]" />
                 <span className="text-[10px] md:text-xs font-bold text-primary uppercase tracking-wide opacity-80">
-                  Unbeatable Savings • Updated hourly
+                  Fresh stock just in • Grab them now
                 </span>
               </div>
             </div>
@@ -29,7 +29,6 @@ const LowestPriceSection = ({ products, onSeeAll }) => {
               <ChevronRight size={12} className="ml-0.5" strokeWidth={3} />
             </button>
           </div>
-
           <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-6 pb-4 md:pb-6 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory scroll-smooth scroll-pl-4 md:scroll-pl-0 after:content-[''] after:w-1 after:shrink-0">
             {products.slice(0, 12).map((product) => (
               <div key={product.id} className="w-[126px] sm:w-[136px] md:w-[148px] shrink-0 snap-start smooth-transform">
