@@ -54,6 +54,10 @@ const productSchema = new mongoose.Schema(
             type: String,
             trim: true,
         }],
+        highlights: [{
+            icon: { type: String, trim: true },
+            label: { type: String, trim: true },
+        }],
         mainImage: {
             type: String, // Cloudinary URL
         },

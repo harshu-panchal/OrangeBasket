@@ -1,69 +1,135 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutGrid, ShoppingBag, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, LayoutGrid, CalendarCheck, Wallet, User, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCart } from '../../context/CartContext';
+import { motion } from 'framer-motion';
 
-const navItems = [
-    { label: 'Home', icon: Home, path: '/' },
-    { label: 'Category', icon: LayoutGrid, path: '/categories' },
-    { label: 'Orders', icon: ShoppingBag, path: '/orders' },
-    { label: 'Profile', icon: User, path: '/profile' },
-];
+const isRouteActive = (itemPath, currentPath) => {
+    if (itemPath === '/') {
+        return currentPath === '/' || currentPath === '/offers' || currentPath === '/search';
+    }
+    if (itemPath === '/categories') {
+        return currentPath.startsWith('/categories') || currentPath.startsWith('/category');
+    }
+    if (itemPath === '/orders') {
+        return currentPath.startsWith('/orders') || currentPath.startsWith('/payment-status');
+    }
+    if (itemPath === '/wallet') {
+        return currentPath.startsWith('/wallet');
+    }
+    if (itemPath === '/profile') {
+        return (
+            currentPath.startsWith('/profile') ||
+            currentPath.startsWith('/addresses') ||
+            currentPath.startsWith('/settings') ||
+            currentPath.startsWith('/support') ||
+            currentPath.startsWith('/about') ||
+            currentPath.startsWith('/privacy') ||
+            currentPath.startsWith('/terms') ||
+            currentPath.startsWith('/wishlist') ||
+            currentPath.startsWith('/transactions')
+        );
+    }
+    return currentPath === itemPath || (itemPath !== '/' && currentPath.startsWith(itemPath));
+};
 
 const BottomNav = () => {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { cartCount } = useCart();
+
+    const leftNavItems = [
+        { label: 'Home', icon: Home, path: '/' },
+        { label: 'Categories', icon: LayoutGrid, path: '/categories' },
+        { label: 'Orders', icon: CalendarCheck, path: '/orders' },
+    ];
+
+    const rightNavItems = [
+        { label: 'Wallet', icon: Wallet, path: '/wallet' },
+        { label: 'Account', icon: User, path: '/profile' },
+    ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[500] bg-white border-t border-gray-100 flex items-center justify-around h-[70px] md:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.06)] px-4 pb-[env(safe-area-inset-bottom)]">
-            {navItems.map((item) => {
-                const isActive = location.pathname === item.path ||
-                    (item.path !== '/' && location.pathname.startsWith(item.path));
+        <div className="fixed bottom-3 left-1.5 right-1.5 z-[500] max-w-lg mx-auto md:hidden pointer-events-auto">
+            <div className="bg-white/95 backdrop-blur-md rounded-full border border-slate-100 shadow-[0_12px_36px_rgba(15,23,42,0.12)] px-1.5 py-1 flex items-center justify-between relative">
+                
+                {/* Left Side Items */}
+                <div className="flex items-center justify-around flex-1 min-w-0">
+                    {leftNavItems.map((item) => {
+                        const isActive = isRouteActive(item.path, location.pathname);
 
-                return (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className="flex-1 flex flex-col items-center justify-center h-full relative group transition-all"
-                    >
-                        {isActive && (
-                            <div className="absolute -inset-y-2 -inset-x-4 bg-primary/5 rounded-[20px] -z-10 transition-opacity duration-300" />
-                        )}
-
-                        <div className="flex flex-col items-center justify-center relative">
-                            <div
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
                                 className={cn(
-                                    "transition-transform duration-300",
-                                    isActive ? "-translate-y-0.5 scale-110" : "translate-y-0 scale-100"
+                                    "flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 shrink-0",
+                                    isActive 
+                                        ? "bg-[#fff0e6] text-[#ff5500] font-extrabold shadow-2xs" 
+                                        : "text-slate-500 hover:text-slate-700 font-medium"
                                 )}
                             >
                                 <item.icon
-                                    size={24}
+                                    size={17}
                                     strokeWidth={isActive ? 2.5 : 2}
-                                    className={cn(
-                                        "transition-colors duration-300",
-                                        isActive ? "text-primary" : "text-gray-400"
-                                    )}
+                                    className={cn("transition-colors shrink-0", isActive ? "text-[#ff5500]" : "text-slate-500")}
                                 />
-                            </div>
+                                <span className={cn("text-[10.5px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-extrabold" : "text-slate-600 font-semibold")}>
+                                    {item.label}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
 
-                            <span
-                                className={cn(
-                                    "text-[10px] font-bold tracking-tight mt-1 transition-all duration-300",
-                                    isActive ? "text-primary" : "text-gray-400"
-                                )}
-                                style={{ transform: isActive ? "translateY(1px)" : "translateY(0)" }}
-                            >
-                                {item.label}
-                            </span>
+                {/* Center Elevated Floating Cart Button */}
+                <div className="relative mx-1.5 flex items-center justify-center shrink-0 z-20">
+                    <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => navigate(cartCount > 0 ? '/checkout' : '/orders')}
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center -mt-18 sm:-mt-20 border-[4px] border-white shadow-[0_16px_34px_rgba(255,85,0,0.65)] transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        title="View Cart"
+                    >
+                        <ShoppingCart size={24} className="text-white" strokeWidth={2.3} />
+                    </motion.button>
+                    {cartCount > 0 && (
+                        <div className="absolute -top-18 -right-1 bg-red-500 text-white font-black text-[10px] w-5.5 h-5.5 rounded-full border-2 border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
+                            {cartCount > 99 ? '99+' : cartCount}
                         </div>
+                    )}
+                </div>
 
-                        {/* Top Accent Line for Active State */}
-                        {isActive && (
-                            <div className="absolute -top-[1px] w-8 h-[3px] bg-primary rounded-full transition-opacity duration-300" />
-                        )}
-                    </Link>
-                );
-            })}
+                {/* Right Side Items */}
+                <div className="flex items-center justify-around flex-1 min-w-0">
+                    {rightNavItems.map((item) => {
+                        const isActive = isRouteActive(item.path, location.pathname);
+
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={cn(
+                                    "flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 shrink-0",
+                                    isActive 
+                                        ? "bg-[#fff0e6] text-[#ff5500] font-extrabold shadow-2xs" 
+                                        : "text-slate-500 hover:text-slate-700 font-medium"
+                                )}
+                            >
+                                <item.icon
+                                    size={17}
+                                    strokeWidth={isActive ? 2.5 : 2}
+                                    className={cn("transition-colors shrink-0", isActive ? "text-[#ff5500]" : "text-slate-500")}
+                                />
+                                <span className={cn("text-[10.5px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-extrabold" : "text-slate-600 font-semibold")}>
+                                    {item.label}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+
+            </div>
         </div>
     );
 };

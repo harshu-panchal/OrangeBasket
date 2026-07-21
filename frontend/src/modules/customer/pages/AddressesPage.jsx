@@ -279,61 +279,67 @@ const AddressesPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white pb-24 font-sans">
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
+        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-200/70 rounded-full transition-colors -ml-1"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Saved Addresses</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Saved Addresses</h1>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20 space-y-4">
                 {/* Add New Address Button */}
                 <button
                     onClick={openAddModal}
-                    className="w-full bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-700 hover:bg-slate-50 transition-colors group"
+                    className="w-full bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center gap-3 text-slate-700 hover:bg-slate-50/80 transition-colors group"
                 >
-                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-brand-50 border border-brand-100 text-primary flex items-center justify-center shadow-xs">
                         <Plus size={18} strokeWidth={2.5} />
                     </div>
-                    <span className="font-semibold text-sm">Add New Address</span>
+                    <span className="font-bold text-sm">Add New Address</span>
                 </button>
 
                 {/* Address List */}
                 <div className="space-y-4">
                     {loading ? (
-                        <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
                             <p className="text-slate-500 font-medium">Loading addresses...</p>
                         </div>
                     ) : addresses.length === 0 ? (
-                        <div className="bg-white rounded-xl p-6 border border-slate-200 text-center">
-                            <MapPin size={30} className="mx-auto text-slate-300 mb-3" />
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
+                            <div className="w-12 h-12 rounded-full bg-blue-50/80 border border-blue-100 flex items-center justify-center text-blue-700 mx-auto mb-3">
+                                <span className="text-xl">📍</span>
+                            </div>
                             <p className="text-slate-700 font-semibold mb-1">No saved addresses</p>
                             <p className="text-slate-500 text-sm">Add your first delivery address above</p>
                         </div>
                     ) : addresses.map((addr) => (
-                        <div key={addr.id} className="bg-white rounded-xl p-4 border border-slate-200 relative overflow-hidden">
+                        <div key={addr.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative overflow-hidden">
                             {addr.isDefault && (
-                                <div className="absolute top-0 right-0 bg-slate-900 text-white text-[10px] font-semibold px-2.5 py-1 rounded-bl-lg uppercase tracking-wide">
+                                <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wide">
                                     Default
                                 </div>
                             )}
 
-                            <div className="flex items-start gap-3">
-                                <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 flex-shrink-0">
-                                    {addr.type === 'Home' ? <Home size={18} /> : addr.type === 'Work' ? <Briefcase size={18} /> : <MapPin size={18} />}
+                            <div className="flex items-start gap-3.5">
+                                <div className={`w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs flex-shrink-0 ${
+                                    addr.type === 'Home' ? 'bg-blue-50/80 border-blue-100 text-blue-700' :
+                                    addr.type === 'Work' ? 'bg-purple-50/80 border-purple-100 text-purple-700' :
+                                    'bg-emerald-50/80 border-emerald-100 text-emerald-700'
+                                }`}>
+                                    <span className="text-lg">{addr.type === 'Home' ? '🏠' : addr.type === 'Work' ? '💼' : '📍'}</span>
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-0.5">
-                                        <h3 className="text-sm font-semibold text-slate-800">{addr.type}</h3>
+                                        <h3 className="text-sm font-bold text-slate-800">{addr.type}</h3>
                                     </div>
-                                    <p className="text-slate-800 font-medium text-sm mb-1">{addr.name}</p>
-                                    <p className="text-slate-500 text-xs leading-relaxed mb-1">{addr.address}</p>
-                                    <p className="text-slate-500 text-xs mb-2">{[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</p>
-                                    <p className="text-slate-700 font-medium text-xs">Phone: {addr.phone}</p>
+                                    <p className="text-slate-800 font-bold text-sm mb-1">{addr.name}</p>
+                                    <p className="text-slate-500 text-xs font-medium leading-relaxed mb-1">{addr.address}</p>
+                                    <p className="text-slate-500 text-xs font-medium mb-2">{[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</p>
+                                    <p className="text-slate-700 font-bold text-xs">Phone: {addr.phone}</p>
                                 </div>
                             </div>
 

@@ -8,27 +8,27 @@ const PrivacyPage = () => {
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
     return (
-        <div className="min-h-screen bg-white font-sans pb-10">
+        <div className="min-h-screen bg-white font-['Outfit',_sans-serif] pb-10">
             {/* Header */}
-            <div className="bg-white sticky top-0 z-30 px-4 py-3 flex items-center gap-1 shadow-sm">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
-                    <ChevronLeft size={24} className="text-slate-600" />
+                    <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-lg font-black text-slate-800">Privacy Policy</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Privacy Policy</h1>
             </div>
 
-            <div className="p-5 max-w-3xl mx-auto space-y-6">
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+            <div className="px-4 pt-1 max-w-3xl mx-auto space-y-6">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="h-12 w-12 rounded-2xl bg-brand-50 flex items-center justify-center text-primary">
-                            <Shield size={24} />
+                        <div className="w-12 h-12 rounded-full bg-indigo-50/80 border border-indigo-100 flex items-center justify-center text-indigo-700 shadow-2xs shrink-0">
+                            <span className="text-xl">🛡️</span>
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Privacy Policy</h2>
-                            <p className="text-xs text-slate-500 font-medium">Last updated: Oct 2025</p>
+                            <h2 className="text-xl font-extrabold text-slate-800">Privacy Policy</h2>
+                            <p className="text-xs text-slate-500 font-semibold mt-0.5">Last updated: Oct 2025</p>
                         </div>
                     </div>
 

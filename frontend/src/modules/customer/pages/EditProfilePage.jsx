@@ -81,8 +81,10 @@ const EditProfilePage = () => {
                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
-                            <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
-                                <User size={20} className="text-slate-400" />
+                            <div className="flex items-center gap-3 bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                                <div className="w-9 h-9 rounded-full bg-amber-50/80 border border-amber-100 flex items-center justify-center shrink-0">
+                                    <span className="text-sm">👤</span>
+                                </div>
                                 <input
                                     type="text"
                                     name="name"
@@ -93,7 +95,7 @@ const EditProfilePage = () => {
                                         e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                                         handleChange(e);
                                     }}
-                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium"
+                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium text-sm"
                                     placeholder="Enter your name"
                                 />
                             </div>
@@ -101,14 +103,16 @@ const EditProfilePage = () => {
 
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone Number</label>
-                            <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
-                                <Phone size={20} className="text-slate-400" />
+                            <div className="flex items-center gap-3 bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                                <div className="w-9 h-9 rounded-full bg-emerald-50/80 border border-emerald-100 flex items-center justify-center shrink-0">
+                                    <span className="text-sm">📞</span>
+                                </div>
                                 <input
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium"
+                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium text-sm"
                                     placeholder="Enter phone number"
                                 />
                             </div>
@@ -116,14 +120,16 @@ const EditProfilePage = () => {
 
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
-                            <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
-                                <Mail size={20} className="text-slate-400" />
+                            <div className="flex items-center gap-3 bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                                <div className="w-9 h-9 rounded-full bg-blue-50/80 border border-blue-100 flex items-center justify-center shrink-0">
+                                    <span className="text-sm">✉️</span>
+                                </div>
                                 <input
                                     type="email"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium"
+                                    className="bg-transparent w-full text-slate-800 font-bold outline-none placeholder:font-medium text-sm"
                                     placeholder="Enter email address"
                                 />
                             </div>
@@ -131,14 +137,19 @@ const EditProfilePage = () => {
 
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Bio</label>
-                            <textarea
-                                name="bio"
-                                value={formData.bio}
-                                onChange={handleChange}
-                                rows="3"
-                                className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-slate-800 font-medium resize-none"
-                                placeholder="Tell us about yourself..."
-                            ></textarea>
+                            <div className="flex gap-3 bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                                <div className="w-9 h-9 rounded-full bg-purple-50/80 border border-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                                    <span className="text-sm">📝</span>
+                                </div>
+                                <textarea
+                                    name="bio"
+                                    value={formData.bio}
+                                    onChange={handleChange}
+                                    rows="3"
+                                    className="w-full bg-transparent outline-none text-slate-800 font-medium text-sm resize-none"
+                                    placeholder="Tell us about yourself..."
+                                ></textarea>
+                            </div>
                         </div>
                     </div>
 

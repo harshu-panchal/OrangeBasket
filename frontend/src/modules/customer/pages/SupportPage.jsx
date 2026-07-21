@@ -77,34 +77,35 @@ const SupportPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white pb-24 font-sans">
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
+        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-200/70 rounded-full transition-colors -ml-1"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Help & Support</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Help & Support</h1>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20 space-y-5">
                 {/* Contact Channels */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <ContactCard icon={MessageCircle} label="Chat Us" sub="Instant Support" to="/chat" />
+                    <ContactCard emoji="💬" badgeBg="bg-emerald-50/80 border-emerald-100 text-emerald-700" label="Chat Us" sub="Instant Support" to="/chat" />
                     <ContactCard
-                        icon={PlusCircle}
+                        emoji="🎫"
+                        badgeBg="bg-amber-50/80 border-amber-100 text-amber-700"
                         label="Raise Ticket"
                         sub="Formal Request"
                         onClick={() => setIsTicketModalOpen(true)}
                     />
-                    <ContactCard icon={Phone} label="Call Us" sub="+91 98765..." />
-                    <ContactCard icon={Mail} label="Email Us" sub={supportEmailShort} />
+                    <ContactCard emoji="📞" badgeBg="bg-blue-50/80 border-blue-100 text-blue-700" label="Call Us" sub="+91 98765..." />
+                    <ContactCard emoji="✉️" badgeBg="bg-purple-50/80 border-purple-100 text-purple-700" label="Email Us" sub={supportEmailShort} />
                 </div>
 
                 {/* FAQ Section */}
                 <div>
-                    <h2 className="text-base font-semibold text-slate-800 mb-3 px-1">Frequently Asked Questions</h2>
+                    <h2 className="text-base font-bold text-slate-800 mb-3 px-1">Frequently Asked Questions</h2>
                     <div className="space-y-3">
                         {faqs.length > 0 ? (
                             faqs.map((faq) => (
@@ -115,7 +116,7 @@ const SupportPage = () => {
                                 />
                             ))
                         ) : (
-                            <div className="bg-white rounded-2xl shadow-[0_4px_10px_rgb(0,0,0,0.02)] border border-slate-100 px-5 py-4 text-sm text-slate-400 text-center">
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 text-sm text-slate-400 text-center font-medium">
                                 No FAQs available right now.
                             </div>
                         )}
@@ -123,14 +124,20 @@ const SupportPage = () => {
                 </div>
 
                 {/* Legal Links */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                    <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-3">Legal</h3>
+                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                    <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Legal & Policy</h3>
                     <div className="space-y-3">
-                        <Link to="/terms" className="flex items-center gap-2.5 text-slate-700 hover:text-slate-900 font-medium">
-                            <FileText size={18} /> Terms & Conditions
+                        <Link to="/terms" className="flex items-center gap-3 text-slate-700 hover:text-slate-900 font-bold text-sm">
+                            <div className="w-8 h-8 rounded-full bg-indigo-50/80 border border-indigo-100 flex items-center justify-center text-indigo-700 shrink-0">
+                                <span className="text-xs">📜</span>
+                            </div>
+                            Terms & Conditions
                         </Link>
-                        <Link to="/privacy" className="flex items-center gap-2.5 text-slate-700 hover:text-slate-900 font-medium">
-                            <FileText size={18} /> Privacy Policy
+                        <Link to="/privacy" className="flex items-center gap-3 text-slate-700 hover:text-slate-900 font-bold text-sm">
+                            <div className="w-8 h-8 rounded-full bg-purple-50/80 border border-purple-100 flex items-center justify-center text-purple-700 shrink-0">
+                                <span className="text-xs">🛡️</span>
+                            </div>
+                            Privacy Policy
                         </Link>
                     </div>
                 </div>
@@ -139,95 +146,90 @@ const SupportPage = () => {
             {/* Ticket Creation Modal */}
             <AnimatePresence>
                 {isTicketModalOpen && (
-                    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsTicketModalOpen(false)}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ y: "100%" }}
-                            animate={{ y: 0 }}
-                            exit={{ y: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl overflow-hidden z-10"
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-lg border border-slate-100"
                         >
-                            <div className="p-8">
-                                <div className="flex items-center justify-between mb-8">
-                                    <div>
-                                        <h2 className="text-2xl font-black text-slate-800">Raise a Ticket</h2>
-                                        <p className="text-sm text-slate-500 font-medium">Describe your issue in detail</p>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-9 h-9 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
+                                        <span className="text-sm">🎫</span>
                                     </div>
-                                    <button
-                                        onClick={() => setIsTicketModalOpen(false)}
-                                        className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-                                    >
-                                        <X size={20} />
-                                    </button>
+                                    <h3 className="text-lg font-extrabold text-slate-900">Raise Support Ticket</h3>
+                                </div>
+                                <button
+                                    onClick={() => setIsTicketModalOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleTicketSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Subject</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={ticketData.subject}
+                                        onChange={(e) => setTicketData({ ...ticketData, subject: e.target.value })}
+                                        placeholder="Brief title of your issue"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-sm text-slate-800"
+                                    />
                                 </div>
 
-                                <form onSubmit={handleTicketSubmit} className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Subject</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={ticketData.subject}
-                                            onChange={(e) => setTicketData({ ...ticketData, subject: e.target.value })}
-                                            placeholder="What's the issue about?"
-                                            className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-1 ring-transparent focus:ring-primary/20 transition-all"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Priority</label>
+                                    <select
+                                        value={ticketData.priority}
+                                        onChange={(e) => setTicketData({ ...ticketData, priority: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-bold text-sm text-slate-800"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
 
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {['low', 'medium', 'high'].map((p) => (
-                                            <button
-                                                key={p}
-                                                type="button"
-                                                onClick={() => setTicketData({ ...ticketData, priority: p })}
-                                                className={cn(
-                                                    "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                                                    ticketData.priority === p
-                                                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-brand-100"
-                                                        : "bg-white text-slate-400 border-slate-100 hover:bg-slate-50"
-                                                )}
-                                            >
-                                                {p}
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+                                    <textarea
+                                        required
+                                        rows={4}
+                                        value={ticketData.description}
+                                        onChange={(e) => setTicketData({ ...ticketData, description: e.target.value })}
+                                        placeholder="Please explain your issue in detail..."
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none font-medium text-sm text-slate-800 resize-none"
+                                    />
+                                </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Description</label>
-                                        <textarea
-                                            required
-                                            value={ticketData.description}
-                                            onChange={(e) => setTicketData({ ...ticketData, description: e.target.value })}
-                                            placeholder="Please explain the issue clearly..."
-                                            className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold min-h-[150px] outline-none ring-1 ring-transparent focus:ring-primary/20 transition-all"
-                                        />
-                                    </div>
-
-                                    <Button
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsTicketModalOpen(false)}
+                                        className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
                                         type="submit"
                                         disabled={ticketLoading}
-                                        className="w-full h-14 bg-primary hover:bg-[#0b721b] text-white text-lg font-black rounded-2xl shadow-xl shadow-brand-100 transition-all active:scale-95"
+                                        className="flex-1 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-[#0a701a] transition-colors flex items-center justify-center gap-2 text-sm shadow-md"
                                     >
                                         {ticketLoading ? (
-                                            <div className="flex items-center gap-2 text-center w-full justify-center">
-                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                SUBMITTING...
-                                            </div>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                         ) : (
-                                            <div className="flex items-center gap-2 text-center w-full justify-center">
-                                                <Send size={20} /> SUBMIT TICKET
-                                            </div>
+                                            <>
+                                                <Send size={16} /> Submit Ticket
+                                            </>
                                         )}
-                                    </Button>
-                                </form>
-                            </div>
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
@@ -236,18 +238,18 @@ const SupportPage = () => {
     );
 };
 
-const ContactCard = ({ icon: Icon, label, sub, to, onClick }) => {
+const ContactCard = ({ emoji, badgeBg, label, sub, to, onClick }) => {
     const CardContent = (
         <div
             onClick={onClick}
-            className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer group h-full"
+            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-2 hover:bg-slate-50/80 transition-colors cursor-pointer group h-full"
         >
-            <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:text-slate-800 transition-colors">
-                <Icon size={20} />
+            <div className={cn("w-12 h-12 rounded-full border flex items-center justify-center shadow-2xs group-hover:scale-108 transition-transform", badgeBg)}>
+                <span className="text-xl">{emoji}</span>
             </div>
             <div>
-                <h3 className="font-semibold text-slate-800 text-sm whitespace-nowrap">{label}</h3>
-                <p className="text-[10px] text-slate-500 font-medium">{sub}</p>
+                <h3 className="font-bold text-slate-800 text-sm whitespace-nowrap">{label}</h3>
+                <p className="text-[10px] text-slate-500 font-semibold">{sub}</p>
             </div>
         </div>
     );

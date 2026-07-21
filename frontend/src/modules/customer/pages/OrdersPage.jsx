@@ -40,7 +40,7 @@ const OrdersPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white shadow-sm border border-slate-100">
                     <Loader2 className="animate-spin text-brand-600" size={22} />
                     <span className="text-sm font-medium text-slate-600">Loading your orders…</span>
@@ -50,11 +50,11 @@ const OrdersPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white pb-24">
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
+        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-200/70 rounded-full transition-colors -ml-1"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>

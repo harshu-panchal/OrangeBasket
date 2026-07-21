@@ -1,17 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Heart, Plus, Minus, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "@shared/components/ui/Toast";
 import { useCartAnimation } from "../../context/CartAnimationContext";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
-
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock } from "lucide-react";
-
 import { useProductDetail } from "../../context/ProductDetailContext";
 
 const ProductCard = React.memo(
@@ -40,7 +36,6 @@ const ProductCard = React.memo(
         const effective = sale > 0 && sale < mrp ? sale : mrp;
 
         if (Number.isFinite(displayedOriginal) && displayedOriginal > displayed) {
-          // Try to match both (sale + original) when card shows a discount.
           if (effective === displayed && (mrp === displayedOriginal || displayedOriginal === 0)) {
             return true;
           }
@@ -155,55 +150,47 @@ const ProductCard = React.memo(
       ],
     );
 
+    const discountText = React.useMemo(() => {
+      if (badge) return badge;
+      if (product.discount) return product.discount;
+      if (product.originalPrice > product.price) {
+        return `-${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%`;
+      }
+      return null;
+    }, [badge, product]);
+
     return (
       <div
         className={cn(
-          "flex-shrink-0 w-full rounded-xl sm:rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-all duration-300 hover:scale-[1.02]",
-          layout === "list" ? "flex flex-row items-center border-b border-gray-100 py-3" : "flex flex-col h-full",
-          layout !== "list" && compact
-            ? "bg-white border-[1.5px] border-brand-50 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.08)]"
-            : layout !== "list" && neutralBg
-              ? "bg-white border border-slate-100 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.08)]"
-              : layout !== "list" ? "bg-primary/10 border border-primary/20" : "bg-transparent",
-          className,
+          "group relative flex flex-col justify-between bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-100 shadow-2xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden",
+          layout === "list" ? "flex-row items-center gap-3 py-3" : "h-full",
+          className
         )}
-        onClick={handleProductClick}>
+        onClick={handleProductClick}
+      >
         {/* Top Image Section */}
-        <div className={cn("relative", layout === "list" ? "w-[100px] h-[100px] shrink-0" : "")}>
-          {/* Badge (Custom or Discount) */}
-          {(badge ||
-            product.discount ||
-            product.originalPrice > product.price) && (
-              <div
-                className={cn(
-                  "absolute z-10 bg-primary text-primary-foreground font-[900] rounded-md shadow-sm uppercase tracking-wider flex items-center justify-center",
-                  compact
-                    ? "top-2 left-2 px-1.5 py-0.5 text-[7px]"
-                    : "top-2 left-2 px-1 py-0.5 text-[7px] sm:top-3 sm:left-3 sm:px-2 sm:py-1 sm:text-[9px]",
-                )}>
-                {badge ||
-                  product.discount ||
-                  `${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF`}
-              </div>
-            )}
+        <div className={cn("relative w-full rounded-xl overflow-hidden bg-slate-50/50 flex items-center justify-center p-2", layout === "list" ? "w-[90px] h-[90px] shrink-0" : "aspect-square")}>
+          {/* Discount Badge (Top-Left Orange Pill) */}
+          {discountText && (
+            <div className="absolute top-2 left-2 z-10 bg-[#ff6b00] text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shadow-xs tracking-tight leading-none">
+              {discountText}
+            </div>
+          )}
 
+          {/* Wishlist Heart Button (Top-Right White Circle) */}
           <button
             onClick={toggleWishlist}
-            className={cn(
-              "absolute z-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:bg-white transition-all active:scale-90",
-              compact
-                ? "top-2 right-2 h-7 w-7"
-                : "top-2 right-2 h-6.5 w-6.5 sm:top-3 sm:right-3 sm:h-8 sm:w-8",
-            )}>
+            className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-2xs flex items-center justify-center hover:bg-white hover:scale-105 active:scale-90 transition-all"
+            title="Wishlist"
+          >
             <motion.div
               whileTap={{ scale: 0.8 }}
-              animate={isWishlisted ? { scale: [1, 1.2, 1] } : {}}>
+              animate={isWishlisted ? { scale: [1, 1.25, 1] } : {}}
+            >
               <Heart
-                size={compact ? 12 : 14}
+                size={14}
                 className={cn(
-                  isWishlisted
-                    ? "text-red-500 fill-current"
-                    : "text-neutral-400",
+                  isWishlisted ? "text-red-500 fill-current" : "text-slate-400"
                 )}
               />
             </motion.div>
@@ -213,142 +200,78 @@ const ProductCard = React.memo(
             {showHeartPopup && (
               <motion.div
                 initial={{ scale: 0.5, opacity: 1, y: 0 }}
-                animate={{ scale: 2, opacity: 0, y: -40 }}
+                animate={{ scale: 2, opacity: 0, y: -35 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute top-3 right-3 z-50 pointer-events-none text-red-500">
-                <Heart size={24} fill="currentColor" />
+                className="absolute top-3 right-3 z-50 pointer-events-none text-red-500"
+              >
+                <Heart size={20} fill="currentColor" />
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div
-            className={cn(
-              "block w-full h-full overflow-hidden flex items-center justify-center transition-transform duration-500 group-hover:scale-105",
-              layout !== "list" && "aspect-square",
-              (compact || neutralBg || layout === "list") ? "bg-white/70" : "bg-white/50",
-              layout === "list" && "rounded-lg border border-gray-100"
-            )}>
-            <img
-              ref={imageRef}
-              src={applyCloudinaryTransform(product.image)}
-              alt={product.name}
-              loading="lazy"
-              className="w-full h-full object-cover mix-blend-multiply"
-            />
-          </div>
+          {/* Product Image */}
+          <img
+            ref={imageRef}
+            src={applyCloudinaryTransform(product.image)}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+          />
         </div>
 
-        {/* Info Section */}
-        <div
-          className={cn(
-            "flex flex-col flex-1",
-            layout === "list" ? "pl-3 gap-1" :
-            compact
-              ? "p-2 pt-1 gap-0"
-              : "bg-white/40 p-1.5 pt-2 sm:p-3 sm:pt-4 gap-0.5",
-          )}>
-          <div className="flex items-center gap-1 mb-0.5 sm:gap-1.5 sm:mb-1">
-            <div
-              className={cn(
-                "border-2 border-primary rounded-full flex items-center justify-center",
-                compact ? "h-2.5 w-2.5" : "h-2.5 w-2.5 sm:h-3.5 sm:w-3.5",
-              )}>
-              <div
-                className={cn(
-                  "bg-primary rounded-full",
-                  compact ? "h-0.5 w-0.5" : "h-1 w-1",
-                )}
-              />
-            </div>
-            <div
-              className={cn(
-                "bg-brand-50 text-brand-600 font-bold rounded px-1.5 py-0 tracking-wide",
-                compact ? "text-[8px]" : "text-[8px] sm:text-[9px]",
-              )}>
-              {product.weight || "1 unit"}
-            </div>
-          </div>
-
-          <div className={cn(compact && layout !== "list" ? "h-8" : layout === "list" ? "" : "h-8 sm:h-9")}>
-            <h4
-              className={cn(
-                "font-[600] text-[#1A1A1A] leading-tight line-clamp-2",
-                compact ? "text-[10.5px]" : "text-[12px] sm:text-[13px]",
-              )}>
+        {/* Content Box */}
+        <div className={cn("flex flex-col flex-1 mt-2.5", layout === "list" && "mt-0")}>
+          {/* Title & Weight */}
+          <div>
+            <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-slate-900 transition-colors">
               {product.name}
             </h4>
+            <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+              {product.weight || "1 unit"}
+            </p>
           </div>
 
-          {/* Delivery Time & Unit info */}
-          <div className="flex items-center gap-1 text-gray-500 mt-0.5 mb-1 sm:gap-1.5 sm:mt-1 sm:mb-2">
-            <Clock size={compact ? 9 : 10} className="text-primary/80" />
-            <span
-              className={cn(
-                "font-semibold",
-                compact ? "text-[8px]" : "text-[9px] sm:text-[10px]",
-              )}>
-              {product.deliveryTime || "8-12 mins"}
-            </span>
-          </div>
-
-          {/* Price Row / ADD Button Combination */}
-          <div className={cn("flex items-center justify-between gap-1", layout === "list" ? "mt-1" : "mt-auto")}>
-            <div className="flex flex-col">
-              <span
-                className={cn(
-                  "font-[1000] text-[#1A1A1A]",
-                  compact ? "text-[11px]" : "text-[13px] sm:text-sm",
-                )}>
+          {/* Bottom Price Row & Plus/Quantity Selector */}
+          <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-1">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
                 ₹{product.price}
               </span>
               {product.originalPrice > product.price && (
-                <span
-                  className={cn(
-                    "font-medium text-gray-400 line-through leading-none",
-                    compact ? "text-[8px]" : "text-[9px] sm:text-[10px]",
-                  )}>
+                <span className="text-[11px] sm:text-xs text-slate-400 line-through font-medium">
                   ₹{product.originalPrice}
                 </span>
               )}
             </div>
 
-            {/* ADD Button / Quantity Selector (Always in price row) */}
-            <div className="flex">
+            {/* Orange Plus Button / Quantity Controls */}
+            <div>
               {quantity > 0 ? (
-                <div
-                  className={cn(
-                    "flex items-center bg-white border-[1.5px] border-primary rounded-lg p-0.5 justify-between",
-                    compact ? "min-w-[60px]" : "min-w-[68px] sm:min-w-[90px] md:min-w-[100px]",
-                  )}>
+                <div className="h-8 bg-[#ff6b00] text-white rounded-full px-2 flex items-center justify-between gap-1.5 shadow-xs transition-all">
                   <button
                     onClick={handleDecrement}
-                    className="p-0.5 px-0.5 text-primary active:scale-90 transition-transform sm:p-1 sm:px-1">
-                    <Minus size={compact ? 10 : 12} strokeWidth={3.5} />
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 active:scale-90 transition-transform"
+                  >
+                    <Minus size={12} strokeWidth={3} />
                   </button>
-                  <span
-                    className={cn(
-                      "font-black text-primary",
-                      compact ? "text-[10px]" : "text-[11px] sm:text-[13px] md:text-sm",
-                    )}>
+                  <span className="font-extrabold text-xs px-1">
                     {quantity}
                   </span>
                   <button
                     onClick={handleIncrement}
-                    className="p-0.5 px-0.5 text-primary active:scale-90 transition-transform sm:p-1 sm:px-1">
-                    <Plus size={compact ? 10 : 12} strokeWidth={3.5} />
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 active:scale-90 transition-transform"
+                  >
+                    <Plus size={12} strokeWidth={3} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={handleAddToCart}
-                  className={cn(
-                    "bg-white border-[1.5px] border-primary text-primary rounded-lg font-black shadow-sm hover:bg-primary/5 mb-0 transition-all uppercase tracking-wide leading-none active:scale-95",
-                    compact
-                      ? "px-2.5 py-1 text-[10px]"
-                      : "px-3.5 py-1.5 text-[11px] sm:px-7 sm:py-2 sm:text-[13px] md:text-sm md:px-8 md:py-2.5",
-                  )}>
-                  ADD
+                  className="w-8 h-8 rounded-full bg-[#ff6b00] hover:bg-orange-600 text-white flex items-center justify-center font-extrabold text-base shadow-xs hover:scale-105 active:scale-90 transition-all"
+                  title="Add to Cart"
+                >
+                  <Plus size={18} strokeWidth={3} />
                 </button>
               )}
             </div>
@@ -356,7 +279,7 @@ const ProductCard = React.memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 export default ProductCard;

@@ -645,6 +645,13 @@ export const createProduct = async (req, res) => {
         // Not JSON, keep as is
       }
     }
+    if (typeof productData.highlights === "string") {
+      try {
+        productData.highlights = JSON.parse(productData.highlights);
+      } catch (e) {
+        // Not JSON
+      }
+    }
 
     if (!productData.name) {
       return handleResponse(res, 400, "Product name is required");
@@ -803,6 +810,13 @@ export const updateProduct = async (req, res) => {
         productData.tags = JSON.parse(productData.tags);
       } catch (e) {
         // Not JSON, keep as is
+      }
+    }
+    if (typeof productData.highlights === "string") {
+      try {
+        productData.highlights = JSON.parse(productData.highlights);
+      } catch (e) {
+        // Not JSON
       }
     }
 

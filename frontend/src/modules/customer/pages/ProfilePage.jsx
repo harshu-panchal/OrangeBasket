@@ -9,6 +9,7 @@ import { useSettings } from '@core/context/SettingsContext';
 import { customerApi } from '../services/customerApi';
 import { toast } from 'sonner';
 import CartPage from './CartPage';
+import { cn } from '@/lib/utils';
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -26,24 +27,23 @@ const ProfilePage = () => {
         return raw;
     };
 
-
     return (
         <>
-            <div className="min-h-screen bg-white pb-20 font-['Outfit',_sans-serif]">
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
+            <div className="min-h-screen bg-slate-50/50 pb-20 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2 shadow-2xs">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-200/70 rounded-full transition-colors -ml-1"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">My Profile</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">My Profile</h1>
                 <div className="ml-auto flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => navigate('/notifications')}
                         title="View notifications"
-                        className="w-10 h-10 flex items-center justify-center rounded-full transition-colors border border-slate-200 bg-white hover:bg-slate-100"
+                        className="w-10 h-10 flex items-center justify-center rounded-full transition-colors border border-slate-200 bg-white hover:bg-slate-100 shadow-2xs"
                     >
                         <Bell size={18} className="text-slate-700" />
                     </button>
@@ -53,110 +53,143 @@ const ProfilePage = () => {
             <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20 space-y-4">
 
                 {/* User Identity Card */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="h-14 w-14 rounded-xl bg-slate-100 flex items-center justify-center p-1 border border-slate-200">
-                            <div className="h-full w-full rounded-lg bg-white flex items-center justify-center overflow-hidden">
-                                <User size={28} className="text-slate-700" />
+                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                        <div className="h-14 w-14 rounded-full bg-gradient-to-tr from-brand-50 to-brand-100/60 border border-brand-200/50 flex items-center justify-center p-0.5 shadow-sm">
+                            <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                                <User size={26} className="text-primary" />
                             </div>
                         </div>
                         <div>
-                            <h2 className="text-base leading-tight font-semibold text-slate-900">{user?.name || 'Customer'}</h2>
-                            <p className="text-slate-500 text-xs font-medium flex items-center gap-1 mt-0.5">
-                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] uppercase">India</span> +91 {formatIndiaPhone(user?.phone)}
+                            <h2 className="text-base leading-tight font-bold text-slate-900">{user?.name || 'Customer'}</h2>
+                            <p className="text-slate-500 text-xs font-semibold flex items-center gap-1 mt-1">
+                                <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase">India</span> +91 {formatIndiaPhone(user?.phone)}
                             </p>
                         </div>
                     </div>
-                    <Link to="/profile/edit" className="p-2.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                    <Link to="/profile/edit" className="p-2.5 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-100 transition-colors shadow-2xs">
                         <Edit2 size={16} />
                     </Link>
+                </div>
+
+                {/* Quick Action Badges (Circular Highlight Icon Style) */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                    <div className="grid grid-cols-4 gap-2">
+                        <button
+                            onClick={() => navigate('/orders')}
+                            className="flex flex-col items-center text-center group py-1"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-emerald-50/80 border border-emerald-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <span className="text-xl">📦</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Your<br/>Orders</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/wallet')}
+                            className="flex flex-col items-center text-center group py-1"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-teal-50/80 border border-teal-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <span className="text-xl">👛</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">My<br/>Wallet</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/wishlist')}
+                            className="flex flex-col items-center text-center group py-1"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-rose-50/80 border border-rose-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <span className="text-xl">❤️</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Wishlist</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/addresses')}
+                            className="flex flex-col items-center text-center group py-1"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-blue-50/80 border border-blue-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <span className="text-xl">📍</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Addresses</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Menu Sections */}
                 <div className="space-y-4">
                     {/* Account Section */}
-                    <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Personal Account</p>
+                    <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                        <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Personal Account</p>
                         </div>
                         <div className="divide-y divide-slate-100">
                             <MenuItem
-                                icon={ShoppingCart}
+                                emoji="🛒"
                                 label="My Cart"
                                 sub="View your added products"
                                 onClick={() => setIsCartOpen(true)}
-                                color="#f59e0b"
-                                bg="rgba(245,158,11,0.10)"
+                                badgeBg="bg-amber-50/80 border-amber-100/70 text-amber-700"
                             />
                             <MenuItem
-                                icon={Package}
+                                emoji="📦"
                                 label="Your Orders"
                                 sub="Track, return or buy things again"
                                 path="/orders"
-                                color="var(--primary)"
-                                bg="rgba(16,185,129,0.10)"
+                                badgeBg="bg-emerald-50/80 border-emerald-100/70 text-emerald-700"
                             />
                             <MenuItem
-                                icon={CreditCard}
+                                emoji="💳"
                                 label="Order Transactions"
                                 sub="View all payments & refunds"
                                 path="/transactions"
-                                color="#f97316"
-                                bg="rgba(249,115,22,0.10)"
+                                badgeBg="bg-orange-50/80 border-orange-100/70 text-orange-700"
                             />
                             <MenuItem
-                                icon={Wallet}
+                                emoji="👛"
                                 label="Wallet"
                                 sub="Balance & return refunds"
                                 path="/wallet"
-                                color="#10b981"
-                                bg="rgba(16,185,129,0.10)"
+                                badgeBg="bg-teal-50/80 border-teal-100/70 text-teal-700"
                             />
                             <MenuItem
-                                icon={Heart}
+                                emoji="❤️"
                                 label="Your Wishlist"
                                 sub="Your saved items"
                                 path="/wishlist"
-                                color="#fb7185"
-                                bg="rgba(248,113,113,0.08)"
+                                badgeBg="bg-rose-50/80 border-rose-100/70 text-rose-700"
                             />
                             <MenuItem
-                                icon={MapPin}
+                                emoji="📍"
                                 label="Saved Addresses"
                                 sub="Manage your delivery locations"
                                 path="/addresses"
-                                color="var(--primary)"
-                                bg="rgba(56,189,248,0.10)"
+                                badgeBg="bg-blue-50/80 border-blue-100/70 text-blue-700"
                             />
                         </div>
                     </div>
 
                     {/* Support Section */}
-                    <div className="bg-white rounded-xl overflow-hidden border border-slate-200">
-                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Help & Settings</p>
+                    <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                        <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Help & Settings</p>
                         </div>
                         <div className="divide-y divide-slate-100">
                             <MenuItem
-                                icon={HelpCircle}
+                                emoji="🎧"
                                 label="Help & Support"
                                 path="/support"
-                                color="#3b82f6"
-                                bg="rgba(59,130,246,0.08)"
+                                badgeBg="bg-purple-50/80 border-purple-100/70 text-purple-700"
                             />
                             <MenuItem
-                                icon={ShieldCheck}
+                                emoji="🛡️"
                                 label="Privacy Policy"
                                 path="/privacy"
-                                color="#a855f7"
-                                bg="rgba(168,85,247,0.08)"
+                                badgeBg="bg-indigo-50/80 border-indigo-100/70 text-indigo-700"
                             />
                             <MenuItem
-                                icon={Info}
+                                emoji="ℹ️"
                                 label="About Us"
                                 path="/about"
-                                color="#14b8a6"
-                                bg="rgba(45,212,191,0.08)"
+                                badgeBg="bg-cyan-50/80 border-cyan-100/70 text-cyan-700"
                             />
                         </div>
                     </div>
@@ -165,14 +198,14 @@ const ProfilePage = () => {
                 {/* Logout Button */}
                 <button
                     onClick={() => setShowLogoutModal(true)}
-                    className="w-full py-3 rounded-lg border border-slate-300 text-slate-700 font-semibold bg-white hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 mt-2"
+                    className="w-full py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 mt-2 shadow-2xs"
                 >
-                    <LogOut size={20} />
+                    <LogOut size={18} className="text-slate-600" />
                     Sign out
                 </button>
 
                 <div className="text-center pb-8">
-                    <p className="text-[10px] text-slate-400 font-medium">Version 2.4.0 - {appName}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Version 2.4.0 • {appName}</p>
                 </div>
 
             </div>
@@ -210,10 +243,9 @@ const ProfilePage = () => {
             </div>
         )}
 
-        {/* Cart Overlay (Bottom Sheet on Mobile, Centered Modal on Desktop) */}
+        {/* Cart Overlay */}
         {isCartOpen && (
             <div className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center items-center bg-slate-900/60 backdrop-blur-sm m-0 p-0 sm:p-4">
-                {/* Click outside to close */}
                 <div className="absolute inset-0" onClick={() => setIsCartOpen(false)}></div>
                 <div 
                     className="relative w-full sm:max-w-md h-[90vh] sm:h-auto sm:max-h-[85vh] bg-white rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl transition-transform"
@@ -239,27 +271,20 @@ const ProfilePage = () => {
     );
 };
 
-const MenuItem = ({ icon: Icon, label, sub, path, onClick, color = '#334155', bg = 'rgba(148,163,184,0.12)' }) => {
+const MenuItem = ({ emoji, label, sub, path, onClick, badgeBg = 'bg-slate-50/80 border-slate-100/70 text-slate-700' }) => {
     const Component = onClick ? 'button' : Link;
     return (
-    <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors group">
-        <div className="flex items-center gap-3">
-            <div
-                className="h-10 w-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: bg }}
-            >
-                <Icon
-                    size={20}
-                    className="transition-colors"
-                    style={{ color }}
-                />
+    <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group">
+        <div className="flex items-center gap-3.5">
+            <div className={cn("w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0", badgeBg)}>
+                <span className="text-lg">{emoji}</span>
             </div>
             <div>
-                <h3 className="text-sm font-semibold text-slate-800">{label}</h3>
-                {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
+                <h3 className="text-sm font-bold text-slate-800 leading-tight">{label}</h3>
+                {sub && <p className="text-[11px] font-medium text-slate-500 mt-0.5">{sub}</p>}
             </div>
         </div>
-        <div className="p-1.5 rounded-md group-hover:bg-slate-100 transition-colors">
+        <div className="p-1.5 rounded-full group-hover:bg-slate-100 transition-colors">
             <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-all group-hover:translate-x-0.5" />
         </div>
     </Component>

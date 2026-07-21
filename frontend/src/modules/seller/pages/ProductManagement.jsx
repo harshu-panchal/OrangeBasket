@@ -21,7 +21,9 @@ import {
   HiOutlineFolderOpen,
   HiOutlineSwatch,
   HiOutlineSquaresPlus,
+  HiOutlineSparkles,
 } from "react-icons/hi2";
+import { PRESET_HIGHLIGHT_ICONS } from "./AddProduct";
 import Modal from "@shared/components/ui/Modal";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -330,6 +332,7 @@ const ProductManagement = () => {
       data.append("weight", formData.weight);
       data.append("tags", formData.tags);
       data.append("variants", JSON.stringify(formData.variants));
+      data.append("highlights", JSON.stringify(formData.highlights || []));
 
       if (formData.mainImageFile) {
         data.append("mainImage", formData.mainImageFile);
@@ -425,6 +428,14 @@ const ProductManagement = () => {
         brand: item.brand || "",
         mainImage: item.mainImage || null,
         galleryImages: item.galleryImages || [],
+        highlights: (Array.isArray(item.highlights) && item.highlights.length > 0)
+          ? item.highlights
+          : [
+              { icon: "leaf", label: "100% Natural" },
+              { icon: "avocado", label: "Farm Fresh" },
+              { icon: "zap", label: "High Protein" },
+              { icon: "sprout", label: "Source of Fiber" },
+            ],
         variants: (item.variants && item.variants.length > 0) ? item.variants.map(v => ({ ...v, id: v._id || Date.now() })) : [
           {
             id: Date.now(),
@@ -934,6 +945,11 @@ const ProductManagement = () => {
                       label: "Groups",
                       icon: HiOutlineFolderOpen,
                     },
+                    {
+                      id: "highlights",
+                      label: "Highlights",
+                      icon: HiOutlineSparkles,
+                    },
                     { id: "media", label: "Photos", icon: HiOutlinePhoto },
                   ].map((tab) => (
                     <button
@@ -1302,6 +1318,84 @@ const ProductManagement = () => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {modalTab === "highlights" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">
+                          Product Highlight Badges (4 Slots)
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Select icons and enter custom text labels to display product highlights on the product page.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[0, 1, 2, 3].map((slotIdx) => {
+                          const currentHighlight = formData.highlights?.[slotIdx] || { icon: "leaf", label: "" };
+                          return (
+                            <div key={slotIdx} className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                  Highlight #{slotIdx + 1}
+                                </span>
+                                <span className="text-xl">
+                                  {PRESET_HIGHLIGHT_ICONS.find((i) => i.id === currentHighlight.icon)?.emoji || "🌿"}
+                                </span>
+                              </div>
+
+                              {/* Icon Selector Grid */}
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                                  Select Icon
+                                </label>
+                                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200">
+                                  {PRESET_HIGHLIGHT_ICONS.map((ic) => (
+                                    <button
+                                      key={ic.id}
+                                      type="button"
+                                      onClick={() => {
+                                        const nextHL = [...(formData.highlights || [])];
+                                        nextHL[slotIdx] = { ...currentHighlight, icon: ic.id };
+                                        setFormData({ ...formData, highlights: nextHL });
+                                      }}
+                                      className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                                        currentHighlight.icon === ic.id
+                                          ? "bg-brand-50 border-primary text-primary shadow-xs"
+                                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                                      )}
+                                    >
+                                      <span>{ic.emoji}</span>
+                                      <span className="text-[10px]">{ic.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Title Input */}
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                  Heading / Title Text
+                                </label>
+                                <input
+                                  type="text"
+                                  value={currentHighlight.label}
+                                  onChange={(e) => {
+                                    const nextHL = [...(formData.highlights || [])];
+                                    nextHL[slotIdx] = { ...currentHighlight, label: e.target.value };
+                                    setFormData({ ...formData, highlights: nextHL });
+                                  }}
+                                  placeholder="e.g. 100% Natural"
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-primary/10"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

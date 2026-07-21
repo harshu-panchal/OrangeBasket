@@ -26,27 +26,29 @@ const OrderTransactionsPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-white pb-24 font-sans">
-            <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center gap-2">
+        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-200/70 rounded-full transition-colors -ml-1"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Order Transactions</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Order Transactions</h1>
             </div>
 
             <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20">
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-semibold text-slate-800">Transaction History</h3>
-                            <p className="text-[11px] text-slate-500">
+                            <h3 className="text-base font-bold text-slate-800">Transaction History</h3>
+                            <p className="text-[11px] font-medium text-slate-500">
                                 Based on your recent orders
                             </p>
                         </div>
-                        <ReceiptIndianRupee className="h-5 w-5 text-slate-400" />
+                        <div className="w-10 h-10 rounded-full bg-orange-50/80 border border-orange-100 flex items-center justify-center text-orange-700 shrink-0">
+                            <span className="text-lg">💳</span>
+                        </div>
                     </div>
 
                     {loading ? (
@@ -72,32 +74,28 @@ const OrderTransactionsPage = () => {
                                 return (
                                     <div
                                         key={order._id}
-                                        className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                                        className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors"
                                     >
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-3.5">
                                             <div
-                                                className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                                                className={`w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs shrink-0 ${
                                                     isRefund
-                                                        ? 'bg-amber-50 text-amber-600'
-                                                        : 'bg-slate-100 text-slate-700'
+                                                        ? 'bg-amber-50/80 border-amber-100 text-amber-700'
+                                                        : 'bg-orange-50/80 border-orange-100 text-orange-700'
                                                 }`}
                                             >
-                                                {isRefund ? (
-                                                    <ArrowUpRight size={19} />
-                                                ) : (
-                                                    <ArrowDownLeft size={19} />
-                                                )}
+                                                <span className="text-lg">{isRefund ? '↩️' : '💳'}</span>
                                             </div>
                                             <div>
-                                                <h4 className="font-semibold text-slate-800 text-sm">
+                                                <h4 className="font-bold text-slate-800 text-sm">
                                                     {isRefund ? 'Refund' : 'Order Payment'}
                                                 </h4>
-                                                <p className="text-[11px] text-slate-500">
+                                                <p className="text-[11px] font-medium text-slate-500">
                                                     #{order.orderId || order._id?.slice(-8)} •{' '}
                                                     {order.paymentMethod || 'Online'}
                                                 </p>
                                                 {createdAt && (
-                                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">
                                                         {createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })},{' '}
                                                         {createdAt.toLocaleTimeString([], {
                                                             hour: '2-digit',
@@ -108,7 +106,7 @@ const OrderTransactionsPage = () => {
                                             </div>
                                         </div>
                                         <div
-                                            className={`text-sm font-semibold ${
+                                            className={`text-sm font-bold ${
                                                 isRefund ? 'text-amber-600' : 'text-slate-900'
                                             }`}
                                         >

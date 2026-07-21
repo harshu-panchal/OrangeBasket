@@ -20,17 +20,17 @@ const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSect
         <div className="border-b border-slate-100 last:border-0">
             <button
                 onClick={() => toggleSection(id)}
-                className="w-full py-4 flex items-center justify-between transition-all hover:bg-slate-50/50 rounded-lg group px-2"
+                className="w-full py-2.5 flex items-center justify-between transition-all hover:bg-slate-50/50 rounded-lg group px-2"
             >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                     <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                        "w-7 h-7 rounded-lg flex items-center justify-center transition-all",
                         isOpen ? "bg-brand-50 text-primary" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
                     )}>
                         {icon}
                     </div>
                     <span className={cn(
-                        "font-bold text-[13px] uppercase tracking-wider",
+                        "font-bold text-[12px] uppercase tracking-wider",
                         isOpen ? "text-[#1A1A1A]" : "text-slate-500"
                     )}>{title}</span>
                 </div>
@@ -38,7 +38,7 @@ const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSect
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     className={cn("transition-colors", isOpen ? "text-primary" : "text-slate-300")}
                 >
-                    <ChevronDown size={18} strokeWidth={3} />
+                    <ChevronDown size={16} strokeWidth={3} />
                 </motion.div>
             </button>
             <AnimatePresence initial={false}>
@@ -47,10 +47,10 @@ const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSect
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
                         className="overflow-hidden"
                     >
-                        <div className="pt-2 pb-6 px-2">
+                        <div className="pt-1 pb-3 px-2">
                             {children}
                         </div>
                     </motion.div>
@@ -58,6 +58,21 @@ const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSect
             </AnimatePresence>
         </div>
     );
+};
+
+const HIGHLIGHT_ICON_MAP = {
+    leaf: { emoji: "🌿", bg: "bg-amber-50/80 border-amber-100/70 text-amber-700" },
+    avocado: { emoji: "🥑", bg: "bg-emerald-50/80 border-emerald-100/70 text-emerald-700" },
+    zap: { emoji: "⚡", bg: "bg-orange-50/80 border-orange-100/70 text-orange-700" },
+    sprout: { emoji: "🌱", bg: "bg-teal-50/80 border-teal-100/70 text-teal-700" },
+    shield: { emoji: "🛡️", bg: "bg-blue-50/80 border-blue-100/70 text-blue-700" },
+    heart: { emoji: "❤️", bg: "bg-rose-50/80 border-rose-100/70 text-rose-700" },
+    star: { emoji: "⭐", bg: "bg-yellow-50/80 border-yellow-100/70 text-yellow-700" },
+    truck: { emoji: "🚚", bg: "bg-indigo-50/80 border-indigo-100/70 text-indigo-700" },
+    wheat: { emoji: "🌾", bg: "bg-amber-50/80 border-amber-100/70 text-amber-800" },
+    sugarfree: { emoji: "🍬", bg: "bg-purple-50/80 border-purple-100/70 text-purple-700" },
+    sun: { emoji: "☀️", bg: "bg-orange-50/80 border-orange-100/70 text-orange-700" },
+    smile: { emoji: "😊", bg: "bg-green-50/80 border-green-100/70 text-green-700" },
 };
 
 const ProductDetailSheet = () => {
@@ -107,6 +122,18 @@ const ProductDetailSheet = () => {
           : [
               "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
             ];
+    }, [selectedProduct]);
+
+    const displayHighlights = useMemo(() => {
+        if (Array.isArray(selectedProduct?.highlights) && selectedProduct.highlights.length > 0) {
+            return selectedProduct.highlights.slice(0, 4);
+        }
+        return [
+            { icon: "leaf", label: "100% Natural" },
+            { icon: "avocado", label: "Farm Fresh" },
+            { icon: "zap", label: "High Protein" },
+            { icon: "sprout", label: "Source of Fiber" },
+        ];
     }, [selectedProduct]);
 
     // Update variant when product changes
@@ -596,39 +623,14 @@ const ProductDetailSheet = () => {
                                             </motion.div>
                                         )}
 
-                                        {/* Decorative Divider */}
+                                         {/* Decorative Divider */}
                                         <div className="relative -mt-1 -mb-1">
                                             <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
                                             <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-white border border-gray-200 rounded-full" />
                                         </div>
 
-                                        {/* Variants Selection (Desktop) */}
-                                        {selectedProduct.variants && selectedProduct.variants.length > 0 && (
-                                            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50 mt-4">
-                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Select Variant</h4>
-                                                <div className="flex gap-2.5 flex-wrap">
-                                                    {selectedProduct.variants.map((v, idx) => (
-                                                        <motion.button
-                                                            key={idx}
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => setSelectedVariant(v)}
-                                                            className={cn(
-                                                                'px-4 py-2 font-black rounded-xl text-xs transition-all border-2',
-                                                                selectedVariant?.sku === v.sku
-                                                                    ? 'bg-white border-primary text-primary shadow-sm shadow-brand-100'
-                                                                    : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
-                                                            )}
-                                                        >
-                                                            {v.name}
-                                                        </motion.button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
                                         {/* Product Information Accordion (Desktop) */}
-                                        <div className="mt-8 border-t border-slate-100">
+                                        <div className="mt-4 border-t border-slate-100">
                                             {/* Description */}
                                             {cleanDesc && (
                                                 <AccordionItem expandedSections={expandedSections} toggleSection={toggleSection}
@@ -833,7 +835,7 @@ const ProductDetailSheet = () => {
                             onWheel={handleWheel}
                         >
                             {/* Product Image Carousel */}
-                            <div className="relative w-full bg-gradient-to-b from-[#F5F7F8] to-white pt-0 pb-4 h-[52vh] min-h-[320px] max-h-[560px]">
+                            <div className="relative w-full bg-gradient-to-b from-[#F5F7F8] to-white py-2 h-[230px] sm:h-[260px]">
                                 <div
                                     ref={scrollRef}
                                     className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full"
@@ -851,7 +853,6 @@ const ProductDetailSheet = () => {
                                                 src={applyCloudinaryTransform(img, "f_auto,q_auto:best,w_1200,dpr_auto")}
                                                 alt={`${selectedProduct.name} ${i + 1}`}
                                                 className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl"
-                                                style={{ objectPosition: 'center calc(50% - 40px)' }}
                                             />
                                         </div>
                                     ))}
@@ -859,7 +860,7 @@ const ProductDetailSheet = () => {
 
                                 {/* Carousel Dots */}
                                 {allImages.length > 1 && (
-                                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+                                    <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
                                         {allImages.map((_, i) => (
                                             <div
                                                 key={i}
@@ -874,21 +875,64 @@ const ProductDetailSheet = () => {
                             </div>
 
                             {/* Product Info Container */}
-                            <div className="px-5 pt-2 pb-6">
+                            <div className="px-5 pt-3 pb-3 space-y-3">
                                 {/* Delivery Time Badge */}
-                                <div className="inline-flex items-center gap-1.5 bg-[#F0FDF4] border border-brand-100 text-primary px-2.5 py-1 rounded-lg text-[10px] font-black uppercase mb-3">
+                                <div className="inline-flex items-center gap-1.5 bg-[#F0FDF4] border border-brand-100 text-primary px-2.5 py-1 rounded-lg text-[10px] font-black uppercase">
                                     <Clock size={12} strokeWidth={3} />
                                     {selectedProduct.deliveryTime || "8 Mins"}
                                 </div>
 
-                                <h2 className="text-xl font-black text-[#1A1A1A] leading-tight mb-2">
-                                    {selectedProduct.name}
-                                </h2>
+                                {/* Title & Weight */}
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 leading-snug tracking-tight">
+                                        {selectedProduct.name}
+                                    </h2>
+                                    <p className="text-xs text-slate-500 font-semibold mt-1">
+                                        {selectedVariant?.name || selectedProduct.weight || "1 kg"}
+                                    </p>
+                                </div>
+
+                                {/* Price Row */}
+                                <div className="flex items-baseline gap-2.5 pt-0.5">
+                                    <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                                        ₹{selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.price}
+                                    </span>
+                                    {((selectedVariant?.salePrice && selectedVariant.salePrice < selectedVariant.price) || 
+                                       (!selectedVariant && selectedProduct.originalPrice > selectedProduct.price)) && (
+                                        <>
+                                            <span className="text-sm font-semibold text-slate-400 line-through">
+                                                ₹{selectedVariant?.price || selectedProduct.originalPrice}
+                                            </span>
+                                            <span className="text-xs font-bold text-orange-500 uppercase tracking-wide">
+                                                {selectedVariant
+                                                    ? Math.round(((selectedVariant.price - selectedVariant.salePrice) / selectedVariant.price) * 100)
+                                                    : Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Key Feature Highlights Row (Dynamic Seller Badges) */}
+                                <div className="grid grid-cols-4 gap-2 pt-2 pb-1 border-t border-b border-slate-100/80 my-2">
+                                    {displayHighlights.map((hl, idx) => {
+                                        const iconConfig = HIGHLIGHT_ICON_MAP[hl.icon] || HIGHLIGHT_ICON_MAP.leaf;
+                                        return (
+                                            <div key={idx} className="flex flex-col items-center text-center group py-1">
+                                                <div className={cn("w-11 h-11 rounded-full border flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-105 transition-transform", iconConfig.bg)}>
+                                                    <span className="text-lg">{iconConfig.emoji}</span>
+                                                </div>
+                                                <span className="text-[11px] font-bold text-slate-700 leading-tight whitespace-pre-line">
+                                                    {hl.label || "Highlight"}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
 
                                 {/* Variants Selection (Mobile) */}
                                 {selectedProduct.variants && selectedProduct.variants.length > 0 && (
-                                    <div className="mt-4 mb-2">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Select Variant</h4>
+                                    <div className="pt-1 mb-1">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Select Variant</h4>
                                         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                                             {selectedProduct.variants.map((v, idx) => (
                                                 <motion.button
@@ -896,7 +940,7 @@ const ProductDetailSheet = () => {
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => setSelectedVariant(v)}
                                                     className={cn(
-                                                        "flex-shrink-0 px-5 py-2.5 font-bold rounded-xl text-sm transition-all relative border-2",
+                                                        "flex-shrink-0 px-4 py-2 font-bold rounded-xl text-xs transition-all relative border-2",
                                                         selectedVariant?.sku === v.sku
                                                             ? "bg-[#ecfeff] border-primary text-primary shadow-sm shadow-brand-100"
                                                             : "bg-slate-50 border-slate-100 text-slate-500"
@@ -904,7 +948,7 @@ const ProductDetailSheet = () => {
                                                 >
                                                     {v.name}
                                                     {selectedVariant?.sku === v.sku && (
-                                                        <div className="absolute top-0 right-0 w-3 h-3 bg-primary rounded-bl-lg" />
+                                                        <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-primary rounded-bl-lg" />
                                                     )}
                                                 </motion.button>
                                             ))}
@@ -913,7 +957,7 @@ const ProductDetailSheet = () => {
                                 )}
 
                                 {/* Product Information Accordion (Mobile) */}
-                                <div className="mt-4 border-t border-slate-100">
+                                <div className="mt-2 border-t border-slate-100">
                                     {/* Description */}
                                     {cleanDesc && (
                                         <AccordionItem expandedSections={expandedSections} toggleSection={toggleSection}
@@ -1030,8 +1074,6 @@ const ProductDetailSheet = () => {
                                         </div>
                                     </AccordionItem>
                                 </div>
-
-                                <div className="h-24" /> {/* Bottom spacer for sticky bar */}
                             </div>
                         </div>
 
