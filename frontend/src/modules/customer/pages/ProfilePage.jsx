@@ -2,18 +2,17 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     User, MapPin, Package, CreditCard, Wallet, ChevronRight,
-    LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell, ShoppingCart
+    LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell, ShoppingCart,
+    ClipboardCheck, Ticket, LifeBuoy, MapPinned, CalendarCheck, BadgePercent
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
-import { customerApi } from '../services/customerApi';
-import { toast } from 'sonner';
 import CartPage from './CartPage';
 import { cn } from '@/lib/utils';
 
 const ProfilePage = () => {
     const navigate = useNavigate();
-    const { user, role, logout } = useAuth();
+    const { user, logout } = useAuth();
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
@@ -79,8 +78,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/orders')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="w-12 h-12 rounded-full bg-emerald-50/80 border border-emerald-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
-                                <span className="text-xl">📦</span>
+                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
+                                <CalendarCheck size={28} strokeWidth={2.2} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Your<br/>Orders</span>
                         </button>
@@ -88,8 +87,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/wallet')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="w-12 h-12 rounded-full bg-teal-50/80 border border-teal-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
-                                <span className="text-xl">👛</span>
+                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
+                                <Wallet size={28} strokeWidth={2.2} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">My<br/>Wallet</span>
                         </button>
@@ -97,8 +96,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/wishlist')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="w-12 h-12 rounded-full bg-rose-50/80 border border-rose-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
-                                <span className="text-xl">❤️</span>
+                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
+                                <BadgePercent size={28} strokeWidth={2.2} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Wishlist</span>
                         </button>
@@ -106,8 +105,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/addresses')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="w-12 h-12 rounded-full bg-blue-50/80 border border-blue-100/70 flex items-center justify-center shadow-xs mb-1.5 group-hover:scale-108 transition-transform">
-                                <span className="text-xl">📍</span>
+                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
+                                <MapPinned size={28} strokeWidth={2.2} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Addresses</span>
                         </button>
@@ -123,42 +122,42 @@ const ProfilePage = () => {
                         </div>
                         <div className="divide-y divide-slate-100">
                             <MenuItem
-                                emoji="🛒"
+                                icon={ShoppingCart}
                                 label="My Cart"
                                 sub="View your added products"
                                 onClick={() => setIsCartOpen(true)}
                                 badgeBg="bg-amber-50/80 border-amber-100/70 text-amber-700"
                             />
                             <MenuItem
-                                emoji="📦"
+                                icon={CalendarCheck}
                                 label="Your Orders"
                                 sub="Track, return or buy things again"
                                 path="/orders"
                                 badgeBg="bg-emerald-50/80 border-emerald-100/70 text-emerald-700"
                             />
                             <MenuItem
-                                emoji="💳"
+                                icon={CreditCard}
                                 label="Order Transactions"
                                 sub="View all payments & refunds"
                                 path="/transactions"
                                 badgeBg="bg-orange-50/80 border-orange-100/70 text-orange-700"
                             />
                             <MenuItem
-                                emoji="👛"
+                                icon={Wallet}
                                 label="Wallet"
                                 sub="Balance & return refunds"
                                 path="/wallet"
                                 badgeBg="bg-teal-50/80 border-teal-100/70 text-teal-700"
                             />
                             <MenuItem
-                                emoji="❤️"
+                                icon={BadgePercent}
                                 label="Your Wishlist"
                                 sub="Your saved items"
                                 path="/wishlist"
                                 badgeBg="bg-rose-50/80 border-rose-100/70 text-rose-700"
                             />
                             <MenuItem
-                                emoji="📍"
+                                icon={MapPinned}
                                 label="Saved Addresses"
                                 sub="Manage your delivery locations"
                                 path="/addresses"
@@ -174,19 +173,19 @@ const ProfilePage = () => {
                         </div>
                         <div className="divide-y divide-slate-100">
                             <MenuItem
-                                emoji="🎧"
+                                icon={LifeBuoy}
                                 label="Help & Support"
                                 path="/support"
                                 badgeBg="bg-purple-50/80 border-purple-100/70 text-purple-700"
                             />
                             <MenuItem
-                                emoji="🛡️"
+                                icon={ShieldCheck}
                                 label="Privacy Policy"
                                 path="/privacy"
                                 badgeBg="bg-indigo-50/80 border-indigo-100/70 text-indigo-700"
                             />
                             <MenuItem
-                                emoji="ℹ️"
+                                icon={Info}
                                 label="About Us"
                                 path="/about"
                                 badgeBg="bg-cyan-50/80 border-cyan-100/70 text-cyan-700"
@@ -204,7 +203,7 @@ const ProfilePage = () => {
                     Sign out
                 </button>
 
-                <div className="text-center pb-8">
+                <div className="text-center pb-8 mt-4">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Version 2.4.0 • {appName}</p>
                 </div>
 
@@ -271,13 +270,13 @@ const ProfilePage = () => {
     );
 };
 
-const MenuItem = ({ emoji, label, sub, path, onClick, badgeBg = 'bg-slate-50/80 border-slate-100/70 text-slate-700' }) => {
+const MenuItem = ({ icon: Icon, label, sub, path, onClick }) => {
     const Component = onClick ? 'button' : Link;
     return (
     <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group">
-        <div className="flex items-center gap-3.5">
-            <div className={cn("w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0", badgeBg)}>
-                <span className="text-lg">{emoji}</span>
+        <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0 text-slate-700">
+                <Icon size={24} strokeWidth={2.2} />
             </div>
             <div>
                 <h3 className="text-sm font-bold text-slate-800 leading-tight">{label}</h3>
@@ -292,5 +291,3 @@ const MenuItem = ({ emoji, label, sub, path, onClick, badgeBg = 'bg-slate-50/80 
 };
 
 export default ProfilePage;
-
-

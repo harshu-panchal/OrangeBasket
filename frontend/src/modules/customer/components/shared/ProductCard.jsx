@@ -1,6 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Heart, Plus, Minus } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Heart, Plus, Minus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
@@ -18,6 +18,7 @@ const ProductCard = React.memo(
     const { showToast } = useToast();
     const { animateAddToCart, animateRemoveFromCart } = useCartAnimation();
 
+    const navigate = useNavigate();
     const { openProduct } = useProductDetail();
     const [showHeartPopup, setShowHeartPopup] = React.useState(false);
 
@@ -169,18 +170,18 @@ const ProductCard = React.memo(
         onClick={handleProductClick}
       >
         {/* Top Image Section */}
-        <div className={cn("relative w-full rounded-xl overflow-hidden bg-slate-50/50 flex items-center justify-center p-2", layout === "list" ? "w-[90px] h-[90px] shrink-0" : "aspect-square")}>
-          {/* Discount Badge (Top-Left Orange Pill) */}
+        <div className={cn("relative w-full overflow-hidden flex items-center justify-center p-0.5", layout === "list" ? "w-[90px] h-[90px] shrink-0" : "aspect-square")}>
+          {/* Discount Badge (Top-Left Orange Speech Bubble) */}
           {discountText && (
-            <div className="absolute top-2 left-2 z-10 bg-[#ff6b00] text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shadow-xs tracking-tight leading-none">
+            <div className="absolute top-0 left-0 z-10 bg-[#FF8200] text-white font-black text-[9.5px] px-2.5 py-1 rounded-[10px_10px_10px_0px] shadow-3xs tracking-tight leading-none select-none">
               {discountText}
             </div>
           )}
 
-          {/* Wishlist Heart Button (Top-Right White Circle) */}
+          {/* Wishlist Heart Button (Top-Right White Circle parallel to badge) */}
           <button
             onClick={toggleWishlist}
-            className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-2xs flex items-center justify-center hover:bg-white hover:scale-105 active:scale-90 transition-all"
+            className="absolute top-0 right-0 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-2xs flex items-center justify-center hover:bg-white hover:scale-105 active:scale-90 transition-all"
             title="Wishlist"
           >
             <motion.div
@@ -221,7 +222,7 @@ const ProductCard = React.memo(
         </div>
 
         {/* Content Box */}
-        <div className={cn("flex flex-col flex-1 mt-2.5", layout === "list" && "mt-0")}>
+        <div className={cn("flex flex-col flex-1 mt-1.5", layout === "list" && "mt-0")}>
           {/* Title & Weight */}
           <div>
             <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-slate-900 transition-colors">
@@ -233,45 +234,46 @@ const ProductCard = React.memo(
           </div>
 
           {/* Bottom Price Row & Plus/Quantity Selector */}
-          <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-1">
-            <div className="flex items-baseline gap-1.5 min-w-0">
-              <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
+          <div className="flex items-center justify-between gap-1.5 mt-1.5 pt-0.5">
+            <div className="flex flex-col min-w-0 flex-1 text-left justify-center">
+              <span className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight leading-none">
                 ₹{product.price}
               </span>
               {product.originalPrice > product.price && (
-                <span className="text-[11px] sm:text-xs text-slate-400 line-through font-medium">
+                <span className="text-[10px] text-slate-400 line-through font-semibold mt-0.5 leading-none">
                   ₹{product.originalPrice}
                 </span>
               )}
             </div>
 
-            {/* Orange Plus Button / Quantity Controls */}
-            <div>
+            {/* Orange Plus/Check Toggle Button */}
+            <div className="shrink-0">
               {quantity > 0 ? (
-                <div className="h-8 bg-[#ff6b00] text-white rounded-full px-2 flex items-center justify-between gap-1.5 shadow-xs transition-all">
-                  <button
-                    onClick={handleDecrement}
-                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 active:scale-90 transition-transform"
-                  >
-                    <Minus size={12} strokeWidth={3} />
-                  </button>
-                  <span className="font-extrabold text-xs px-1">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={handleIncrement}
-                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 active:scale-90 transition-transform"
-                  >
-                    <Plus size={12} strokeWidth={3} />
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeFromCart(productId, variantKey);
+                  }}
+                  className="w-7.5 h-7.5 rounded-full bg-[#FF8200] hover:bg-red-550 text-white flex items-center justify-center font-extrabold text-base shadow-2xs hover:scale-105 active:scale-90 transition-all group/btn"
+                  title="Remove from Cart"
+                >
+                  <div className="relative w-4 h-4 flex items-center justify-center">
+                    <span className="absolute transition-all duration-200 opacity-100 scale-100 group-hover/btn:opacity-0 group-hover/btn:scale-75">
+                      <Check size={15} strokeWidth={3.5} />
+                    </span>
+                    <span className="absolute transition-all duration-200 opacity-0 scale-75 group-hover/btn:opacity-100 group-hover/btn:scale-100">
+                      <Minus size={15} strokeWidth={3.5} />
+                    </span>
+                  </div>
+                </button>
               ) : (
                 <button
                   onClick={handleAddToCart}
-                  className="w-8 h-8 rounded-full bg-[#ff6b00] hover:bg-orange-600 text-white flex items-center justify-center font-extrabold text-base shadow-xs hover:scale-105 active:scale-90 transition-all"
+                  className="w-7.5 h-7.5 rounded-full bg-[#FF8200] hover:bg-[#FF8200]/95 text-white flex items-center justify-center font-extrabold text-base shadow-2xs hover:scale-105 active:scale-90 transition-all"
                   title="Add to Cart"
                 >
-                  <Plus size={18} strokeWidth={3} />
+                  <Plus size={16} strokeWidth={3.5} />
                 </button>
               )}
             </div>

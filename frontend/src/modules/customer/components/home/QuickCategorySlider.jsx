@@ -30,28 +30,27 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
 
         <div
           ref={scrollRef}
-          className="relative z-10 flex items-start gap-2 md:gap-3 lg:gap-4 overflow-x-auto no-scrollbar px-4 pb-2 pt-1 md:px-8 md:pb-4 snap-x scroll-smooth">
-          {categories.map((cat, idx) => {
-            const palette = QUICK_CATEGORY_PALETTES[idx % QUICK_CATEGORY_PALETTES.length];
+          className="relative z-10 flex items-start gap-4 md:gap-5 overflow-x-auto no-scrollbar px-4 pb-3 pt-2 snap-x scroll-smooth">
+          {categories.map((cat) => {
             return (
               <div
                 key={cat.id}
                 onClick={() => onCategoryClick(cat.id)}
-                className="flex flex-col items-center gap-1.5 min-w-[100px] md:min-w-[120px] cursor-pointer group/item snap-start transition-transform active:scale-95">
+                className="flex flex-col items-center gap-2 min-w-[70px] max-w-[76px] cursor-pointer group/item snap-start transition-all active:scale-95 text-center">
+                {/* White Card Box Container */}
                 <div
-                  className="relative w-[100px] h-[100px] md:w-[120px] md:h-[120px] bg-transparent flex items-center justify-center transition-all duration-300 group-hover/item:-translate-y-1">
+                  className="w-[66px] h-[66px] md:w-[80px] md:h-[80px] bg-white border border-slate-100 rounded-2xl flex items-center justify-center p-2.5 shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm">
                   <img
-                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_150")}
+                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_120")}
                     alt={cat.name}
                     loading="lazy"
-                    className="w-full h-full object-contain drop-shadow-sm mix-blend-multiply group-hover/item:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-contain group-hover/item:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="text-center w-full px-0.5 mt-1">
-                  <span className="block text-[13px] md:text-[15px] font-extrabold text-[#1f2b20] leading-tight whitespace-nowrap overflow-hidden text-ellipsis group-hover/item:text-primary transition-colors">
-                    {cat.name}
-                  </span>
-                </div>
+                {/* Label text */}
+                <span className="block text-[11px] md:text-[13px] font-bold text-slate-700 leading-tight tracking-wide group-hover/item:text-[#FF8200] transition-colors line-clamp-2 max-w-[72px]">
+                  {cat.name}
+                </span>
               </div>
             );
           })}

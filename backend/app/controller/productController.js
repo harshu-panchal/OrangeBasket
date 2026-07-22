@@ -726,6 +726,7 @@ export const createProduct = async (req, res) => {
 
     try {
       await invalidate(buildKey("catalog", "productList", "*"));
+      await invalidate(buildKey("catalog", "categories", "*"));
       await invalidate("cache:offersections:public:*");
     } catch (cacheErr) {
       logger.error("Cache invalidation error", {
@@ -900,6 +901,7 @@ export const updateProduct = async (req, res) => {
 
     try {
       await invalidate(buildKey("catalog", "productList", "*"));
+      await invalidate(buildKey("catalog", "categories", "*"));
       await invalidate("cache:offersections:public:*");
     } catch (cacheErr) {
       logger.error("Cache invalidation error", {
@@ -957,6 +959,7 @@ export const deleteProduct = async (req, res) => {
 
     try {
       await invalidate(buildKey("catalog", "productList", "*"));
+      await invalidate(buildKey("catalog", "categories", "*"));
       await invalidate("cache:offersections:public:*");
     } catch (cacheErr) {
       logger.error("Cache invalidation error", {
@@ -1024,7 +1027,14 @@ export const getProductById = async (req, res) => {
     }
 
     if (enforceRadius) {
-      const sellerIdForProduct = String(product?.sellerId?._id || product?.sellerId);
+      let sellerIdForProduct = product?.sellerId?._id ? String(product.sellerId._id) : (product?.sellerId ? String(product.sellerId) : null);
+      if (!sellerIdForProduct || sellerIdForProduct === "null") {
+        // If it was null because populate failed for a warehouse, query raw product directly to get the real sellerId/warehouseId
+        const rawProduct = await Product.findById(id).select("sellerId").lean();
+        if (rawProduct && rawProduct.sellerId) {
+          sellerIdForProduct = String(rawProduct.sellerId);
+        }
+      }
       if (!nearbySellerSet || !nearbySellerSet.has(sellerIdForProduct)) {
         return handleResponse(res, 404, "Product not available in your area");
       }

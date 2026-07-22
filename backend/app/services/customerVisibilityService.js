@@ -1,4 +1,5 @@
 import Seller from "../models/seller.js";
+import Warehouse from "../models/warehouse.js";
 import { calculateDistance } from "../utils/helper.js";
 import { buildKey, getOrSet, getTTL } from "./cacheService.js";
 
@@ -31,34 +32,53 @@ function buildNearbySellersKey(lat, lng) {
 
 export async function getNearbySellerIdsForCustomer(lat, lng) {
   const fetchFn = async () => {
-    const sellers = await Seller.find({
-      isActive: true,
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [lng, lat],
+    const [sellers, warehouses] = await Promise.all([
+      Seller.find({
+        isActive: true,
+        location: {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [lng, lat],
+            },
+            $maxDistance: MAX_SELLER_SEARCH_DISTANCE_M,
           },
-          $maxDistance: MAX_SELLER_SEARCH_DISTANCE_M,
         },
-      },
-    })
-      .select("_id location serviceRadius")
-      .lean();
+      })
+        .select("_id location serviceRadius")
+        .lean(),
+      Warehouse.find({
+        isActive: true,
+        location: {
+          $near: {
+            $geometry: {
+              type: "Point",
+              coordinates: [lng, lat],
+            },
+            $maxDistance: MAX_SELLER_SEARCH_DISTANCE_M,
+          },
+        },
+      })
+        .select("_id location serviceRadius")
+        .lean()
+    ]);
 
-    return sellers
-      .filter((seller) => {
-        const coords = seller?.location?.coordinates;
+    const allEntities = [...sellers, ...warehouses];
+
+    return allEntities
+      .filter((entity) => {
+        const coords = entity?.location?.coordinates;
         if (!Array.isArray(coords) || coords.length < 2) return false;
-        const [sellerLng, sellerLat] = coords;
-        if (!Number.isFinite(sellerLat) || !Number.isFinite(sellerLng)) {
+        const [entityLng, entityLat] = coords;
+        if (!Number.isFinite(entityLat) || !Number.isFinite(entityLng)) {
           return false;
         }
-        const distanceKm = calculateDistance(lat, lng, sellerLat, sellerLng);
-        return distanceKm <= (seller.serviceRadius || 5);
+        const distanceKm = calculateDistance(lat, lng, entityLat, entityLng);
+        return distanceKm <= (entity.serviceRadius || 5);
       })
-      .map((seller) => String(seller._id));
+      .map((entity) => String(entity._id));
   };
 
   return getOrSet(buildNearbySellersKey(lat, lng), fetchFn, getTTL("nearbySellers"));
 }
+

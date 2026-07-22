@@ -913,41 +913,30 @@ const CheckoutPage = () => {
 
   // ─── Main checkout return ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f5f1e8] pb-32 font-sans">
+    <div className="min-h-screen bg-white pb-32 font-sans">
       {/* Order Success Overlay */}
       <CheckoutOrderSuccess orderId={orderId} show={showSuccess} />
 
-      {/* Premium Header */}
-      <div className="bg-gradient-to-br from-[var(--brand-700)] via-[var(--brand-600)] to-[var(--brand-400)] pt-6 pb-12 md:pb-24 relative z-10 shadow-lg md:rounded-b-[4rem] rounded-b-[2rem] overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -mr-32 -mt-64 pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-brand-400/10 rounded-full blur-[80px] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all active:scale-95">
-              <ChevronLeft size={28} className="text-white" />
-            </button>
-            <div className="flex flex-col items-center">
-              <h1 className="text-xl md:text-3xl font-[1000] text-white tracking-tight uppercase">Checkout</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="h-1.5 w-1.5 bg-brand-400 rounded-full animate-pulse" />
-                <p className="text-brand-100/90 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase">
-                  {cartCount} {cartCount === 1 ? "Item" : "Items"} in cart
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleShare}
-              className="h-12 px-4 flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl transition-all active:scale-95">
-              <Share2 size={20} className="text-white" />
-              <span className="text-xs font-black text-white uppercase tracking-widest hidden sm:block">Share</span>
-            </button>
+      {/* Clean Header */}
+      <div className="bg-white py-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between relative">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-1 -ml-1 hover:bg-slate-50 rounded-full transition-all">
+            <ChevronLeft size={24} className="text-gray-900" />
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <h1 className="text-base md:text-lg font-bold text-gray-900 tracking-tight">Checkout</h1>
+            <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-0.5">
+              {cartCount} {cartCount === 1 ? "Item" : "Items"} in cart
+            </p>
           </div>
+          {/* Balanced spacer */}
+          <div className="w-8 h-8" />
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-12 md:-mt-16 lg:-mt-20 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-6 relative z-20">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
 
           {/* Left Column */}

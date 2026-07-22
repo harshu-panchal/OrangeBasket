@@ -50,6 +50,7 @@ const ALLOWED_KEYS = [
   "onlineEnabled",
   "lowStockAlertsEnabled",
   "productApproval",
+  "categoriesBanner",
 ];
 
 function flattenForMongoSet(prefix, value, target) {
@@ -127,6 +128,14 @@ const updateSettingsSchema = Joi.object({
     sellerCreateRequiresApproval: Joi.boolean(),
     sellerEditRequiresApproval: Joi.boolean(),
   }).unknown(false),
+  categoriesBanner: Joi.object({
+    image: Joi.string().allow("").max(2000),
+    badgeText: Joi.string().allow("").max(100),
+    title: Joi.string().allow("").max(500),
+    buttonText: Joi.string().allow("").max(100),
+    buttonLink: Joi.string().allow("").max(500),
+    isVisible: Joi.boolean(),
+  }).unknown(false),
 }).unknown(false);
 
 /**
@@ -147,7 +156,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner createdAt",
           )
           .lean();
         return existing || null;
@@ -237,8 +246,8 @@ export const updateSettings = async (req, res) => {
 export const uploadSettingsImage = async (req, res) => {
   try {
     const type = (req.query.type || "logo").toLowerCase();
-    if (type !== "logo" && type !== "favicon") {
-      return handleResponse(res, 400, "type must be logo or favicon");
+    if (type !== "logo" && type !== "favicon" && type !== "categoriesbanner") {
+      return handleResponse(res, 400, "type must be logo, favicon or categoriesbanner");
     }
 
     if (req.file) {

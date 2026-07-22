@@ -76,6 +76,14 @@ const AdminSettings = () => {
             sellerCreateRequiresApproval: false,
             sellerEditRequiresApproval: false,
         },
+        categoriesBanner: {
+            image: '',
+            badgeText: 'KIRANA STORE',
+            title: 'Everything you need, in one place',
+            buttonText: 'Shop Now',
+            buttonLink: '/',
+            isVisible: true,
+        },
     });
 
     useEffect(() => {
@@ -90,6 +98,10 @@ const AdminSettings = () => {
                         productApproval: normalizeProductApprovalConfig(data || {}),
                         keywords: Array.isArray(data.keywords) ? data.keywords : (data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()).filter(Boolean) : []),
                         returnDeliveryCommission: data.returnDeliveryCommission ?? 0,
+                        categoriesBanner: {
+                            ...prev.categoriesBanner,
+                            ...(data.categoriesBanner || {}),
+                        },
                     }));
                 }
             } catch (error) {
@@ -195,12 +207,52 @@ const AdminSettings = () => {
         }
     };
 
+    const [bannerUploading, setBannerUploading] = useState(false);
+    const bannerInputRef = useRef(null);
+
+    const handleBannerChange = (field, value) => {
+        setSettings(prev => ({
+            ...prev,
+            categoriesBanner: {
+                ...(prev.categoriesBanner || {}),
+                [field]: value
+            }
+        }));
+    };
+
+    const handleBannerUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select an image file (PNG, JPG, etc.)', 'error');
+            return;
+        }
+        setBannerUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('image', file);
+            const res = await adminApi.uploadSettingsImage(fd, 'categoriesBanner');
+            const url = res.data?.result?.url || res.data?.url;
+            if (url) {
+                handleBannerChange('image', url);
+                showToast('Banner image uploaded. Click Save Changes to apply.', 'success');
+            } else throw new Error('No URL returned');
+        } catch (err) {
+            console.error(err);
+            showToast(err.response?.data?.message || 'Failed to upload banner image', 'error');
+        } finally {
+            setBannerUploading(false);
+            e.target.value = '';
+        }
+    };
+
     const tabs = [
         { id: 'general', label: 'General', icon: Settings },
         { id: 'branding', label: 'Branding', icon: Globe },
         { id: 'legal', label: 'Legal & Contact', icon: Building2 },
         { id: 'social', label: 'Social & Apps', icon: Share2 },
         { id: 'seo', label: 'SEO & Meta', icon: Search },
+        { id: 'categoriesBanner', label: 'Categories Banner', icon: Smartphone },
     ];
 
     return (
@@ -690,6 +742,78 @@ const AdminSettings = () => {
                                         placeholder="keyword1, keyword2, keyword3"
                                     />
                                     <p className="text-[10px] font-bold text-slate-400 italic text-right">Separate keywords with commas</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Categories Banner Settings */}
+                    {activeTab === 'categoriesBanner' && (
+                        <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-xl overflow-hidden animate-in fade-in duration-300">
+                            <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                        Categories Promotional Banner
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-semibold mt-1">Upload and toggle the promotional banner visible to customers in mobile view.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500">Visible to Users</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleBannerChange('isVisible', !settings.categoriesBanner?.isVisible)}
+                                        className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative flex items-center p-0.5",
+                                            settings.categoriesBanner?.isVisible ? "bg-emerald-500 justify-end" : "bg-slate-300 justify-start"
+                                        )}
+                                    >
+                                        <div className="w-5 h-5 bg-white rounded-full shadow-md" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-8">
+                                <div className="max-w-md mx-auto space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Banner Image</label>
+                                    <input
+                                        type="file"
+                                        ref={bannerInputRef}
+                                        onChange={handleBannerUpload}
+                                        className="hidden"
+                                        accept="image/*"
+                                    />
+                                    <div
+                                        onClick={() => bannerInputRef.current?.click()}
+                                        className={cn(
+                                            "border-2 border-dashed border-slate-200 rounded-3xl p-6 text-center cursor-pointer hover:border-brand-500 hover:bg-slate-50/50 transition-all relative flex flex-col items-center justify-center min-h-[200px]",
+                                            bannerUploading && "pointer-events-none opacity-60"
+                                        )}
+                                    >
+                                        {bannerUploading ? (
+                                            <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+                                        ) : settings.categoriesBanner?.image ? (
+                                            <div className="relative w-full h-[150px] rounded-xl overflow-hidden bg-slate-100">
+                                                <img
+                                                    src={settings.categoriesBanner.image}
+                                                    alt="Categories Banner"
+                                                    className="w-full h-full object-contain"
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                                    Change Image
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Upload className="h-8 w-8 text-slate-400 mx-auto" />
+                                                <p className="text-xs font-bold text-slate-500">Upload Banner Image</p>
+                                                <p className="text-[10px] text-slate-400 font-semibold uppercase">Recommended size: 600 x 250 pixels</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {settings.categoriesBanner?.image && (
+                                        <p className="text-[10px] text-slate-400 font-semibold uppercase text-center">
+                                            Recommended size: 600 x 250 pixels
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </Card>

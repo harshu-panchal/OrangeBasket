@@ -85,6 +85,7 @@ export const addToCart = async (req, res) => {
 
     const itemIndex = cart.items.findIndex(
       (item) =>
+        item.productId &&
         item.productId.toString() === productId &&
         String(item.variantSku || "").trim() === normalizedVariantSku,
     );
@@ -121,6 +122,7 @@ export const updateQuantity = async (req, res) => {
 
     const itemIndex = cart.items.findIndex(
       (item) =>
+        item.productId &&
         item.productId.toString() === productId &&
         String(item.variantSku || "").trim() === normalizedVariantSku,
     );
@@ -140,6 +142,7 @@ export const updateQuantity = async (req, res) => {
 
     return handleResponse(res, 200, "Cart updated successfully", updatedCart);
   } catch (error) {
+    console.error("CRITICAL BACKEND ERROR IN updateQuantity:", error);
     return handleResponse(res, 500, error.message);
   }
 };
@@ -160,6 +163,7 @@ export const removeFromCart = async (req, res) => {
     }
 
     cart.items = cart.items.filter((item) => {
+      if (!item.productId) return false;
       if (item.productId.toString() !== productId) return true;
       // If variantSku is provided, remove only that variant line.
       if (normalizedVariantSku) {
@@ -175,6 +179,7 @@ export const removeFromCart = async (req, res) => {
 
     return handleResponse(res, 200, "Item removed from cart", updatedCart);
   } catch (error) {
+    console.error("CRITICAL BACKEND ERROR IN removeFromCart:", error);
     return handleResponse(res, 500, error.message);
   }
 };

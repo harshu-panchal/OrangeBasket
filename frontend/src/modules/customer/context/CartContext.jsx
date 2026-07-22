@@ -33,7 +33,7 @@ export const CartProvider = ({ children }) => {
       const { price, salePrice, variantName } = resolveVariantPricing(product, variantKey);
       return {
         ...product,
-        id: product?._id, // Normalize ID
+        id: product?._id ? String(product._id) : "", // Normalize ID to string
         quantity: item.quantity,
         variantSku: variantKey,
         variantName,
@@ -68,9 +68,14 @@ export const CartProvider = ({ children }) => {
   };
 
   const syncCart = (backendItems) => {
+    console.log("DEBUG: syncCart backendItems:", backendItems);
     // Only update state from backend if no more pending optimistic updates
     if (pendingRequestsRef.current === 0) {
-      setCart(normalizeBackendCart(backendItems));
+      const normalized = normalizeBackendCart(backendItems);
+      console.log("DEBUG: syncCart setting normalized cart:", normalized);
+      setCart(normalized);
+    } else {
+      console.log("DEBUG: syncCart skipped due to pending optimistic updates:", pendingRequestsRef.current);
     }
   };
 
@@ -79,7 +84,9 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       try {
         const response = await customerApi.getCart();
-        setCart(normalizeBackendCart(response.data.result.items));
+        const normalized = normalizeBackendCart(response.data.result.items);
+        console.log("DEBUG: fetchCart loaded:", normalized);
+        setCart(normalized);
       } catch (error) {
         console.error("Failed to fetch cart from backend", error);
       } finally {
@@ -124,6 +131,7 @@ export const CartProvider = ({ children }) => {
     const variantSku = String(product?.variantSku || product?.variantName || "").trim();
     const id = product.id || product._id;
     const key = `${id}::${variantSku || ""}`;
+    console.log("DEBUG: addToCart product:", { id, name: product?.name, variantSku, key });
     const { price, salePrice, variantName } = resolveVariantPricing(product, variantSku);
 
     // Optimistic UI update for instant feedback
@@ -132,6 +140,7 @@ export const CartProvider = ({ children }) => {
         (item) => `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key,
       );
       if (existingItem) {
+        console.log("DEBUG: addToCart existing item incrementing");
         return prev.map((item) =>
           `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key
             ? { ...item, quantity: item.quantity + 1 }
@@ -139,6 +148,7 @@ export const CartProvider = ({ children }) => {
         );
       }
 
+      console.log("DEBUG: addToCart new item adding");
       return [
         ...prev,
         {
@@ -210,13 +220,18 @@ export const CartProvider = ({ children }) => {
   const updateQuantity = async (productId, delta, variantSku = "") => {
     const normalizedVariantSku = String(variantSku || "").trim();
     const key = `${productId}::${normalizedVariantSku || ""}`;
+    console.log("DEBUG: updateQuantity called:", { productId, delta, variantSku, key });
     const currentItem = cart.find(
       (item) =>
         `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key,
     );
-    if (!currentItem) return;
+    if (!currentItem) {
+      console.warn("DEBUG: updateQuantity currentItem NOT found in cart for key:", key);
+      return;
+    }
 
     const newQty = Math.max(0, currentItem.quantity + delta);
+    console.log("DEBUG: updateQuantity currentQty:", currentItem.quantity, "newQty:", newQty);
 
     if (newQty === 0) {
       removeFromCart(productId, normalizedVariantSku);

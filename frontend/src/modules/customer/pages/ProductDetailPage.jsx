@@ -97,7 +97,7 @@ const ProductDetailPage = () => {
     }, [id]);
 
     useEffect(() => {
-        if (id && product) {
+        if (id) {
             fetchData(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

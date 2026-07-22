@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useAnimation, useDragControls } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, ChevronDown, Share2, Heart, Search, Clock, Minus, Plus, ShoppingBag, Star, MessageSquare, ArrowLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronDown, Share2, Heart, Search, Clock, Minus, Plus, ShoppingBag, ShoppingCart, Star, MessageSquare, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useProductDetail } from '../../context/ProductDetailContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -350,7 +350,7 @@ const ProductDetailSheet = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={closeProduct}
-                        className="fixed inset-0 bg-black/60 z-[220] backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/60 z-[580] backdrop-blur-sm"
                     />
 
                     {/* ============================================================ */}
@@ -361,7 +361,7 @@ const ProductDetailSheet = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: 30 }}
                         transition={{ type: 'spring', damping: 28, stiffness: 380 }}
-                        className="hidden md:flex fixed z-[230] top-[72px] bottom-[16px] left-[3%] right-[3%] lg:left-[6%] lg:right-[6%] xl:left-[12%] xl:right-[12%] bg-white rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.25)] overflow-hidden"
+                        className="hidden md:flex fixed z-[590] top-[72px] bottom-[16px] left-[3%] right-[3%] lg:left-[6%] lg:right-[6%] xl:left-[12%] xl:right-[12%] bg-white rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.25)] overflow-hidden"
                     >
                         {/* Parent flex container that holds both sides together so the whole modal scrolls */}
                         <div className="flex w-full min-h-full">
@@ -800,7 +800,7 @@ const ProductDetailSheet = () => {
                             mass: 0.8
                         }}
                         className={cn(
-                            "md:hidden fixed z-[230] bg-white shadow-2xl overflow-hidden flex flex-col",
+                            "md:hidden fixed z-[590] bg-white shadow-2xl overflow-hidden flex flex-col",
                         )}
                         style={{ willChange: "transform, top, bottom, left, width, border-radius" }}
                     >
@@ -1078,84 +1078,55 @@ const ProductDetailSheet = () => {
                         </div>
 
                         {/* Sticky Bottom Action Bar */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-50">
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex flex-col min-w-[80px]">
-                                        {((selectedVariant?.salePrice && selectedVariant.salePrice < selectedVariant.price) || 
-                                           (!selectedVariant && selectedProduct.originalPrice > selectedProduct.price)) && (
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-gray-400 line-through decoration-gray-400/50">
-                                                    ₹{selectedVariant?.price || selectedProduct.originalPrice}
-                                                </span>
-                                                <span className="bg-red-50 text-red-500 text-[10px] font-black px-1.5 py-0.5 rounded leading-none">
-                                                    {selectedVariant
-                                                        ? Math.round(((selectedVariant.price - selectedVariant.salePrice) / selectedVariant.price) * 100)
-                                                        : Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div className="text-2xl font-black text-[#1A1A1A] leading-none mt-1">
-                                            ₹{selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.price}
+                        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100/80 p-4 pb-7 shadow-[0_-10px_40px_rgba(0,0,0,0.06)] z-50 rounded-t-3xl">
+                            <div className="flex items-center gap-4">
+                                {/* Left Side: Cart Icon with Badge */}
+                                <Link
+                                    to="/checkout"
+                                    onClick={closeProduct}
+                                    className="relative w-14 h-14 bg-white border border-slate-100 rounded-[20px] shadow-sm flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-all flex-shrink-0"
+                                >
+                                    <ShoppingCart size={22} className="text-slate-800" />
+                                    {cartCount > 0 && (
+                                        <div className="absolute -top-1.5 -right-1.5 bg-[#FF8200] text-white text-[11px] font-black w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center shadow-md animate-in zoom-in duration-200">
+                                            {cartCount}
                                         </div>
-                                    </div>
-
-                                    {quantity > 0 ? (
-                                        <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-1.5 shadow-inner flex-1 justify-between max-w-[170px]">
-                                            <motion.button
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={handleDecrement}
-                                                className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white shadow-sm border border-slate-100 transition-all"
-                                            >
-                                                <Minus size={18} strokeWidth={3.5} />
-                                            </motion.button>
-                                            <span className="font-black text-xl text-slate-800 w-8 text-center tabular-nums">{quantity}</span>
-                                            <motion.button
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={handleIncrement}
-                                                className="w-10 h-10 bg-gradient-to-br from-primary to-[var(--brand-400)] rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-100/50 hover:shadow-brand-200 transition-all border border-white/20"
-                                            >
-                                                <Plus size={18} strokeWidth={3.5} />
-                                            </motion.button>
-                                        </div>
-                                    ) : (
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={handleAddToCart}
-                                            className="flex-1 bg-gradient-to-r from-primary to-[var(--brand-400)] text-white h-[56px] rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-brand-100 transition-all border border-white/20 uppercase tracking-[0.05em] whitespace-nowrap px-4"
-                                        >
-                                            <ShoppingBag size={18} strokeWidth={3} />
-                                            ADD TO CART
-                                        </motion.button>
                                     )}
-                                </div>
+                                </Link>
 
-                                {/* View Cart Button */}
-                                {cartCount > 0 && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="mt-2"
-                                    >
-                                        <Link
-                                            to="/checkout"
-                                            onClick={closeProduct}
-                                            className="w-full bg-gradient-to-r from-primary to-[var(--brand-400)] text-white h-[64px] rounded-2xl flex items-center justify-between px-5 shadow-xl shadow-brand-200/50 hover:shadow-brand-300 transition-all active:scale-[0.98] border border-white/20 relative overflow-hidden group"
+                                {/* Right Side: Add to Cart / Quantity Pill Button */}
+                                {quantity > 0 ? (
+                                    <div className="flex-1 bg-[#FF8200] text-white h-14 rounded-[20px] flex items-center justify-between px-2 shadow-xl shadow-brand-100 border border-white/20">
+                                        <motion.button
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={handleDecrement}
+                                            className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
                                         >
-                                            <div className="flex flex-col items-start leading-none">
-                                                <span className="text-[13px] font-[1000] uppercase tracking-wide">View cart</span>
-                                                <span className="text-[11px] font-bold opacity-90 mt-1">{cartCount} {cartCount === 1 ? 'item' : 'items'} in cart</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[16px] font-[1000] tracking-tight">₹{cartTotal}</span>
-                                                <ChevronRight size={18} strokeWidth={4} />
-                                            </div>
-                                        </Link>
-                                    </motion.div>
+                                            <Minus size={18} strokeWidth={3.5} />
+                                        </motion.button>
+                                        <span className="font-[1000] text-sm uppercase tracking-wider">{quantity} in cart</span>
+                                        <motion.button
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={handleIncrement}
+                                            className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+                                        >
+                                            <Plus size={18} strokeWidth={3.5} />
+                                        </motion.button>
+                                    </div>
+                                ) : (
+                                    <motion.button
+                                        whileHover={{ scale: 1.01 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={handleAddToCart}
+                                        className="flex-1 bg-[#FF8200] text-white h-14 rounded-[20px] font-bold text-sm flex items-center justify-between px-6 shadow-xl shadow-brand-100 transition-all border border-white/20"
+                                    >
+                                        <span className="uppercase tracking-wider font-extrabold text-[13px]">Add to Cart</span>
+                                        <span className="text-sm font-black">₹{selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.price}</span>
+                                    </motion.button>
                                 )}
                             </div>
                         </div>
+
                     </motion.div>
                 </>
             )}

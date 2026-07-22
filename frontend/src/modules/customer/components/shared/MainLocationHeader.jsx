@@ -148,6 +148,7 @@ const MainLocationHeader = ({
   onCategorySelect,
 }) => {
   const { scrollY } = useScroll();
+  const isMobileView = typeof window !== "undefined" && window.innerWidth < 768;
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [cartAnimData, setCartAnimData] = useState(null);
 
@@ -305,9 +306,9 @@ const MainLocationHeader = ({
             borderBottomLeftRadius: headerRoundness,
             borderBottomRightRadius: headerRoundness,
             opacity: bgOpacity,
-            backgroundColor: baseHeaderColor,
+            backgroundColor: isMobileView ? "#ffffff" : baseHeaderColor,
           }}
-          className="px-4 overflow-visible transform-gpu will-change-transform">
+          className="px-4 overflow-visible transform-gpu will-change-transform bg-white md:bg-transparent border-b border-slate-100/60 md:border-b-0">
           {/* Subtle Glow Overlay */}
           <div className="absolute inset-0 bg-white/8 pointer-events-none" />
 
@@ -432,63 +433,75 @@ const MainLocationHeader = ({
             </div>
           </div>
 
-          {/* Collapsible Delivery Info & Location (MOBILE ONLY) */}
-          <div className="md:hidden">
-            <motion.div className="relative z-10 mb-3 flex items-center justify-between">
-
-              <div className="flex items-center gap-3">
-                {/* Profile Icon */}
-                <div
-                  onClick={() => navigate("/profile")}
-                  className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0 overflow-hidden cursor-pointer shadow-sm"
-                >
-                  <AccountCircleOutlinedIcon sx={{ color: "var(--primary)", fontSize: 32 }} />
-                </div>
-
-                {/* Location */}
-                <div className="flex flex-col cursor-pointer" onClick={() => setIsLocationOpen(true)}>
-                  <div className="text-[11px] font-medium tracking-wide text-white/90">
-                    Deliver to
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[14px] font-bold max-w-[180px] truncate leading-tight text-white">
-                      {isFetchingLocation ? "Detecting location..." : currentLocation.name}
-                    </span>
-                    <ChevronDownIcon sx={{ fontSize: 18, color: "white", opacity: 0.9 }} />
-                  </div>
+          {/* Mobile Header Layout (MOBILE ONLY) */}
+          <div className="md:hidden pt-3 pb-3.5 space-y-3 select-none">
+            {/* Top row: Logo/Branding + Bell Button */}
+            <div className="flex items-center justify-between">
+              {/* Brand Logo & Name */}
+              <div onClick={() => navigate("/")} className="flex items-center gap-2.5 cursor-pointer">
+                <img
+                  src={logoUrl || LogoImage}
+                  alt="Orange Basket"
+                  className="h-14 w-auto object-contain shrink-0"
+                />
+                <div className="flex flex-col justify-center text-left">
+                  <span className="text-[19px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
+                  <span className="text-[19px] font-black text-[#2E7D32] leading-none tracking-tight mt-0.5">Basket</span>
+                  <span className="text-[9px] font-bold text-[#5D7E68] tracking-wide mt-1 leading-none">
+                    Fresh. Fast. Reliable.
+                  </span>
                 </div>
               </div>
 
-              {/* Close (X) Icon */}
-              <div
-                onClick={() => navigate(-1)}
-                className="w-9 h-9 rounded-full bg-white flex items-center justify-center cursor-pointer shrink-0 shadow-sm"
+              {/* Notification Bell Button */}
+              <button
+                onClick={() => navigate("/notifications")}
+                className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center relative cursor-pointer active:scale-95 transition-all text-slate-800 shadow-3xs"
               >
-                <span className="text-slate-400 font-bold text-lg leading-none mb-0.5">✕</span>
+                <NotificationsNoneOutlinedIcon sx={{ fontSize: 22 }} />
+                <span className="absolute -top-0.5 -right-0.5 bg-[#FF8200] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                  3
+                </span>
+              </button>
+            </div>
+
+            {/* Middle row: Deliver to Address capsule (w-fit) */}
+            <div className="flex justify-start">
+              <div
+                onClick={() => setIsLocationOpen(true)}
+                className="w-fit max-w-[90%] flex items-center gap-2 bg-white border border-slate-100 rounded-full py-1.5 px-3.5 cursor-pointer shadow-3xs active:scale-[0.99] transition-all"
+              >
+                <LocationOnIcon sx={{ color: "#FF8200", fontSize: 18 }} className="shrink-0" />
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider leading-none">Deliver to</span>
+                  <span className="text-[11.5px] font-black text-slate-800 truncate max-w-[190px] mt-0.5 leading-none">
+                    {isFetchingLocation ? "Detecting location..." : currentLocation.name}
+                  </span>
+                </div>
+                <ChevronDownIcon sx={{ color: "#64748b", fontSize: 15 }} className="shrink-0 ml-0.5" />
               </div>
+            </div>
 
-            </motion.div>
-          </div>
-
-          {/* Categories Navigation - Removed */}
-
-          {/* Search Bar (MOBILE ONLY) */}
-          <div className="relative z-10 mt-3 -mb-6 pb-0 flex items-center gap-2 md:hidden">
-            <motion.div
+            {/* Bottom row: Unified Search Bar with Mic and Scanner SVG */}
+            <div
               onClick={handleSearchClick}
-              whileTap={{ scale: 0.98 }}
-              className="bg-white flex-1 rounded-2xl px-3 h-12 flex items-center border border-slate-100 shadow-md transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 cursor-pointer">
-              <SearchIcon sx={{ color: "#000000", fontSize: 20 }} />
+              className="w-full bg-white border border-slate-100 rounded-full px-4 h-11.5 flex items-center shadow-3xs cursor-pointer hover:border-slate-200 transition-all"
+            >
+              <SearchIcon sx={{ color: "#78909c", fontSize: 20 }} className="shrink-0" />
               <input
                 type="text"
-                placeholder="Search for 'Milk, Apples, Brinjal'"
+                placeholder='Search "Atta, Rice, Oil, Maggi..."'
                 readOnly
-                className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-semibold placeholder:text-black/40 text-[14px] cursor-pointer"
+                className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-bold placeholder:text-slate-400 text-[12.5px] cursor-pointer"
               />
-              <div className="flex items-center gap-2 border-l border-slate-100 pl-2.5">
-                <MicIcon sx={{ color: "#000000", fontSize: 18 }} />
+              <div className="flex items-center gap-3.5 shrink-0 ml-1">
+                <MicIcon sx={{ color: "#78909c", fontSize: 20 }} className="cursor-pointer" />
+                {/* Barcode Scanner SVG */}
+                <svg className="w-5 h-5 text-[#FF8200] cursor-pointer" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 8V4h4M16 4h4v4M4 16v4h4M20 16v4h4M8 12h8" />
+                </svg>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Background Decorative patterns */}

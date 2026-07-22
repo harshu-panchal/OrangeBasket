@@ -1,4 +1,5 @@
 import Category from "../models/category.js";
+import Product from "../models/product.js";
 import handleResponse from "../utils/helper.js";
 import getPagination from "../utils/pagination.js";
 import { buildKey, getOrSet, getTTL, invalidate } from "../services/cacheService.js";
@@ -60,7 +61,7 @@ export const getCategories = async (req, res) => {
         cacheKey,
         async () => {
           const selectFields = "name slug image iconId type parentId headerColor headerFontColor headerIconColor";
-          return Category.find({ type: "header" })
+          const rawCategories = await Category.find({ type: "header" })
             .select(selectFields)
             .populate({
               path: "children",
@@ -72,6 +73,28 @@ export const getCategories = async (req, res) => {
             })
             .sort({ name: 1, _id: 1 })
             .lean();
+
+          // Aggregate product counts
+          const counts = await Product.aggregate([
+            { $match: { status: "active", approvalStatus: "approved" } },
+            { $group: { _id: "$categoryId", count: { $sum: 1 } } }
+          ]);
+          const countMap = {};
+          counts.forEach(c => {
+            if (c._id) countMap[c._id.toString()] = c.count;
+          });
+
+          // Helper to recursively set count
+          const processCategory = (cat) => {
+            const idStr = String(cat._id || cat.id);
+            cat.productCount = countMap[idStr] || 0;
+            if (cat.children && Array.isArray(cat.children)) {
+              cat.children.forEach(processCategory);
+            }
+          };
+
+          rawCategories.forEach(processCategory);
+          return rawCategories;
         },
         getTTL("categories"),
       );
@@ -109,6 +132,22 @@ export const getCategories = async (req, res) => {
         Category.find(query).sort({ name: 1 }).skip(skip).limit(limit).lean(),
         Category.countDocuments(query),
       ]);
+
+      // Map counts for paginated items too
+      const counts = await Product.aggregate([
+        { $match: { status: "active", approvalStatus: "approved" } },
+        { $group: { _id: "$categoryId", count: { $sum: 1 } } }
+      ]);
+      const countMap = {};
+      counts.forEach(c => {
+        if (c._id) countMap[c._id.toString()] = c.count;
+      });
+
+      items.forEach(cat => {
+        const idStr = String(cat._id || cat.id);
+        cat.productCount = countMap[idStr] || 0;
+      });
+
       return handleResponse(res, 200, "Categories fetched successfully", {
         items,
         page,
@@ -125,7 +164,25 @@ export const getCategories = async (req, res) => {
     const cacheKey = categoryCacheKey({ tree: false, type: query.type || "all" });
     const categories = await getOrSet(
       cacheKey,
-      async () => Category.find(query).sort({ name: 1, _id: 1 }).lean(),
+      async () => {
+        const rawCategories = await Category.find(query).sort({ name: 1, _id: 1 }).lean();
+        
+        const counts = await Product.aggregate([
+          { $match: { status: "active", approvalStatus: "approved" } },
+          { $group: { _id: "$categoryId", count: { $sum: 1 } } }
+        ]);
+        const countMap = {};
+        counts.forEach(c => {
+          if (c._id) countMap[c._id.toString()] = c.count;
+        });
+
+        rawCategories.forEach(cat => {
+          const idStr = String(cat._id || cat.id);
+          cat.productCount = countMap[idStr] || 0;
+        });
+
+        return rawCategories;
+      },
       getTTL("categories"),
     );
     return handleResponse(

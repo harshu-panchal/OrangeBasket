@@ -161,6 +161,32 @@ const settingSchema = new mongoose.Schema(
                 default: false,
             },
         },
+        categoriesBanner: {
+            image: {
+                type: String,
+                default: "",
+            },
+            badgeText: {
+                type: String,
+                default: "KIRANA STORE",
+            },
+            title: {
+                type: String,
+                default: "Everything you need, in one place",
+            },
+            buttonText: {
+                type: String,
+                default: "Shop Now",
+            },
+            buttonLink: {
+                type: String,
+                default: "/",
+            },
+            isVisible: {
+                type: Boolean,
+                default: true,
+            },
+        },
     },
     {
         timestamps: true,

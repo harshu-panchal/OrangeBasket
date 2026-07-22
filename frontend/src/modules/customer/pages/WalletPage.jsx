@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownLeft, ChevronLeft, Wallet } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ChevronLeft, Wallet, ArrowRight } from 'lucide-react';
 import { customerApi } from '../services/customerApi';
+import { useToast } from '@shared/components/ui/Toast';
 
 const formatDate = (d) => {
     if (!d) return '';
@@ -17,6 +18,7 @@ const formatDate = (d) => {
 
 const WalletPage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -70,12 +72,32 @@ const WalletPage = () => {
             </div>
 
             <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20 space-y-4">
-                <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Available Balance</p>
-                    <h2 className="text-3xl font-extrabold text-slate-900 mt-1">
-                        {loading ? '...' : `₹${(balance || 0).toLocaleString('en-IN')}`}
-                    </h2>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Return refunds are credited here</p>
+                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-xs flex items-center justify-between overflow-hidden relative">
+                    {/* Left Column */}
+                    <div className="flex flex-col items-start text-left">
+                        <p className="text-xs font-bold text-slate-800 tracking-tight">My Wallet</p>
+                        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1.5 leading-none tracking-tight">
+                            {loading ? '...' : `₹${(balance || 0).toFixed(2)}`}
+                        </h2>
+                        <p className="text-xs font-bold text-slate-400 mt-1.5 leading-none">Wallet Balance</p>
+                        
+                        <button 
+                            onClick={() => showToast("Add Money feature coming soon!", "info")}
+                            className="mt-5 h-9 px-5 rounded-full bg-gradient-to-r from-[#2e7d32] to-[#1b5e20] hover:from-[#2e7d32]/95 hover:to-[#1b5e20]/95 text-white font-black text-[11px] flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none"
+                        >
+                            <span>Add Money</span>
+                            <ArrowRight size={13} strokeWidth={3} />
+                        </button>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="w-[160px] h-[130px] flex items-center justify-center shrink-0">
+                        <img 
+                            src="/wallet iamge .png" 
+                            alt="Wallet Illustration" 
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Search, ChevronRight } from 'lucide-react';
 import { customerApi } from '../services/customerApi';
 import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
+import { useSettings } from '@core/context/SettingsContext';
 
 const CategoriesPage = () => {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
+    const { settings } = useSettings();
 
     const fetchCategories = async () => {
         setIsLoading(true);
@@ -24,6 +26,7 @@ const CategoriesPage = () => {
                                 id: cat._id,
                                 name: cat.name,
                                 image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
+                                productCount: cat.productCount || 0,
                             });
                         });
                     }
@@ -46,6 +49,7 @@ const CategoriesPage = () => {
                     id: cat._id,
                     name: cat.name,
                     image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
+                    productCount: cat.productCount || 0,
                 }));
                 setCategories(formattedCats);
             }
@@ -60,62 +64,107 @@ const CategoriesPage = () => {
         fetchCategories();
     }, []);
 
+    const banner = settings?.categoriesBanner || {
+        image: '',
+        badgeText: 'KIRANA STORE',
+        title: 'Everything you need, in one place',
+        buttonText: 'Shop Now',
+        buttonLink: '/',
+        isVisible: true,
+    };
+
     return (
-        <div className="min-h-screen bg-white pb-24 md:pt-[120px]">
-            {/* Top Bar for Mobile */}
-            <div className="flex items-center px-4 py-3 bg-white sticky top-0 z-10 md:hidden">
-                <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-                    <ChevronLeft className="w-6 h-6 text-gray-800" />
+        <div className="min-h-screen bg-white pb-24 md:pt-[100px] font-sans">
+            {/* Header Area */}
+            <div className="sticky top-0 z-30 bg-white px-5 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-1 -ml-1 hover:bg-slate-50 rounded-full transition-all"
+                    >
+                        <ChevronLeft size={24} className="text-gray-900" />
+                    </button>
+                    <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Categories</h1>
+                </div>
+                <button
+                    onClick={() => navigate('/search')}
+                    className="p-1.5 hover:bg-slate-50 rounded-full transition-all"
+                >
+                    <Search size={22} className="text-gray-900" strokeWidth={2.5} />
                 </button>
-                <h1 className="flex-1 text-center text-[17px] font-bold text-gray-800 mr-6">Categories</h1>
             </div>
 
-            <div className="max-w-[1280px] mx-auto pt-2 px-2 md:px-4">
-                {/* Desktop Title */}
-                <h1 className="hidden md:block text-2xl font-bold text-gray-800 mb-6 px-2">All Categories</h1>
-
-                {isLoading && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-8 gap-x-2 p-2">
-                        {[...Array(12)].map((_, j) => (
-                            <div key={j} className="flex flex-col items-center gap-2">
-                                <div className="w-[90px] h-[90px] bg-gray-100 rounded-xl animate-pulse" />
-                                <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
-                            </div>
-                        ))}
+            <div className="max-w-[600px] mx-auto px-4 space-y-5">
+                {/* Promotional Banner - Hidden on Desktop (md:hidden), Visible only on Mobile */}
+                {banner.isVisible && (
+                    <div className="block md:hidden w-full overflow-hidden rounded-2xl">
+                        <img
+                            src={banner.image || "/grocery_box_banner.png"}
+                            alt="Categories Banner"
+                            className="w-full h-auto object-contain block"
+                        />
                     </div>
                 )}
 
-                {!isLoading && categories.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-24 text-center">
-                        <div className="text-6xl mb-4">🛒</div>
-                        <h2 className="text-xl font-bold text-gray-700 mb-2">No Categories Found</h2>
-                        <p className="text-gray-400 text-sm">Add categories from the admin panel to see them here.</p>
-                    </div>
-                )}
-
-                {!isLoading && categories.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-y-6 gap-x-2 py-4 px-2">
-                        {categories.map((category) => (
-                            <Link
-                                key={category.id}
-                                to={`/category/${category.id}`}
-                                className="flex flex-col items-center group cursor-pointer"
-                            >
-                                <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] mb-2 flex items-center justify-center bg-transparent transition-transform duration-300 group-hover:scale-105">
-                                    <img
-                                        src={applyCloudinaryTransform(category.image)}
-                                        alt={category.name}
-                                        loading="lazy"
-                                        className="w-full h-full object-contain"
-                                    />
+                {/* Categories List */}
+                <div className="space-y-1">
+                    {isLoading && (
+                        <div className="space-y-4 py-4">
+                            {[...Array(6)].map((_, idx) => (
+                                <div key={idx} className="flex items-center justify-between py-4 px-2">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-20 h-20 bg-slate-50/50 rounded-xl animate-pulse" />
+                                        <div className="space-y-2">
+                                            <div className="h-4 w-28 bg-slate-50 rounded animate-pulse" />
+                                            <div className="h-3 w-16 bg-slate-50 rounded animate-pulse" />
+                                        </div>
+                                    </div>
+                                    <div className="h-4 w-4 bg-slate-50 rounded animate-pulse" />
                                 </div>
-                                <span className="text-center text-[13px] md:text-sm font-semibold text-gray-800 leading-snug px-2">
-                                    {category.name}
-                                </span>
-                            </Link>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    )}
+
+                    {!isLoading && categories.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-24 text-center">
+                            <div className="text-6xl mb-4">🛒</div>
+                            <h2 className="text-xl font-bold text-gray-700 mb-2">No Categories Found</h2>
+                            <p className="text-gray-400 text-sm">Add categories from the admin panel to see them here.</p>
+                        </div>
+                    )}
+
+                    {!isLoading && categories.length > 0 && (
+                        <div className="divide-y divide-slate-100/80">
+                            {categories.map((category) => (
+                                <Link
+                                    key={category.id}
+                                    to={`/category/${category.id}`}
+                                    className="flex items-center justify-between py-4 hover:bg-slate-50/40 transition-colors px-2"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
+                                            <img
+                                                src={applyCloudinaryTransform(category.image)}
+                                                alt={category.name}
+                                                loading="lazy"
+                                                className="w-full h-full object-contain"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-[15px] text-slate-800 leading-tight">
+                                                {category.name}
+                                            </span>
+                                            <span className="text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                                                {category.productCount || 0} {category.productCount === 1 ? 'item' : 'items'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={18} className="text-slate-400" strokeWidth={2.5} />
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
