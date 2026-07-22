@@ -113,22 +113,18 @@ const OrdersPage = () => {
                                 <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                                     <span
                                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-                                            legacy === 'delivered'
-                                                ? 'bg-brand-50 text-brand-700 border-brand-100'
-                                                : legacy === 'cancelled'
-                                                    ? 'bg-rose-50 text-rose-700 border-rose-100'
-                                                    : 'bg-brand-50 text-brand-700 border-brand-100'
+                                            legacy === 'cancelled'
+                                                ? 'bg-[#FF8200]/10 text-[#FF8200] border-[#FF8200]/20'
+                                                : 'bg-brand-50 text-brand-700 border-brand-100'
                                         }`}
                                     >
                                         <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/80">
                                             <CheckCircle
                                                 size={9}
                                                 className={`${
-                                                    legacy === 'delivered'
-                                                        ? 'text-brand-600'
-                                                        : legacy === 'cancelled'
-                                                            ? 'text-rose-500'
-                                                            : 'text-brand-500'
+                                                    legacy === 'cancelled'
+                                                        ? 'text-[#FF8200]'
+                                                        : 'text-brand-500'
                                                 }`}
                                             />
                                         </span>

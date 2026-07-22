@@ -31,7 +31,7 @@ async function acquireLock(jobName, lockDuration) {
   
   if (!client || !isRedisEnabled()) {
     // No Redis available, allow execution (non-production fallback)
-    logger.warn('Distributed lock unavailable, executing without lock', {
+    logger.debug('Distributed lock unavailable, executing without lock', {
       jobName,
       instanceId
     });
