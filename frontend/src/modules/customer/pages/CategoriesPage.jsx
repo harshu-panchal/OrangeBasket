@@ -96,10 +96,10 @@ const CategoriesPage = () => {
 
             <div className="max-w-[600px] mx-auto px-4 space-y-5">
                 {/* Promotional Banner - Hidden on Desktop (md:hidden), Visible only on Mobile */}
-                {banner.isVisible && (
+                {banner?.isVisible && banner?.image && (
                     <div className="block md:hidden w-full overflow-hidden rounded-2xl">
                         <img
-                            src={banner.image || "/grocery_box_banner.png"}
+                            src={banner.image}
                             alt="Categories Banner"
                             className="w-full h-auto object-contain block"
                         />

@@ -1,15 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, Circle, Clock, Truck, Home } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 import { getLegacyStatusFromOrder } from "@/shared/utils/orderStatus";
-
-const STATUS_TO_STAGE = {
-  pending: "confirmed",
-  confirmed: "confirmed",
-  packed: "confirmed",
-  out_for_delivery: "out_for_delivery",
-  delivered: "delivered",
-};
 
 const OrderProgressTracker = ({
   order,
@@ -18,55 +10,18 @@ const OrderProgressTracker = ({
   totalDistanceText = "—",
 }) => {
   const status = getLegacyStatusFromOrder(order);
-  const currentStage = STATUS_TO_STAGE[status] || "confirmed";
 
   const steps = [
-    {
-      id: "confirmed",
-      label: "Order Confirmed",
-      icon: CheckCircle,
-      statuses: ["confirmed"],
-    },
-    {
-      id: "out_for_delivery",
-      label: "Out for delivery",
-      icon: Truck,
-      statuses: ["out_for_delivery", "delivered"],
-    },
-    {
-      id: "delivered",
-      label: "Delivered",
-      icon: Home,
-      statuses: ["delivered"],
-    },
+    { id: "pending", label: "Order Placed", subLabel: "We have received your order" },
+    { id: "confirmed", label: "Order Confirmed", subLabel: "Your order has been confirmed" },
+    { id: "packed", label: "Order Packed", subLabel: "Your order is packed and ready" },
+    { id: "out_for_delivery", label: "Out for Delivery", subLabel: "Your order is on the way" },
+    { id: "delivered", label: "Delivered", subLabel: "Order has been delivered" },
   ];
 
-  const getStepStatus = (step) => {
-    if (status === "cancelled") return "cancelled";
-
-    const stepIndex = steps.findIndex((s) => s.id === step.id);
-
-    if (status === "pending") {
-      return stepIndex === 0 ? "active" : "pending";
-    }
-
-    if (status === "confirmed" || status === "packed") {
-      return stepIndex === 0 ? "completed" : "pending";
-    }
-
-    if (status === "out_for_delivery") {
-      if (stepIndex === 0) return "completed";
-      if (stepIndex === 1) return "active";
-      return "pending";
-    }
-
-    if (status === "delivered") {
-      return "completed";
-    }
-
-    return step.id === "confirmed" ? "active" : "pending";
-  };
-
+  const statusList = ["pending", "confirmed", "packed", "out_for_delivery", "delivered"];
+  let currentStatusIndex = statusList.indexOf(status);
+  
   if (status === "cancelled") {
     return (
       <div className="bg-rose-50 border border-rose-200 rounded-3xl p-5">
@@ -75,83 +30,68 @@ const OrderProgressTracker = ({
     );
   }
 
+  // Fallback for unknown status
+  if (currentStatusIndex === -1) currentStatusIndex = 0;
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="space-y-4">
+        className="flex flex-col gap-6"
+      >
         {steps.map((step, index) => {
-          const stepStatus = getStepStatus(step);
-          const Icon = step.icon;
-          const isCompleted = stepStatus === "completed";
-          const isActive = stepStatus === "active";
-          const isPending = stepStatus === "pending";
+          const isCompleted = index < currentStatusIndex || (status === "delivered" && index === 4);
+          const isActive = index === currentStatusIndex && status !== "delivered";
+          const isPending = !isCompleted && !isActive;
+
+          // Determine line color to the NEXT step
+          const isLineActive = index < currentStatusIndex;
 
           return (
-            <div
-              key={step.id}
-              className="relative transition-opacity duration-200">
-              <div className="flex items-center gap-4">
-                {/* Icon Circle */}
+            <div key={step.id} className="relative flex items-start gap-4">
+              {/* Connecting Line (drawn below the circle) */}
+              {index < steps.length - 1 && (
                 <div
-                  className={`relative z-10 h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    isCompleted
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                      : isActive
-                      ? "bg-amber-100 text-amber-600 border-2 border-amber-400"
-                      : "bg-slate-100 text-slate-400"
+                  className={`absolute left-[11px] top-6 bottom-[-24px] w-[2px] ${
+                    isLineActive ? "bg-[#1e7145]" : "bg-slate-200"
                   }`}
-                >
-                  {isCompleted ? (
-                    <CheckCircle size={24} className="fill-current" />
-                  ) : isActive ? (
-                    <div className="animate-spin">
-                      <Icon size={22} />
-                    </div>
-                  ) : (
-                    <Circle size={22} />
-                  )}
-                </div>
+                />
+              )}
 
-                {/* Label */}
-                <div className="flex-1">
-                  <p
-                    className={`text-sm font-bold ${
-                      isCompleted
-                        ? "text-slate-900"
-                        : isActive
-                        ? "text-amber-700"
-                        : "text-slate-400"
-                    }`}
-                  >
-                    {step.label}
-                  </p>
-                  {isActive && (
-                    <p className="text-xs text-amber-600 font-medium mt-0.5">
-                      In progress...
-                    </p>
-                  )}
-                </div>
-
-                {/* Status Indicator */}
-                {isCompleted && (
-                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center transition-opacity duration-200">
-                    <CheckCircle size={14} className="text-primary" />
+              {/* Status Indicator */}
+              <div className="relative z-10 flex h-[24px] w-[24px] shrink-0 items-center justify-center bg-white">
+                {isCompleted ? (
+                  <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[#1e7145] text-white">
+                    <Check size={12} strokeWidth={4} />
+                  </div>
+                ) : isActive ? (
+                  <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[#1e7145]">
+                    <div className="h-[6px] w-[6px] rounded-full bg-white" />
+                  </div>
+                ) : (
+                  <div className="flex h-[20px] w-[20px] items-center justify-center rounded-full border-[2px] border-slate-300">
                   </div>
                 )}
               </div>
 
-              {/* Connecting Line */}
-              {index < steps.length - 1 && (
-                <div className="absolute left-6 top-12 bottom-0 w-0.5 -mb-4">
-                  <div
-                    className={`h-full w-full ${
-                      isCompleted ? "bg-primary" : "bg-slate-200"
-                    }`}
-                  />
-                </div>
-              )}
+              {/* Step Text */}
+              <div className="flex flex-col pt-[2px]">
+                <span
+                  className={`text-[14px] font-bold leading-none ${
+                    isActive
+                      ? "text-[#1e7145]"
+                      : isCompleted
+                      ? "text-slate-800"
+                      : "text-slate-400"
+                  }`}
+                >
+                  {step.label}
+                </span>
+                <span className="text-[11px] text-slate-500 mt-1">
+                  {step.subLabel}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -159,25 +99,25 @@ const OrderProgressTracker = ({
 
       {/* ETA Display */}
       {status !== "delivered" && (
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="flex items-center justify-between bg-amber-50 rounded-2xl p-4 gap-4">
+        <div className="mt-8 pt-5 border-t border-slate-100">
+          <div className="flex items-center justify-between bg-emerald-50 rounded-2xl p-4 gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Clock size={20} className="text-amber-600" />
+              <div className="h-10 w-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                <Clock size={20} className="text-emerald-700" />
               </div>
               <div>
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                <p className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
                   Estimated Time
                 </p>
-                <p className="text-lg font-black text-amber-900">{estimatedArrivalText}</p>
+                <p className="text-lg font-black text-emerald-900">{estimatedArrivalText}</p>
               </div>
             </div>
             <div className="text-right flex flex-col items-end gap-1">
               <div>
-                <p className="text-xs text-amber-600 font-semibold">Arriving in</p>
-                <p className="text-2xl font-black text-amber-900">{arrivingInText}</p>
+                <p className="text-xs text-emerald-700 font-semibold">Arriving in</p>
+                <p className="text-2xl font-black text-emerald-900">{arrivingInText}</p>
               </div>
-              <div className="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200">
+              <div className="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200">
                 Total distance: {totalDistanceText}
               </div>
             </div>

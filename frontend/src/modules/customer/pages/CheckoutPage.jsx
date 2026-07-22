@@ -1000,7 +1000,7 @@ const CheckoutPage = () => {
           </div>
 
           {/* Right Column */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-8 pb-32 lg:pb-8">
+          <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-8 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto no-scrollbar pb-32 lg:pb-8">
             {/* Coupon Section */}
             <CheckoutCouponSection
               coupons={coupons}
