@@ -410,68 +410,14 @@ const Home = () => {
         <MainLocationHeader categories={categories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>
 
-      {products.length === 0 && !isLoading ? (
-        <div className="flex flex-col items-center justify-center pt-20 pb-36 px-6 max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-6 duration-500">
-          <div className="w-64 h-64 mb-8 drop-shadow-xs">
-            {noServiceData && <Lottie animationData={noServiceData} loop={true} />}
-          </div>
-          <div className="space-y-2.5 text-center">
-            <h3 className="text-[28px] font-black text-gray-900 tracking-tight leading-tight uppercase">
-              Service <span className="text-[#FF8200]">Unavailable</span>
-            </h3>
-            <p className="text-[13px] text-gray-400 font-bold max-w-[280px] mx-auto leading-relaxed">
-              Ah! We haven't reached your neighborhood yet.
-            </p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 px-8 py-3 bg-[#FF8200] text-white font-extrabold rounded-[18px] uppercase text-xs tracking-wider shadow-lg shadow-[#FF8200]/15 hover:scale-102 active:scale-98 transition-all"
-          >
-            Check Again
-          </button>
-        </div>
-      ) : (
         <>
-          <motion.div ref={heroRef} className="block md:hidden will-change-transform" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-            <div className="mx-4 mt-12 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
-              {heroConfig.banners?.items?.length ? (
+          {heroConfig.banners?.items?.length > 0 && (
+            <motion.div ref={heroRef} className="block md:hidden will-change-transform" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
+              <div className="mx-4 mt-12 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
                 <ExperienceBannerCarousel section={{ title: "" }} items={heroConfig.banners.items} fullWidth edgeToEdge />
-              ) : (
-                <div className="w-full relative overflow-hidden bg-gradient-to-r from-[#1B4D3E] to-[#0B2920] px-5 py-6 flex items-center">
-                  {/* Left Side Content */}
-                  <div className="relative z-10 w-7/12 flex flex-col items-start text-left select-none">
-                    <span className="text-[20px] font-black text-white leading-none tracking-tight">10 MINUTES</span>
-                    <span className="text-[#FFB800] text-[9.5px] font-black tracking-widest mt-0.5 uppercase">EXPRESS DELIVERY</span>
-                    <h4 className="text-[15px] font-black text-white leading-tight mt-3">
-                      Fresh Groceries & Kirana<br />
-                      <span className="font-semibold text-slate-100/90 text-[13.5px]">At Your Doorstep</span>
-                    </h4>
-                    <button
-                      onClick={() => navigate('/categories')}
-                      className="mt-4 bg-[#FF8200] text-white px-5 py-2.5 rounded-[16px] font-black text-xs tracking-wider flex items-center gap-1.5 shadow-lg shadow-[#FF8200]/25 cursor-pointer hover:scale-105 active:scale-95 transition-all"
-                    >
-                      Order Now <span className="text-[13px] leading-none mb-0.5">→</span>
-                    </button>
-                  </div>
-
-                  {/* Right Side Graphics */}
-                  <div className="absolute right-2 bottom-0 w-[42%] top-0 flex items-end justify-center select-none pointer-events-none">
-                    <img
-                      src="/delivery_scooter.png"
-                      alt="Express Delivery"
-                      className="w-full h-auto object-contain max-h-[145px]"
-                    />
-                  </div>
-
-                  {/* Top-Right 10 MIN Badge */}
-                  <div className="absolute top-4 right-4 bg-[#0B2920]/80 backdrop-blur-xs border-2 border-[#FFB800] w-12 h-12 rounded-full flex flex-col items-center justify-center shrink-0 shadow-sm">
-                    <span className="text-[12px] font-black text-white leading-none">10</span>
-                    <span className="text-[6.5px] font-extrabold text-[#FFB800] tracking-wider leading-none mt-0.5 uppercase">MIN</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
+          )}
 
           <QuickCategorySlider categories={effectiveQuickCategories} onCategoryClick={(id) => navigate(`/category/${id}`)} />
           <LowestPriceSection products={products} onSeeAll={() => navigate("/category/all")} />
@@ -483,7 +429,6 @@ const Home = () => {
             </div>
           )}
         </>
-      )}
     </div>
   );
 };

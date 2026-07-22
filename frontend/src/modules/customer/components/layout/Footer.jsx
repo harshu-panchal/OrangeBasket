@@ -5,7 +5,7 @@ import { useSettings } from '@core/context/SettingsContext';
 
 const Footer = () => {
     const { settings } = useSettings();
-    const logoUrl = settings?.logoUrl || Logo;
+    const logoUrl = settings?.logoUrl;
     const primaryColor = settings?.primaryColor || 'var(--primary)';
 
     return (

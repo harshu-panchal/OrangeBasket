@@ -14,7 +14,7 @@ import {
   buildSearchBarBackgroundColor,
   shiftHex,
 } from "../../utils/headerTheme";
-import LogoImage from "../../../../assets/Logo.png";
+
 
 // MUI Icons
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
@@ -163,7 +163,7 @@ const MainLocationHeader = ({
   const { isOpen: isProductDetailOpen } = useProductDetail();
   const { settings } = useSettings();
   const appName = settings?.appName || "App";
-  const logoUrl = settings?.logoUrl || LogoImage;
+  const logoUrl = settings?.logoUrl;
   const navigate = useNavigate();
 
   // Search Logic
@@ -440,7 +440,7 @@ const MainLocationHeader = ({
               {/* Brand Logo & Name */}
               <div onClick={() => navigate("/")} className="flex items-center gap-2.5 cursor-pointer">
                 <img
-                  src={logoUrl || LogoImage}
+                  src={logoUrl}
                   alt="Orange Basket"
                   className="h-14 w-auto object-contain shrink-0"
                 />
