@@ -433,7 +433,7 @@ const Home = () => {
       ) : (
         <>
           <motion.div ref={heroRef} className="block md:hidden will-change-transform" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-            <div className="mx-4 mt-7 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
+            <div className="mx-4 mt-12 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
               {heroConfig.banners?.items?.length ? (
                 <ExperienceBannerCarousel section={{ title: "" }} items={heroConfig.banners.items} fullWidth edgeToEdge />
               ) : (
