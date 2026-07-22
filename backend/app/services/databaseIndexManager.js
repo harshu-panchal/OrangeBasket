@@ -215,6 +215,11 @@ export async function createAllIndexes() {
             continue;
           }
           
+          if (error.code === 26 || error.codeName === "NamespaceNotFound") {
+            logger.debug(`[DatabaseIndexManager] Collection ${collectionName} does not exist yet, skipping index ${indexName}`);
+            continue;
+          }
+          
           logger.error(`[DatabaseIndexManager] Failed to create index on ${collectionName}:`, error);
           results.failed++;
           results.errors.push({

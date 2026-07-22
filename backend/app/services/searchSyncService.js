@@ -187,6 +187,11 @@ export async function startSearchIndexWorker() {
   try {
     const queue = getSearchIndexQueue();
     
+    if (!queue) {
+      logger.warn("[SearchSync] Queue is null, search index worker not started");
+      return;
+    }
+    
     // Process jobs
     queue.process("index", 5, processSearchIndexJob); // 5 concurrent index jobs
     queue.process("remove", 5, processSearchIndexJob); // 5 concurrent remove jobs
