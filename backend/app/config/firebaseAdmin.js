@@ -26,6 +26,9 @@ export const getFirebaseAdminApp = () => {
     // Some .env loaders escape double quotes as \", which breaks JSON.parse
     const cleanJson = json.replace(/\\"/g, '"');
     const serviceAccount = JSON.parse(cleanJson);
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
     const config = {
       credential: admin.credential.cert(serviceAccount),
     };

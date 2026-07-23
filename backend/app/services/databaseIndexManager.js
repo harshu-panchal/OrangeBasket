@@ -193,9 +193,8 @@ export async function createAllIndexes() {
       const collection = mongoose.connection.collection(collectionName);
       
       for (const indexDef of indexes) {
+        const indexName = indexDef.options?.name || Object.keys(indexDef.keys).join("_");
         try {
-          const indexName = indexDef.options?.name || Object.keys(indexDef.keys).join("_");
-          
           const existingIndexes = await collection.indexes();
           const indexExists = existingIndexes.some(idx => idx.name === indexName);
           

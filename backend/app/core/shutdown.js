@@ -140,21 +140,28 @@ async function closeBullQueues() {
   
   const closePromises = _bullQueues.map(async (queue) => {
     try {
+      const qName = queue.name || "noop";
       // Pause the queue to stop accepting new jobs
-      await queue.pause(true, true);
-      console.log(`[Shutdown] Queue "${queue.name}" paused`);
+      if (typeof queue.pause === "function") {
+        await queue.pause(true, true);
+        console.log(`[Shutdown] Queue "${qName}" paused`);
+      }
       
       // Wait for active jobs to complete (with timeout)
-      const activeJobs = await queue.getActive();
-      if (activeJobs.length > 0) {
-        console.log(`[Shutdown] Waiting for ${activeJobs.length} active job(s) in queue "${queue.name}"...`);
+      if (typeof queue.getActive === "function") {
+        const activeJobs = await queue.getActive();
+        if (activeJobs.length > 0) {
+          console.log(`[Shutdown] Waiting for ${activeJobs.length} active job(s) in queue "${qName}"...`);
+        }
       }
       
       // Close the queue
-      await queue.close();
-      console.log(`[Shutdown] Queue "${queue.name}" closed successfully`);
+      if (typeof queue.close === "function") {
+        await queue.close();
+        console.log(`[Shutdown] Queue "${qName}" closed successfully`);
+      }
     } catch (error) {
-      console.error(`[Shutdown] Error closing queue "${queue.name}":`, error.message);
+      console.error(`[Shutdown] Error closing queue "${queue.name || "noop"}":`, error.message);
     }
   });
   
