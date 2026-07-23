@@ -51,6 +51,7 @@ const ALLOWED_KEYS = [
   "lowStockAlertsEnabled",
   "productApproval",
   "categoriesBanner",
+  "homeVideoBanner",
 ];
 
 function flattenForMongoSet(prefix, value, target) {
@@ -136,6 +137,10 @@ const updateSettingsSchema = Joi.object({
     buttonLink: Joi.string().allow("").max(500),
     isVisible: Joi.boolean(),
   }).unknown(false),
+  homeVideoBanner: Joi.object({
+    videoUrl: Joi.string().allow("").max(2000),
+    isVisible: Joi.boolean(),
+  }).unknown(false),
 }).unknown(false);
 
 /**
@@ -156,7 +161,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner createdAt",
           )
           .lean();
         return existing || null;
@@ -246,17 +251,18 @@ export const updateSettings = async (req, res) => {
 export const uploadSettingsImage = async (req, res) => {
   try {
     const type = (req.query.type || "logo").toLowerCase();
-    if (type !== "logo" && type !== "favicon" && type !== "categoriesbanner") {
-      return handleResponse(res, 400, "type must be logo, favicon or categoriesbanner");
+    if (type !== "logo" && type !== "favicon" && type !== "categoriesbanner" && type !== "homevideobanner") {
+      return handleResponse(res, 400, "type must be logo, favicon, categoriesbanner, or homevideobanner");
     }
 
     if (req.file) {
+      const isVideo = String(req.file.mimetype || "").trim().toLowerCase().startsWith("video/");
       const url = await uploadToCloudinary(req.file.buffer, "settings", {
         mimeType: req.file.mimetype,
-        resourceType: "image",
+        resourceType: isVideo ? "video" : "image",
       });
       await invalidate("cache:platform:settings:*");
-      return handleResponse(res, 200, "Image uploaded", { url, type });
+      return handleResponse(res, 200, isVideo ? "Video uploaded" : "Image uploaded", { url, type });
     }
 
     const providedUrl = String(req.body?.url || req.body?.imageUrl || "").trim();

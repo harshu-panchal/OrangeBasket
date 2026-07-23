@@ -411,13 +411,30 @@ const Home = () => {
       </div>
 
         <>
-          {heroConfig.banners?.items?.length > 0 && (
-            <motion.div ref={heroRef} className="block md:hidden will-change-transform" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-              <div className="mx-4 mt-12 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
-                <ExperienceBannerCarousel section={{ title: "" }} items={heroConfig.banners.items} fullWidth edgeToEdge />
-              </div>
-            </motion.div>
-          )}
+          {(() => {
+            const hasVideo = settings?.homeVideoBanner?.isVisible && settings.homeVideoBanner.videoUrl;
+            const hasBanners = heroConfig.banners?.items?.length > 0;
+            if (!hasVideo && !hasBanners) return null;
+
+            const combinedItems = [];
+            if (hasVideo) {
+              combinedItems.push({
+                isVideo: true,
+                videoUrl: settings.homeVideoBanner.videoUrl,
+              });
+            }
+            if (hasBanners) {
+              combinedItems.push(...heroConfig.banners.items);
+            }
+
+            return (
+              <motion.div ref={heroRef} className="block md:hidden will-change-transform pt-4" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
+                <div className="mx-4 mt-14 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
+                  <ExperienceBannerCarousel section={{ title: "" }} items={combinedItems} fullWidth edgeToEdge />
+                </div>
+              </motion.div>
+            );
+          })()}
 
           <QuickCategorySlider categories={effectiveQuickCategories} onCategoryClick={(id) => navigate(`/category/${id}`)} />
           <LowestPriceSection products={products} onSeeAll={() => navigate("/category/all")} />

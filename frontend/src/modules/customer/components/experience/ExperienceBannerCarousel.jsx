@@ -37,12 +37,17 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
   React.useEffect(() => {
     if (totalItems <= 1) return;
 
+    const currentSlide = visibleItems[activeIndex];
+    // If current slide is video, do not auto-advance with setInterval. 
+    // The video's onEnded event will handle it.
+    if (currentSlide?.isVideo) return;
+
     const intervalId = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % totalItems);
     }, 4500);
 
     return () => clearInterval(intervalId);
-  }, [totalItems]);
+  }, [totalItems, activeIndex, visibleItems]);
 
   React.useEffect(() => {
     if (!hasMore) return;
@@ -90,7 +95,23 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
             )}
             style={{ width: `${100 / totalItems}%` }}
           >
-            {fullWidth ? (
+            {banner.isVideo ? (
+              <video
+                ref={(el) => {
+                  if (el) {
+                    if (activeIndex === idx) el.play().catch(() => {});
+                    else el.pause();
+                  }
+                }}
+                src={banner.videoUrl}
+                muted
+                playsInline
+                className="w-full h-full object-cover object-center pointer-events-none"
+                onEnded={() => {
+                  setActiveIndex((prev) => (prev + 1) % totalItems);
+                }}
+              />
+            ) : fullWidth ? (
               <img
                 src={getBannerOptimizedSrc(banner.imageUrl)}
                 srcSet={
@@ -104,13 +125,13 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
                 }
                 sizes="100vw"
                 alt={banner.title || section?.title || "Banner"}
-                className="w-full h-full object-contain object-center pointer-events-none"
+                className="w-full h-full object-cover object-center pointer-events-none"
                 loading={idx === 0 ? "eager" : "lazy"}
                 fetchPriority={idx === 0 ? "high" : "low"}
                 decoding="async"
               />
             ) : (
-              <div className="h-full w-full max-w-[560px] overflow-hidden rounded-3xl bg-slate-100 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+              <div className="h-full w-full max-w-[560px] overflow-hidden rounded-[24px] bg-slate-100 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
                 <img
                   src={getBannerOptimizedSrc(banner.imageUrl)}
                   srcSet={

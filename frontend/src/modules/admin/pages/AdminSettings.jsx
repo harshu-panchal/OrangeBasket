@@ -84,6 +84,10 @@ const AdminSettings = () => {
             buttonLink: '/',
             isVisible: true,
         },
+        homeVideoBanner: {
+            videoUrl: '',
+            isVisible: false,
+        },
     });
 
     useEffect(() => {
@@ -101,6 +105,10 @@ const AdminSettings = () => {
                         categoriesBanner: {
                             ...prev.categoriesBanner,
                             ...(data.categoriesBanner || {}),
+                        },
+                        homeVideoBanner: {
+                            ...prev.homeVideoBanner,
+                            ...(data.homeVideoBanner || {}),
                         },
                     }));
                 }
@@ -246,6 +254,49 @@ const AdminSettings = () => {
         }
     };
 
+    const [videoBannerUploading, setVideoBannerUploading] = useState(false);
+    const videoBannerInputRef = useRef(null);
+
+    const handleVideoBannerChange = (field, value) => {
+        setSettings(prev => ({
+            ...prev,
+            homeVideoBanner: {
+                ...(prev.homeVideoBanner || {}),
+                [field]: value
+            }
+        }));
+    };
+
+    const handleVideoBannerUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('video/')) {
+            showToast('Please select a video file (MP4, WebM, etc.)', 'error');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('Video size exceeds 10 MB limit', 'error');
+            return;
+        }
+        setVideoBannerUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('image', file); // Multer uses 'image' or 'file' in settings API
+            const res = await adminApi.uploadSettingsImage(fd, 'homeVideoBanner');
+            const url = res.data?.result?.url || res.data?.url;
+            if (url) {
+                handleVideoBannerChange('videoUrl', url);
+                showToast('Video banner uploaded. Click Save Changes to apply.', 'success');
+            } else throw new Error('No URL returned');
+        } catch (err) {
+            console.error(err);
+            showToast(err.response?.data?.message || 'Failed to upload video', 'error');
+        } finally {
+            setVideoBannerUploading(false);
+            e.target.value = '';
+        }
+    };
+
     const tabs = [
         { id: 'general', label: 'General', icon: Settings },
         { id: 'branding', label: 'Branding', icon: Globe },
@@ -253,6 +304,7 @@ const AdminSettings = () => {
         { id: 'social', label: 'Social & Apps', icon: Share2 },
         { id: 'seo', label: 'SEO & Meta', icon: Search },
         { id: 'categoriesBanner', label: 'Categories Banner', icon: Smartphone },
+        { id: 'homeVideoBanner', label: 'Video Banner', icon: Youtube },
     ];
 
     return (
@@ -812,6 +864,84 @@ const AdminSettings = () => {
                                     {settings.categoriesBanner?.image && (
                                         <p className="text-[10px] text-slate-400 font-semibold uppercase text-center">
                                             Recommended size: 600 x 250 pixels
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Home Video Banner Settings */}
+                    {activeTab === 'homeVideoBanner' && (
+                        <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-xl overflow-hidden animate-in fade-in duration-300">
+                            <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                        Home Video Banner
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-semibold mt-1">Upload and toggle a video banner on the home page. Max size 10MB.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500">Visible to Users</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleVideoBannerChange('isVisible', !settings.homeVideoBanner?.isVisible)}
+                                        className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative flex items-center p-0.5",
+                                            settings.homeVideoBanner?.isVisible ? "bg-emerald-500 justify-end" : "bg-slate-300 justify-start"
+                                        )}
+                                    >
+                                        <div className="w-5 h-5 bg-white rounded-full shadow-md" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-8">
+                                <div className="max-w-md mx-auto space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Video File</label>
+                                    <input
+                                        type="file"
+                                        ref={videoBannerInputRef}
+                                        onChange={handleVideoBannerUpload}
+                                        className="hidden"
+                                        accept="video/mp4,video/webm"
+                                    />
+                                    <div
+                                        onClick={() => videoBannerInputRef.current?.click()}
+                                        className={cn(
+                                            "border-2 border-dashed border-slate-200 rounded-3xl p-6 text-center cursor-pointer hover:border-brand-500 hover:bg-slate-50/50 transition-all relative flex flex-col items-center justify-center min-h-[200px]",
+                                            videoBannerUploading && "pointer-events-none opacity-60"
+                                        )}
+                                    >
+                                        {videoBannerUploading ? (
+                                            <div className="space-y-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-brand-500 mx-auto" />
+                                                <p className="text-xs font-bold text-slate-500">Uploading Video...</p>
+                                            </div>
+                                        ) : settings.homeVideoBanner?.videoUrl ? (
+                                            <div className="relative w-full rounded-xl overflow-hidden bg-slate-100 group">
+                                                <video
+                                                    src={settings.homeVideoBanner.videoUrl}
+                                                    className="w-full h-auto object-cover max-h-[300px]"
+                                                    muted
+                                                    loop
+                                                    autoPlay
+                                                    playsInline
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                                    Change Video
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Upload className="h-8 w-8 text-slate-400 mx-auto" />
+                                                <p className="text-xs font-bold text-slate-500">Upload Video</p>
+                                                <p className="text-[10px] text-slate-400 font-semibold uppercase">Max size: 10 MB (MP4, WebM)</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {settings.homeVideoBanner?.videoUrl && (
+                                        <p className="text-[10px] text-slate-400 font-semibold uppercase text-center">
+                                            Video successfully uploaded
                                         </p>
                                     )}
                                 </div>

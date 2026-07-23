@@ -187,6 +187,16 @@ const settingSchema = new mongoose.Schema(
                 default: true,
             },
         },
+        homeVideoBanner: {
+            videoUrl: {
+                type: String,
+                default: "",
+            },
+            isVisible: {
+                type: Boolean,
+                default: false,
+            },
+        },
     },
     {
         timestamps: true,

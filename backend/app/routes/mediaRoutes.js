@@ -23,10 +23,14 @@ const VALID_ENTITY_TYPES = [
   "other",
 ];
 
-const VALID_RESOURCE_TYPES = ["image", "document", "raw"];
+const VALID_RESOURCE_TYPES = ["image", "video", "document", "raw"];
 
 function isImageMimeType(mimeType = "") {
   return String(mimeType || "").trim().toLowerCase().startsWith("image/");
+}
+
+function isVideoMimeType(mimeType = "") {
+  return String(mimeType || "").trim().toLowerCase().startsWith("video/");
 }
 
 function resolveUploadedByModel(role) {
@@ -112,10 +116,22 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
 
     const mimeType = req.file.mimetype;
     const imageUpload = isImageMimeType(mimeType);
-    const folder = imageUpload ? "media/images" : "media/files";
+    const videoUpload = isVideoMimeType(mimeType);
+    
+    let folder = "media/files";
+    let resourceType = "raw";
+    
+    if (imageUpload) {
+      folder = "media/images";
+      resourceType = "image";
+    } else if (videoUpload) {
+      folder = "media/videos";
+      resourceType = "video";
+    }
+
     const url = await uploadToCloudinary(req.file.buffer, folder, {
       mimeType,
-      resourceType: imageUpload ? "image" : "raw",
+      resourceType,
     });
 
     return handleResponse(res, 200, "Media uploaded successfully", {
