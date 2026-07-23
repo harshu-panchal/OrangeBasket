@@ -55,17 +55,17 @@ const BottomNav = () => {
             <div className="bg-white/95 backdrop-blur-md rounded-full border border-slate-100 shadow-[0_12px_36px_rgba(15,23,42,0.12)] px-1.5 py-1 flex items-center justify-between relative">
 
                 {/* Center Elevated Floating Cart Button */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-4 z-20">
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3.5 z-20">
                     <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => navigate(cartCount > 0 ? '/checkout' : '/orders')}
-                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center border-[4px] border-white shadow-[0_16px_34px_rgba(255,85,0,0.65)] transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center border-[3px] border-white shadow-[0_12px_24px_rgba(255,85,0,0.55)] transition-all cursor-pointer hover:scale-105 active:scale-95"
                         title="View Cart"
                     >
-                        <ShoppingCart size={24} className="text-white" strokeWidth={2.3} />
+                        <ShoppingCart size={18} className="text-white" strokeWidth={2.3} />
                     </motion.button>
                     {cartCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[10px] w-5.5 h-5.5 rounded-full border-2 border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 rounded-full border border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
                             {cartCount > 99 ? '99+' : cartCount}
                         </div>
                     )}

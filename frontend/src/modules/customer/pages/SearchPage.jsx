@@ -118,11 +118,17 @@ const SearchPage = () => {
             }
             setIsLoading(true);
             try {
-                const response = await customerApi.getProducts({
+                const params = {
                     limit: 100,
                     lat: currentLocation.latitude,
                     lng: currentLocation.longitude,
-                });
+                };
+                
+                if (debouncedQuery.trim()) {
+                    params.search = debouncedQuery.trim();
+                }
+
+                const response = await customerApi.getProducts(params);
                 if (response.data.success) {
                     const rawResult = response.data.result;
                     const dbProds = Array.isArray(response.data.results)
@@ -153,7 +159,7 @@ const SearchPage = () => {
             }
         };
         fetchProducts();
-    }, [currentLocation?.latitude, currentLocation?.longitude]);
+    }, [currentLocation?.latitude, currentLocation?.longitude, debouncedQuery]);
 
     // Save search term to history
     const saveSearch = (term) => {
@@ -181,10 +187,10 @@ const SearchPage = () => {
     // Real-time filtering logic
     const filteredResults = useMemo(() => {
         if (!debouncedQuery.trim()) return [];
-        return allProducts.filter(p =>
-            p.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-            p.categoryId?.name?.toLowerCase().includes(debouncedQuery.toLowerCase())
-        );
+        // Since backend handles the search filtering now, we can just return allProducts
+        // or apply a soft local filter if needed, but returning allProducts is generally fine 
+        // because they matched the search API query.
+        return allProducts;
     }, [debouncedQuery, allProducts]);
 
     useEffect(() => {

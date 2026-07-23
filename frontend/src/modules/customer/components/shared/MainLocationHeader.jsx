@@ -326,7 +326,7 @@ const MainLocationHeader = ({
                     src={logoUrl}
                     alt={`${appName} Logo`}
                     loading="lazy"
-                    className="h-10 w-auto object-contain"
+                    className="h-14 w-auto object-contain"
                   />
                 </div>
               </div>
@@ -434,7 +434,7 @@ const MainLocationHeader = ({
           </div>
 
           {/* Mobile Header Layout (MOBILE ONLY) */}
-          <div className="md:hidden pt-3 pb-3.5 space-y-3 select-none">
+          <div className="md:hidden pt-1 pb-3.5 space-y-3 select-none">
             {/* Top row: Logo/Branding + Bell Button */}
             <div className="flex items-center justify-between">
               {/* Brand Logo & Name */}
@@ -442,12 +442,12 @@ const MainLocationHeader = ({
                 <img
                   src={logoUrl}
                   alt="Orange Basket"
-                  className="h-14 w-auto object-contain shrink-0"
+                  className="h-20 w-auto object-contain shrink-0"
                 />
                 <div className="flex flex-col justify-center text-left">
-                  <span className="text-[19px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
-                  <span className="text-[19px] font-black text-[#2E7D32] leading-none tracking-tight mt-0.5">Basket</span>
-                  <span className="text-[9px] font-bold text-[#5D7E68] tracking-wide mt-1 leading-none">
+                  <span className="text-[22px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
+                  <span className="text-[22px] font-black text-[#2E7D32] leading-none tracking-tight mt-0.5">Basket</span>
+                  <span className="text-[11px] font-black text-[#5D7E68] tracking-wide mt-1 leading-none">
                     Fresh. Fast. Reliable.
                   </span>
                 </div>

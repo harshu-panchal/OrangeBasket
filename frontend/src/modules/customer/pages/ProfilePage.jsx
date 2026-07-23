@@ -78,8 +78,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/orders')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
-                                <CalendarCheck size={28} strokeWidth={2.2} />
+                            <div className="w-12 h-12 rounded-full bg-emerald-50/80 border border-emerald-100 text-emerald-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <CalendarCheck size={22} strokeWidth={2.5} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Your<br/>Orders</span>
                         </button>
@@ -87,8 +87,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/wallet')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
-                                <Wallet size={28} strokeWidth={2.2} />
+                            <div className="w-12 h-12 rounded-full bg-teal-50/80 border border-teal-100 text-teal-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <Wallet size={22} strokeWidth={2.5} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">My<br/>Wallet</span>
                         </button>
@@ -96,8 +96,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/wishlist')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
-                                <BadgePercent size={28} strokeWidth={2.2} />
+                            <div className="w-12 h-12 rounded-full bg-rose-50/80 border border-rose-100 text-rose-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <BadgePercent size={22} strokeWidth={2.5} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Wishlist</span>
                         </button>
@@ -105,8 +105,8 @@ const ProfilePage = () => {
                             onClick={() => navigate('/addresses')}
                             className="flex flex-col items-center text-center group py-1"
                         >
-                            <div className="flex items-center justify-center mb-1.5 group-hover:scale-108 transition-transform text-slate-700">
-                                <MapPinned size={28} strokeWidth={2.2} />
+                            <div className="w-12 h-12 rounded-full bg-blue-50/80 border border-blue-100 text-blue-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
+                                <MapPinned size={22} strokeWidth={2.5} />
                             </div>
                             <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Addresses</span>
                         </button>
@@ -270,13 +270,13 @@ const ProfilePage = () => {
     );
 };
 
-const MenuItem = ({ icon: Icon, label, sub, path, onClick }) => {
+const MenuItem = ({ icon: Icon, label, sub, path, onClick, badgeBg }) => {
     const Component = onClick ? 'button' : Link;
     return (
     <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group">
         <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0 text-slate-700">
-                <Icon size={24} strokeWidth={2.2} />
+            <div className={cn("w-10 h-10 rounded-full border flex items-center justify-center shadow-2xs group-hover:scale-108 transition-transform flex-shrink-0", badgeBg || "bg-slate-50 border-slate-100 text-slate-600")}>
+                <Icon size={18} strokeWidth={2.5} />
             </div>
             <div>
                 <h3 className="text-sm font-bold text-slate-800 leading-tight">{label}</h3>
