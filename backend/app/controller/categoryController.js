@@ -202,7 +202,7 @@ export const getCategories = async (req, res) => {
 export const createCategory = async (req, res) => {
   try {
     const categoryData = {};
-    const allowedKeys = ["name", "slug", "description", "type", "parentId", "status", "iconId", "headerColor", "headerFontColor", "headerIconColor", "adminCommission", "adminCommissionType", "adminCommissionValue", "handlingFees", "handlingFeeType", "handlingFeeValue"];
+    const allowedKeys = ["name", "slug", "description", "type", "parentId", "status", "iconId", "headerColor", "headerFontColor", "headerIconColor", "adminCommission", "adminCommissionType", "adminCommissionValue", "handlingFees", "handlingFeeType", "handlingFeeValue", "isKitCategory"];
     
     // Strict Whitelisting and Sanitization
     for (const key of allowedKeys) {

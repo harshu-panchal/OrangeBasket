@@ -22,6 +22,7 @@ import mapsRoute from "./mapsRoutes.js";
 import mediaRoute from "./mediaRoutes.js";
 import healthRoute from "./healthRoutes.js";
 import metricsRoute from "./metricsRoutes.js";
+import kitRoute from "./kitRoutes.js";
 import authOtpRoute from "../modules/otp/otp.routes.js";
 
 import express from "express";
@@ -70,6 +71,7 @@ const setupRoutes = (app) => {
     router.use("/reviews", reviewRoute);
     router.use("/admin/faqs", faqRoute);
     router.use("/public/faqs", faqRoute); // For public access without admin prefix
+    router.use("/kits", kitRoute);
 
     app.use("/api", router);
 }

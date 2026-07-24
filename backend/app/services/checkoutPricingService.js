@@ -1,4 +1,5 @@
 import Seller from "../models/seller.js";
+import Warehouse from "../models/warehouse.js";
 import Category from "../models/category.js";
 import { distanceMeters } from "../utils/geoUtils.js";
 import {
@@ -25,7 +26,7 @@ function normalizeLocation(location = null) {
 export function groupHydratedItemsBySeller(hydratedItems = []) {
   const grouped = new Map();
   for (const item of hydratedItems) {
-    const sellerId = String(item?.sellerId || "");
+    const sellerId = String(item?.sellerId || item?.warehouseId || "");
     if (!sellerId) {
       const err = new Error("Unable to resolve seller for one or more checkout items");
       err.statusCode = 400;
@@ -43,11 +44,18 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
   const normalizedLocation = normalizeLocation(addressLocation);
   if (!normalizedLocation) return 0;
 
-  const query = Seller.findById(sellerId).select("location serviceRadius shopName").lean();
+  let query = Seller.findById(sellerId).select("location serviceRadius shopName").lean();
   if (session) query.session(session);
-  const seller = await query;
+  let seller = await query;
+  
   if (!seller) {
-    const err = new Error("Seller not found");
+    let whQuery = Warehouse.findById(sellerId).select("location").lean();
+    if (session) whQuery.session(session);
+    seller = await whQuery;
+  }
+  
+  if (!seller) {
+    const err = new Error("Seller or Warehouse not found");
     err.statusCode = 404;
     throw err;
   }

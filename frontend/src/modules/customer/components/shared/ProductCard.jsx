@@ -9,6 +9,7 @@ import { useCartAnimation } from "../../context/CartAnimationContext";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
+import ParticleBurst from "./ParticleBurst";
 
 const ProductCard = React.memo(
   ({ product, badge, className, compact = false, neutralBg = false, layout = "grid" }) => {
@@ -107,7 +108,7 @@ const ProductCard = React.memo(
         if (imageRef.current) {
           animateAddToCart(
             imageRef.current.getBoundingClientRect(),
-            product.image,
+            product.mainImage || product.image,
           );
         }
         addToCart({
@@ -134,7 +135,7 @@ const ProductCard = React.memo(
         e.stopPropagation();
 
         if (quantity === 1) {
-          animateRemoveFromCart(product.image);
+          animateRemoveFromCart(product.mainImage || product.image);
           removeFromCart(productId, variantKey);
         } else {
           updateQuantity(productId, -1, variantKey);
@@ -163,12 +164,48 @@ const ProductCard = React.memo(
     return (
       <div
         className={cn(
-          "group relative flex flex-col justify-between bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-100 shadow-2xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden",
+          "group relative flex flex-col justify-between bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-100 shadow-2xs hover:shadow-md transition-all duration-300 cursor-pointer",
           layout === "list" ? "flex-row items-center gap-3 py-3" : "h-full",
           className
         )}
         onClick={handleProductClick}
       >
+        {/* Wishlist Heart Button (Now at card level to allow overflow) */}
+        <button
+          onClick={toggleWishlist}
+          className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-2xs flex items-center justify-center hover:bg-white hover:scale-105 active:scale-90 transition-all"
+          title="Wishlist"
+        >
+          <ParticleBurst isActive={showHeartPopup} />
+          <motion.div
+            whileTap={{ scale: 0.8 }}
+            animate={isWishlisted ? { scale: [1, 1.35, 1] } : {}}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            className="relative z-10"
+          >
+            <Heart
+              size={15}
+              className={cn(
+                isWishlisted ? "text-red-500 fill-current" : "text-slate-400"
+              )}
+            />
+          </motion.div>
+        </button>
+
+        <AnimatePresence>
+          {showHeartPopup && (
+            <motion.div
+              initial={{ scale: 0.5, opacity: 1, y: 0 }}
+              animate={{ scale: 2.5, opacity: 0, y: -65 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
+              className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-50 pointer-events-none text-red-500"
+            >
+              <Heart size={20} fill="currentColor" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Top Image Section */}
         <div className={cn("relative w-full overflow-hidden flex items-center justify-center p-0.5", layout === "list" ? "w-[90px] h-[90px] shrink-0" : "aspect-square")}>
           {/* Discount Badge (Top-Left Orange Speech Bubble) */}
@@ -178,43 +215,10 @@ const ProductCard = React.memo(
             </div>
           )}
 
-          {/* Wishlist Heart Button (Top-Right White Circle parallel to badge) */}
-          <button
-            onClick={toggleWishlist}
-            className="absolute top-0 right-0 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-md shadow-2xs flex items-center justify-center hover:bg-white hover:scale-105 active:scale-90 transition-all"
-            title="Wishlist"
-          >
-            <motion.div
-              whileTap={{ scale: 0.8 }}
-              animate={isWishlisted ? { scale: [1, 1.25, 1] } : {}}
-            >
-              <Heart
-                size={14}
-                className={cn(
-                  isWishlisted ? "text-red-500 fill-current" : "text-slate-400"
-                )}
-              />
-            </motion.div>
-          </button>
-
-          <AnimatePresence>
-            {showHeartPopup && (
-              <motion.div
-                initial={{ scale: 0.5, opacity: 1, y: 0 }}
-                animate={{ scale: 2, opacity: 0, y: -35 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute top-3 right-3 z-50 pointer-events-none text-red-500"
-              >
-                <Heart size={20} fill="currentColor" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Product Image */}
           <img
             ref={imageRef}
-            src={applyCloudinaryTransform(product.image)}
+            src={applyCloudinaryTransform(product.mainImage || product.image)}
             alt={product.name}
             loading="lazy"
             className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"

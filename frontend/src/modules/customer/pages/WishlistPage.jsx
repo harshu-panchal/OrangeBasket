@@ -29,8 +29,8 @@ const WishlistPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24">
-      <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-4 flex items-center justify-between gap-2">
+    <div className="min-h-screen bg-white pb-16">
+      <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 pt-4 pb-3 border-b border-slate-200/60 mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
@@ -67,7 +67,7 @@ const WishlistPage = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+          <div className="text-center py-8 bg-white rounded-xl border border-slate-200">
             <div className="h-14 w-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart size={26} className="text-slate-500" strokeWidth={1.8} />
             </div>

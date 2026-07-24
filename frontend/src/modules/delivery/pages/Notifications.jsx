@@ -18,6 +18,7 @@ import {
   getOrderSocket,
   onDeliveryBroadcastWithdrawn,
 } from "@/core/services/orderSocket";
+import DeliveryFooter from "../components/DeliveryFooter";
 import { createSocketTokenReader } from "@core/utils/authStorage";
 import { STORAGE_KEYS } from "@core/utils/storage";
 
@@ -188,6 +189,7 @@ const Notifications = () => {
           </motion.div>
         )}
       </div>
+      <DeliveryFooter />
     </div>
   );
 };

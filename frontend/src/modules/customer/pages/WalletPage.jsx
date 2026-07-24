@@ -60,8 +60,8 @@ const WalletPage = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-white pb-24 font-['Outfit',_sans-serif]">
-            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-slate-100 mb-4 flex items-center gap-2">
+        <div className="min-h-screen bg-white pb-16 font-['Outfit',_sans-serif]">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-2 border-b border-slate-100 mb-2 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
                     className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
@@ -109,11 +109,11 @@ const WalletPage = () => {
                     </div>
 
                     {loading ? (
-                        <div className="py-12 flex justify-center text-slate-400 text-sm font-semibold">
+                        <div className="py-6 flex justify-center text-slate-400 text-sm font-semibold">
                             Loading...
                         </div>
                     ) : transactions.length === 0 ? (
-                        <div className="py-12 flex flex-col items-center justify-center text-center px-6">
+                        <div className="py-6 flex flex-col items-center justify-center text-center px-6">
                             <p className="text-sm font-semibold text-slate-500 mb-1">No wallet payments yet</p>
                             <p className="text-xs text-slate-400">
                                 Orders paid using wallet will appear here.

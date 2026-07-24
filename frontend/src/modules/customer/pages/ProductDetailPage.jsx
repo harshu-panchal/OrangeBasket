@@ -11,6 +11,8 @@ import { useLocation as useAppLocation } from '../context/LocationContext';
 import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
 import { useSettings } from '@core/context/SettingsContext';
 import Lottie from 'lottie-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ParticleBurst from '../components/shared/ParticleBurst';
 
 const ProductDetailPage = () => {
     const { id } = useParams();
@@ -31,6 +33,8 @@ const ProductDetailPage = () => {
     const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
     const [localHasReviewed, setLocalHasReviewed] = useState(false);
     const [noServiceData, setNoServiceData] = useState(null);
+
+    const [showHeartPopup, setShowHeartPopup] = useState(false);
 
     // Dynamically load no-service Lottie on mount
     useEffect(() => {
@@ -136,6 +140,12 @@ const ProductDetailPage = () => {
 
     const handleToggleWishlist = () => {
         if (!product) return;
+
+        if (!isInWishlist(product.id)) {
+            setShowHeartPopup(true);
+            setTimeout(() => setShowHeartPopup(false), 1000);
+        }
+
         toggleWishlistGlobal(product);
         const isWishlisted = isInWishlist(product.id);
         showToast(
@@ -146,8 +156,8 @@ const ProductDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center items-center h-screen bg-slate-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -214,8 +224,29 @@ const ProductDetailPage = () => {
                                 isWishlisted ? "bg-red-50 text-red-500" : "bg-white text-slate-400"
                             )}
                         >
-                            <Heart size={20} className={cn(isWishlisted && "fill-current")} />
+                            <ParticleBurst isActive={showHeartPopup} />
+                            <motion.div
+                                animate={isWishlisted ? { scale: [1, 1.3, 1] } : {}}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                className="relative z-10"
+                            >
+                                <Heart size={20} className={cn(isWishlisted && "fill-current")} />
+                            </motion.div>
                         </button>
+
+                        <AnimatePresence>
+                            {showHeartPopup && (
+                                <motion.div
+                                    initial={{ scale: 0.5, opacity: 1, y: 0 }}
+                                    animate={{ scale: 2.5, opacity: 0, y: -65 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.9, ease: "easeOut" }}
+                                    className="absolute top-5 right-5 z-50 pointer-events-none text-red-500"
+                                >
+                                    <Heart size={24} fill="currentColor" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -269,19 +300,34 @@ const ProductDetailPage = () => {
                     <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100">
                         {quantity > 0 ? (
                             <div className="flex items-center bg-primary text-primary-foreground rounded-2xl h-16 w-full sm:w-auto px-2 shadow-xl shadow-brand-100">
-                                <button
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(product.id, -1, "")}
                                     className="w-12 h-12 flex items-center justify-center hover:bg-white/20 rounded-xl transition-all"
                                 >
                                     <Minus size={24} strokeWidth={3} />
-                                </button>
-                                <span className="w-16 text-center font-black text-xl">{quantity}</span>
-                                <button
+                                </motion.button>
+                                <div className="w-16 flex justify-center items-center relative overflow-hidden h-8">
+                                    <AnimatePresence mode="popLayout">
+                                        <motion.span
+                                            key={quantity}
+                                            initial={{ y: 15, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: -15, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                            className="text-center font-black text-xl absolute"
+                                        >
+                                            {quantity}
+                                        </motion.span>
+                                    </AnimatePresence>
+                                </div>
+                                <motion.button
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(product.id, 1, "")}
                                     className="w-12 h-12 flex items-center justify-center hover:bg-white/20 rounded-xl transition-all"
                                 >
                                     <Plus size={24} strokeWidth={3} />
-                                </button>
+                                </motion.button>
                             </div>
                         ) : (
                             <Button

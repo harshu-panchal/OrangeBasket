@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { QUICK_CATEGORY_PALETTES } from "../../constants/homeConstants";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
+// @ts-ignore
 import QuickCategoriesBg from "@/assets/Catagorysection_bg.png";
 
 const QuickCategorySlider = ({ categories, onCategoryClick }) => {
@@ -18,7 +19,7 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="w-full mb-5 -mt-1 md:-mt-2 overflow-hidden relative group z-20 bg-transparent">
+    <div className="w-full overflow-hidden relative group z-20 bg-transparent">
       <div className="relative overflow-hidden">        {/* Left Scroll Button */}
         <div className="absolute left-4 lg:left-10 top-[58%] -translate-y-1/2 z-20 hidden md:flex">
           <button

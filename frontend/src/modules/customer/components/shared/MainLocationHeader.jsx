@@ -434,7 +434,7 @@ const MainLocationHeader = ({
           </div>
 
           {/* Mobile Header Layout (MOBILE ONLY) */}
-          <div className="md:hidden pt-1 pb-3.5 space-y-3 select-none">
+          <div className="md:hidden pt-1 pb-1.5 space-y-1.5 select-none">
             {/* Top row: Logo/Branding + Bell Button */}
             <div className="flex items-center justify-between">
               {/* Brand Logo & Name */}
@@ -442,11 +442,11 @@ const MainLocationHeader = ({
                 <img
                   src={logoUrl}
                   alt="Orange Basket"
-                  className="h-20 w-auto object-contain shrink-0"
+                  className="h-14 w-auto object-contain shrink-0"
                 />
                 <div className="flex flex-col justify-center text-left">
-                  <span className="text-[22px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
-                  <span className="text-[22px] font-black text-[#2E7D32] leading-none tracking-tight mt-0.5">Basket</span>
+                  <span className="text-[18px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
+                  <span className="text-[18px] font-black text-[#2E7D32] leading-none tracking-tight mt-[1px]">Basket</span>
                   <span className="text-[11px] font-black text-[#5D7E68] tracking-wide mt-1 leading-none">
                     Fresh. Fast. Reliable.
                   </span>
@@ -469,7 +469,7 @@ const MainLocationHeader = ({
             <div className="flex justify-start">
               <div
                 onClick={() => setIsLocationOpen(true)}
-                className="w-fit max-w-[90%] flex items-center gap-2 bg-white border border-slate-100 rounded-full py-1.5 px-3.5 cursor-pointer shadow-3xs active:scale-[0.99] transition-all"
+                className="w-fit max-w-[90%] flex items-center gap-1.5 bg-white border border-slate-100 rounded-full py-1 px-3 cursor-pointer shadow-3xs active:scale-[0.99] transition-all"
               >
                 <LocationOnIcon sx={{ color: "#FF8200", fontSize: 18 }} className="shrink-0" />
                 <div className="flex flex-col text-left min-w-0">
@@ -485,7 +485,7 @@ const MainLocationHeader = ({
             {/* Bottom row: Unified Search Bar with Mic and Scanner SVG */}
             <div
               onClick={handleSearchClick}
-              className="w-full bg-white border border-slate-100 rounded-full px-4 h-11.5 flex items-center shadow-3xs cursor-pointer hover:border-slate-200 transition-all"
+              className="w-full bg-white border border-slate-100 rounded-full px-4 h-9 flex items-center shadow-3xs cursor-pointer hover:border-slate-200 transition-all"
             >
               <SearchIcon sx={{ color: "#78909c", fontSize: 20 }} className="shrink-0" />
               <input

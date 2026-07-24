@@ -1,4 +1,4 @@
-﻿import Order from "../models/order.js";
+import Order from "../models/order.js";
 import { orderMatchQueryFromRouteParam } from "../utils/orderLookup.js";
 import Transaction from "../models/transaction.js";
 import Delivery from "../models/delivery.js";
@@ -40,7 +40,8 @@ export const getDeliveryStats = async (req, res) => {
 ================================ */
 export const getDeliveryEarnings = async (req, res) => {
     try {
-        const result = await getDeliveryEarningsFromService(req.user.id);
+        const { timeframe, date } = req.query;
+        const result = await getDeliveryEarningsFromService(req.user.id, timeframe, date);
         return handleResponse(res, 200, "Earnings fetched", result);
     } catch (error) {
         return handleResponse(res, error.statusCode || 500, error.message);

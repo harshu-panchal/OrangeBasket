@@ -95,6 +95,10 @@ const AdminSettings = React.lazy(() => import("../pages/AdminSettings"));
 const EnvSettings = React.lazy(() => import("../pages/EnvSettings"));
 const AdminProfile = React.lazy(() => import("../pages/AdminProfile"));
 
+const MonthlyBasketCategories = React.lazy(() => import("../pages/MonthlyBasketCategories"));
+const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBanners"));
+const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
+
 const navItems = [
   {
     label: "Dashboard",
@@ -154,6 +158,16 @@ const navItems = [
     children: [
       { label: "Active Warehouses", path: "/admin/warehouses/active" },
       { label: "Waiting for Review", path: "/admin/warehouses/pending" },
+    ],
+  },
+  {
+    label: "Monthly Baskets",
+    icon: Box,
+    color: "amber",
+    children: [
+      { label: "Categories", path: "/admin/monthly-baskets/categories" },
+      { label: "Banners", path: "/admin/monthly-baskets/banners" },
+      { label: "Approvals", path: "/admin/monthly-baskets/approvals" },
     ],
   },
   {
@@ -260,6 +274,11 @@ const AdminRoutes = () => {
         <Route path="/warehouses/pending" element={<PendingWarehouses />} />
         <Route path="/support-tickets" element={<SupportTickets />} />
         <Route path="/moderation" element={<ReviewModeration />} />
+        {/* Monthly Baskets */}
+        <Route path="/monthly-baskets/categories" element={<MonthlyBasketCategories />} />
+        <Route path="/monthly-baskets/banners" element={<MonthlyBasketBanners />} />
+        <Route path="/monthly-baskets/approvals" element={<MonthlyBasketApprovals />} />
+        
         <Route path="/experience-studio" element={<ContentManager />} />
         <Route path="/hero-categories" element={<HeroCategoriesPerPage />} />
         <Route path="/notifications" element={<NotificationComposer />} />

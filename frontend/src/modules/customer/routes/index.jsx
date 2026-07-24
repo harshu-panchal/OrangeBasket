@@ -26,6 +26,7 @@ import { WishlistProvider } from '../context/WishlistContext';
 import { CartProvider } from '../context/CartContext';
 import { CartAnimationProvider } from '../context/CartAnimationContext';
 import { LocationProvider } from '../context/LocationContext';
+import { PageTransitionProvider } from '../context/PageTransitionContext';
 
 import ProtectedRoute from '../../../core/guards/ProtectedRoute';
 
@@ -35,31 +36,34 @@ const CustomerRoutes = () => {
             <WishlistProvider>
                 <CartProvider>
                     <CartAnimationProvider>
-                        <ScrollToTop />
-                        <Routes>
-                            <Route path="/" element={<Home />} />
-                            <Route path="categories" element={<CategoriesPage />} />
-                            <Route path="category/:categoryName" element={<CategoryProductsPage />} />
-                            <Route path="product/:id" element={<ProductDetailPage />} />
-                            <Route path="terms" element={<TermsPage />} />
-                            <Route path="privacy" element={<PrivacyPage />} />
-                            <Route path="about" element={<AboutPage />} />
-                            <Route path="offers" element={<OffersPage />} />
+                        <PageTransitionProvider>
+                            <ScrollToTop />
+                            <Routes>
+                                <Route path="/" element={<Home />} />
+                                <Route path="categories" element={<CategoriesPage />} />
+                                <Route path="category/:categoryName" element={<CategoryProductsPage />} />
+                                <Route path="product/:id" element={<ProductDetailPage />} />
+                                <Route path="kit/:id" element={<KitDetailPage />} />
+                                <Route path="terms" element={<TermsPage />} />
+                                <Route path="privacy" element={<PrivacyPage />} />
+                                <Route path="about" element={<AboutPage />} />
+                                <Route path="offers" element={<OffersPage />} />
 
-                            {/* Protected Customer Routes */}
-                            <Route path="wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
-                            <Route path="orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-                            <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-                            <Route path="transactions" element={<ProtectedRoute><OrderTransactionsPage /></ProtectedRoute>} />
-                            <Route path="addresses" element={<ProtectedRoute><AddressesPage /></ProtectedRoute>} />
-                            <Route path="settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-                            <Route path="support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
-                            <Route path="chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                            <Route path="checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-                            <Route path="payment-status" element={<ProtectedRoute><PaymentStatusPage /></ProtectedRoute>} />
-                            <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                            <Route path="profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
-                        </Routes>
+                                {/* Protected Customer Routes */}
+                                <Route path="wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+                                <Route path="orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                                <Route path="orders/:orderId" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+                                <Route path="transactions" element={<ProtectedRoute><OrderTransactionsPage /></ProtectedRoute>} />
+                                <Route path="addresses" element={<ProtectedRoute><AddressesPage /></ProtectedRoute>} />
+                                <Route path="settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                                <Route path="support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
+                                <Route path="chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                                <Route path="checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                                <Route path="payment-status" element={<ProtectedRoute><PaymentStatusPage /></ProtectedRoute>} />
+                                <Route path="profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                                <Route path="profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
+                            </Routes>
+                        </PageTransitionProvider>
                     </CartAnimationProvider>
                 </CartProvider>
             </WishlistProvider>

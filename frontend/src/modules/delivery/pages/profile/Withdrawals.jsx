@@ -9,12 +9,14 @@ import {
     Wallet,
     AlertCircle,
     RotateCw,
+    ChevronLeft,
+    ArrowRight,
+    X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "@/shared/components/ui/Button";
-import Card from "@/shared/components/ui/Card";
 import { deliveryApi } from "../../services/deliveryApi";
 
 const Withdrawals = () => {
@@ -22,6 +24,7 @@ const Withdrawals = () => {
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [stats, setStats] = useState({
         availableBalance: 0,
         pendingWithdrawals: 0,
@@ -63,7 +66,7 @@ const Withdrawals = () => {
     }, []);
 
     const handleRequest = async () => {
-        if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
             return toast.error("Please enter a valid amount");
         }
         if (Number(amount) > stats.availableBalance) {
@@ -88,163 +91,174 @@ const Withdrawals = () => {
     };
 
     return (
-        <div className="bg-gray-50/50 min-h-screen pb-24">
+        <div className="min-h-screen bg-white pb-16 font-['Outfit',_sans-serif]">
             {/* Top Header */}
-            <div className="bg-white px-6 py-4 flex items-center shadow-sm sticky top-0 z-50">
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 pt-4 pb-2 border-b border-slate-100 mb-2 flex items-center gap-2">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors mr-2"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-1"
                 >
-                    <ArrowLeft className="text-gray-900" size={24} />
+                    <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-bold text-gray-900">Money Request</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Withdrawals</h1>
             </div>
 
-            <div className="p-6 space-y-6 max-w-lg mx-auto">
+            <div className="max-w-2xl mx-auto px-4 pt-1 relative z-20 space-y-4">
                 {/* Balance Card */}
-                <div className="bg-[#0066FF] p-6 rounded-2xl text-white shadow-xl shadow-brand-500/20 relative overflow-hidden border border-brand-400/20">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/5 rounded-full -ml-12 -mb-12 blur-2xl"></div>
-
-                    <div className="relative z-10">
-                        <p className="text-brand-100 text-xs font-bold uppercase tracking-wider mb-2 opacity-90">Available for Withdrawal</p>
-                        <h2 className="text-4xl font-extrabold flex items-baseline leading-none tracking-tight">
-                            <span className="text-2xl mr-1 font-bold">₹</span>
-                            {stats.availableBalance.toLocaleString()}
+                <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-xs flex items-center justify-between overflow-hidden relative">
+                    {/* Left Column */}
+                    <div className="flex flex-col items-start text-left">
+                        <p className="text-xs font-bold text-slate-800 tracking-tight">Available Balance</p>
+                        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1.5 leading-none tracking-tight">
+                            ₹{stats.availableBalance.toLocaleString()}
                         </h2>
-
-                        <div className="mt-6 flex items-center justify-between text-white bg-white/10 p-3 rounded-xl backdrop-blur-md border border-white/10">
-                            <div className="flex items-center">
-                                <Clock size={16} className="mr-2 opacity-80" />
-                                <span className="text-[11px] font-bold">Pending: ₹{stats.pendingWithdrawals.toLocaleString()}</span>
-                            </div>
-                            <ArrowUpRight size={16} className="opacity-80" />
+                        
+                        <div className="flex items-center gap-1 mt-2 text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md">
+                            <Clock size={12} />
+                            <span>Pending: ₹{stats.pendingWithdrawals.toLocaleString()}</span>
                         </div>
-                    </div>
-                </div>
-
-                {/* Withdrawal Form */}
-                <Card className="p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
-                            <Wallet size={20} />
-                        </div>
-                        <h3 className="font-bold text-gray-800">Request Fund Transfer</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">
-                                Amount to Withdraw
-                            </label>
-                            <div className="relative">
-                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 font-bold text-xl outline-none ring-1 ring-gray-100 focus:ring-2 focus:ring-primary/20 transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
-                            <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
-                            <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
-                                Processing may take 24-48 business hours. Funds will be transferred to your primary bank account.
-                            </p>
-                        </div>
-
-                        <Button
-                            onClick={handleRequest}
-                            disabled={loading || !amount || Number(amount) <= 0}
-                            className="w-full py-4 rounded-2xl font-bold text-sm shadow-lg shadow-primary/20"
+                        
+                        <button 
+                            onClick={() => setIsModalOpen(true)}
+                            className="mt-4 h-9 px-4 rounded-full bg-gradient-to-r from-[#2e7d32] to-[#1b5e20] hover:from-[#2e7d32]/95 hover:to-[#1b5e20]/95 text-white font-black text-[11px] flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95 transition-all select-none"
                         >
-                            {loading ? (
-                                <RotateCw className="animate-spin mr-2" size={18} />
-                            ) : null}
-                            {loading ? "PROCESSING..." : "SUBMIT REQUEST"}
-                        </Button>
-                    </div>
-                </Card>
-
-                {/* History */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                            Transfer History
-                        </h3>
-                        <button
-                            onClick={fetchData}
-                            className="text-primary text-[10px] font-bold flex items-center gap-1 uppercase"
-                        >
-                            <RotateCw size={12} className={fetching ? "animate-spin" : ""} />
-                            Refresh
+                            <span>Withdraw Funds</span>
+                            <ArrowRight size={13} strokeWidth={3} />
                         </button>
                     </div>
 
-                    <div className="space-y-3">
+                    {/* Right Column */}
+                    <div className="w-[140px] h-[120px] flex items-center justify-center shrink-0">
+                        <img 
+                            src="/wallet iamge .png" 
+                            alt="Wallet Illustration" 
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                </div>
+
+                {/* History */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                        <h3 className="text-base font-bold text-slate-800">Transfer History</h3>
+                        <button
+                            onClick={fetchData}
+                            className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 shrink-0 hover:bg-slate-100 transition-colors"
+                        >
+                            <RotateCw size={18} className={fetching ? "animate-spin" : ""} />
+                        </button>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
                         {stats.history.length > 0 ? (
                             stats.history.map((item, idx) => (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    key={item.id}
-                                    className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 flex items-center justify-between"
-                                >
-                                    <div className="flex items-center">
-                                        <div className={cn(
-                                            "p-3 rounded-full mr-4",
-                                            item.status === 'Settled' ? "bg-brand-50 text-brand-600" :
-                                                item.status === 'Failed' ? "bg-red-50 text-red-600" :
-                                                    "bg-amber-50 text-amber-600"
-                                        )}>
+                                <div key={item.id} className="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className={`w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs shrink-0 ${
+                                            item.status === 'Settled' ? 'bg-teal-50/80 border-teal-100 text-teal-700' :
+                                            item.status === 'Failed' ? 'bg-red-50 border-red-100 text-red-700' :
+                                            'bg-amber-50 border-amber-100 text-amber-700'
+                                        }`}>
                                             {item.status === 'Settled' ? <CheckCircle2 size={18} /> :
-                                                item.status === 'Failed' ? <XCircle size={18} /> :
-                                                    <Clock size={18} />}
+                                             item.status === 'Failed' ? <XCircle size={18} /> :
+                                             <Clock size={18} />}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900">₹{Math.abs(item.amount).toLocaleString()}</p>
-                                            <p className="text-[10px] font-medium text-gray-400 mt-0.5">
+                                            <h4 className="font-bold text-slate-800 text-sm">₹{Math.abs(item.amount).toLocaleString()}</h4>
+                                            <p className="text-[11px] font-medium text-slate-500">
                                                 {new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} • {item.id}
                                             </p>
                                         </div>
                                     </div>
-                                    <Badge variant={item.status === 'Settled' ? 'success' : item.status === 'Failed' ? 'destructive' : 'warning'}>
+                                    <div className={`text-[10px] font-bold px-2 py-1 rounded leading-none ${
+                                        item.status === 'Settled' ? 'bg-brand-50 text-brand-600' : 
+                                        item.status === 'Failed' ? 'bg-red-50 text-red-600' : 
+                                        'bg-amber-50 text-amber-600'
+                                    }`}>
                                         {item.status.toUpperCase()}
-                                    </Badge>
-                                </motion.div>
+                                    </div>
+                                </div>
                             ))
                         ) : (
-                            <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center">
-                                <Clock className="mx-auto text-gray-200 mb-2" size={32} />
-                                <p className="text-xs text-gray-400 font-medium tracking-tight">No history found</p>
+                            <div className="py-8 flex flex-col items-center justify-center text-center px-6">
+                                <Clock className="mx-auto text-slate-300 mb-2" size={32} />
+                                <p className="text-sm font-semibold text-slate-500 mb-1">No history found</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Withdrawal Modal */}
+            <AnimatePresence>
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-sm relative z-10 overflow-hidden shadow-2xl border border-slate-100"
+                        >
+                            <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                    <Wallet size={18} className="text-[#ff8200]" />
+                                    Withdraw Funds
+                                </h3>
+                                <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-full hover:bg-slate-200 text-slate-500 transition-colors">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-5">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+                                        Amount to Withdraw
+                                    </label>
+                                    <div className="relative">
+                                        <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={amount}
+                                            onChange={(e) => setAmount(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 font-bold text-xl outline-none focus:border-[#ff8200] focus:ring-2 focus:ring-[#ff8200]/20 transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100/50">
+                                    <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+                                    <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                                        Processing may take 24-48 business hours. Funds will be transferred to your primary bank account.
+                                    </p>
+                                </div>
+
+                                <Button
+                                    onClick={() => {
+                                        handleRequest();
+                                        if (amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) <= stats.availableBalance) {
+                                            setIsModalOpen(false);
+                                        }
+                                    }}
+                                    disabled={loading || !amount || Number(amount) <= 0}
+                                    className="w-full py-3.5 rounded-xl font-bold text-sm shadow-md bg-[#ff8200] hover:bg-[#e67600] text-white"
+                                >
+                                    {loading ? <RotateCw className="animate-spin mr-2" size={18} /> : null}
+                                    {loading ? "PROCESSING..." : "SUBMIT REQUEST"}
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
-
-const Badge = ({ children, variant = "default" }) => {
-    const variants = {
-        default: "bg-gray-100 text-gray-600",
-        success: "bg-brand-50 text-brand-600",
-        warning: "bg-amber-50 text-amber-600",
-        destructive: "bg-red-50 text-red-600",
-    };
-
-    return (
-        <span className={cn("px-2 py-1 rounded text-[10px] font-bold tracking-wider leading-none", variants[variant])}>
-            {children}
-        </span>
-    );
-};
-
-const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 export default Withdrawals;

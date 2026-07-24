@@ -43,12 +43,12 @@ const OffersPage = () => {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   return (
-    <div className="relative z-10 py-8 w-full max-w-[1920px] mx-auto px-4 md:px-[50px] mt-36 md:mt-24">
+    <div className="relative z-10 py-4 w-full max-w-[1920px] mx-auto px-4 md:px-[50px] mt-10 md:mt-10">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-10 text-left"
+        className="mb-4 text-left"
       >
         <h1 className="text-3xl md:text-5xl font-black tracking-tight text-primary mb-3">
           Best Offers for You
@@ -70,7 +70,7 @@ const OffersPage = () => {
           <h3 className="text-xl font-black text-slate-800 mb-4">
             Coupon deals
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedLegacyOffers.map((offer) => (
               <div
                 key={offer._id}

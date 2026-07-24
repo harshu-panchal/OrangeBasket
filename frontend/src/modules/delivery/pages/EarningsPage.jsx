@@ -7,12 +7,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { TrendingUp, ArrowUpRight, Download } from "lucide-react";
+import { TrendingUp, ArrowUpRight, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import Button from "@/shared/components/ui/Button";
 import Card from "@/shared/components/ui/Card";
 import { deliveryApi } from "../services/deliveryApi";
+import DeliveryFooter from "../components/DeliveryFooter";
 
 const RUPEE = "\u20B9";
 const DOT = "\u2022";
@@ -24,8 +25,12 @@ const resolveTipAmount = (txn) =>
       0,
   );
 
+import { useNavigate } from "react-router-dom";
+
 const EarningsPage = () => {
-  const [activeTab, setActiveTab] = useState("weekly");
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("daily");
+  const [targetDate, setTargetDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [earningsData, setEarningsData] = useState({
     totalEarnings: 0,
@@ -39,7 +44,7 @@ const EarningsPage = () => {
   const fetchEarnings = async () => {
     try {
       setLoading(true);
-      const response = await deliveryApi.getEarnings();
+      const response = await deliveryApi.getEarnings(activeTab, targetDate.toISOString());
       if (response.data.success && response.data.result) {
         const result = response.data.result;
         setEarningsData({
@@ -61,7 +66,47 @@ const EarningsPage = () => {
   React.useEffect(() => {
     fetchEarnings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeTab, targetDate]);
+
+  const handlePrevDate = () => {
+    const newDate = new Date(targetDate);
+    if (activeTab === "daily") {
+      newDate.setDate(newDate.getDate() - 1);
+    } else if (activeTab === "weekly") {
+      newDate.setDate(newDate.getDate() - 7);
+    } else if (activeTab === "monthly") {
+      newDate.setMonth(newDate.getMonth() - 1);
+    }
+    setTargetDate(newDate);
+  };
+
+  const handleNextDate = () => {
+    const newDate = new Date(targetDate);
+    if (activeTab === "daily") {
+      newDate.setDate(newDate.getDate() + 1);
+    } else if (activeTab === "weekly") {
+      newDate.setDate(newDate.getDate() + 7);
+    } else if (activeTab === "monthly") {
+      newDate.setMonth(newDate.getMonth() + 1);
+    }
+    setTargetDate(newDate);
+  };
+
+  const formatTargetDate = () => {
+    if (activeTab === "daily") {
+      return targetDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    } else if (activeTab === "monthly") {
+      return targetDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    } else {
+      const d = new Date(targetDate);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(d.setDate(diff));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} - ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -83,28 +128,42 @@ const EarningsPage = () => {
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-24">
-      <div className="bg-white shadow-sm p-6 sticky top-0 z-30">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="ds-h2 text-gray-900">My Earnings</h1>
-          <Button variant="ghost" size="icon">
-            <Download size={20} className="text-gray-600" />
-          </Button>
+      {/* Header & Sticky Area */}
+      <div className="bg-white sticky top-0 z-30 px-5 py-4 shadow-sm border-b border-slate-100">
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
+            <ChevronLeft size={24} className="text-gray-900" />
+          </button>
+          <h1 className="text-[17px] font-bold text-gray-900">Earnings</h1>
+          <div className="w-8"></div> {/* Spacer for centering */}
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          {["today", "weekly", "monthly"].map((tab) => (
+        {/* Tabs */}
+        <div className="flex bg-slate-100 p-1 rounded-full mb-6">
+          {["daily", "weekly", "monthly"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all capitalize ${
+              className={`flex-1 py-2 text-sm font-bold rounded-full transition-all capitalize ${
                 activeTab === tab
-                  ? "bg-white text-primary shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#ff8200] text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               {tab}
             </button>
           ))}
+        </div>
+
+        {/* Date Selector */}
+        <div className="flex justify-between items-center mb-2 px-2">
+          <button className="p-1" onClick={handlePrevDate}>
+            <ChevronLeft size={18} className="text-slate-500" />
+          </button>
+          <span className="font-bold text-slate-800 text-[14px]">{formatTargetDate()}</span>
+          <button className="p-1" onClick={handleNextDate}>
+            <ChevronRight size={18} className="text-slate-500" />
+          </button>
         </div>
       </div>
 
@@ -114,83 +173,94 @@ const EarningsPage = () => {
         initial="hidden"
         animate="visible"
       >
+        {/* Unified Earnings Card */}
         <motion.div variants={itemVariants}>
-          <div className="bg-gradient-to-br from-primary to-brand-600 rounded-2xl p-6 text-white shadow-lg shadow-primary/30 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-10 -mb-10 blur-xl" />
-
-            <p className="text-brand-100 font-medium text-sm uppercase tracking-wide mb-1 relative z-10">
-              Total Earnings
-            </p>
-            <div className="flex items-baseline mb-6 relative z-10">
-              <span className="text-3xl font-bold mr-1">{RUPEE}</span>
-              <span className="text-5xl font-extrabold tracking-tight">
-                {Number(earningsData.totalEarnings || 0).toLocaleString()}
+          <div className="bg-white rounded-[24px] p-6 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-slate-100/50 flex flex-col items-center">
+            <p className="text-slate-500 text-[13px] font-semibold mb-2">Total Earnings</p>
+            <div className="flex items-center justify-center">
+              <span className="text-[40px] leading-none font-bold text-slate-900 tracking-tight">
+                {RUPEE}{Number(earningsData.totalEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
+            
+            <div className="flex items-center mt-3 mb-6 text-[13px] font-bold">
+              <ArrowUpRight size={16} className="text-[#4ade80] mr-1" strokeWidth={3} />
+              <span className="text-[#4ade80] mr-1">12%</span>
+              <span className="text-slate-400 font-medium">vs yesterday</span>
+            </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20 relative z-10">
-              <div>
-                <p className="text-brand-100 text-xs mb-1">Incentives</p>
-                <p className="font-bold text-lg">
-                  +{RUPEE}
-                  {Number(earningsData.incentives || 0).toLocaleString()}
-                </p>
+            <div className="w-full h-[1px] bg-slate-100 mb-6"></div>
+
+            <div className="w-full space-y-4 mb-8">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium text-[14px]">Order Earnings</span>
+                <span className="text-slate-900 font-bold text-[15px]">
+                  {RUPEE}{Number((earningsData.totalEarnings || 0) - (earningsData.incentives || 0) - (earningsData.tipsReceived || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
               </div>
-              <div>
-                <p className="text-brand-100 text-xs mb-1">Tips</p>
-                <p className="font-bold text-lg">
-                  +{RUPEE}
-                  {Number(earningsData.tipsReceived || 0).toLocaleString()}
-                </p>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium text-[14px]">Incentives</span>
+                <span className="text-slate-900 font-bold text-[15px]">
+                  {RUPEE}{Number(earningsData.incentives || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium text-[14px]">Tips</span>
+                <span className="text-slate-900 font-bold text-[15px]">
+                  {RUPEE}{Number(earningsData.tipsReceived || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
               </div>
             </div>
-          </div>
-        </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-800 flex items-center">
-                <TrendingUp size={20} className="mr-2 text-brand-500" />
-                Earnings Trend
-              </h3>
-              <Button variant="ghost" size="sm" className="h-8 text-xs">
-                Last 7 Days
-              </Button>
-            </div>
-            <div className="h-64 w-full">
+            {/* Chart */}
+            <div className="w-full h-36 mb-6">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={earningsData.chartData} barSize={20} margin={{ bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <BarChart data={earningsData.chartData} barSize={10}>
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 600 }}
                     dy={10}
                   />
                   <Tooltip
-                    cursor={{ fill: "#f9fafb" }}
+                    cursor={{ fill: "transparent" }}
                     contentStyle={{
                       borderRadius: "12px",
                       border: "none",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
                   />
-                  <Bar dataKey="earnings" fill="var(--primary)" radius={[4, 4, 0, 0]} stackId="a" />
-                  <Bar dataKey="incentives" fill="#93c5fd" radius={[4, 4, 0, 0]} stackId="a" />
+                  <Bar
+                    dataKey="earnings"
+                    fill="#dcfce7"
+                    radius={[0, 0, 4, 4]}
+                    stackId="a"
+                  />
+                  <Bar
+                    dataKey="incentives"
+                    fill="#86efac"
+                    radius={[4, 4, 0, 0]}
+                    stackId="a"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+
+            <button 
+              className="text-[#22c55e] font-bold text-[14px] flex items-center justify-center"
+              onClick={() => toast.info("Detailed breakdown coming soon!")}
+            >
+              View Detailed Breakdown <ChevronRight size={16} className="ml-1" strokeWidth={2.5} />
+            </button>
+          </div>
         </motion.div>
 
         <motion.div variants={itemVariants}>
           <Card className="overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-800">Recent Earnings</h3>
-              <Button variant="link" className="text-primary text-xs font-bold h-auto p-0">
+              <Button variant="link" className="text-primary text-xs font-bold h-auto p-0" onClick={() => toast.info("Full history coming soon!")}>
                 View All
               </Button>
             </div>
@@ -254,6 +324,7 @@ const EarningsPage = () => {
           </Card>
         </motion.div>
       </motion.div>
+      <DeliveryFooter />
     </div>
   );
 };

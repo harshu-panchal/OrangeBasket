@@ -9,7 +9,7 @@ const Button = ({
     variant = 'primary',
     size = 'md',
     isLoading = false,
-    disabled,
+    disabled = false,
     ...props
 }) => {
     // Map internal variants to shadcn variants

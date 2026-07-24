@@ -87,12 +87,18 @@ const BottomNav = () => {
                                         : "text-slate-500 hover:text-slate-700 font-medium"
                                 )}
                             >
-                                <item.icon
-                                    size={17}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                    className={cn("transition-colors shrink-0", isActive ? "text-[#ff5500]" : "text-slate-500")}
-                                />
-                                <span className={cn("text-[10.5px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-extrabold" : "text-slate-600 font-semibold")}>
+                                <motion.div
+                                    animate={{ scale: isActive ? 1.25 : 1 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                                    className="flex items-center justify-center"
+                                >
+                                    <item.icon
+                                        size={17}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                        className={cn("transition-colors shrink-0", isActive ? "text-[#ff5500]" : "text-slate-500")}
+                                    />
+                                </motion.div>
+                                <span className={cn("text-[10.5px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-extrabold mt-1" : "text-slate-600 font-semibold")}>
                                     {item.label}
                                 </span>
                             </Link>

@@ -39,6 +39,7 @@ import PromoMarquee from "../components/home/PromoMarquee";
 import QuickCategorySlider from "../components/home/QuickCategorySlider";
 import LowestPriceSection from "../components/home/LowestPriceSection";
 import OfferSections from "../components/home/OfferSections";
+import MonthlyBasketSection from "../components/home/MonthlyBasketSection";
 
 const DEFAULT_CATEGORY_THEME = {
   gradient: "linear-gradient(to bottom, var(--primary), var(--brand-400))",
@@ -405,7 +406,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pt-[176px] md:pt-[95px] bg-white">
+    <div className="min-h-screen pt-[120px] md:pt-[95px] bg-white">
       <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
         <MainLocationHeader categories={categories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>
@@ -428,20 +429,23 @@ const Home = () => {
             }
 
             return (
-              <motion.div ref={heroRef} className="block md:hidden will-change-transform pt-4" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-                <div className="mx-4 mt-14 mb-2 relative overflow-hidden rounded-[24px] shadow-md z-20">
+              <motion.div ref={heroRef} className="block md:hidden will-change-transform pt-2" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
+                <div className="mx-4 mt-4 mb-1 relative overflow-hidden rounded-[24px] shadow-md z-20">
                   <ExperienceBannerCarousel section={{ title: "" }} items={combinedItems} fullWidth edgeToEdge />
                 </div>
               </motion.div>
             );
           })()}
 
-          <QuickCategorySlider categories={effectiveQuickCategories} onCategoryClick={(id) => navigate(`/category/${id}`)} />
+          <div className="w-full z-[60] bg-transparent pt-1 pb-2 mb-5">
+            <QuickCategorySlider categories={effectiveQuickCategories} onCategoryClick={(id) => navigate(`/category/${id}`)} />
+          </div>
           <LowestPriceSection products={products} onSeeAll={() => navigate("/category/all")} />
+          <MonthlyBasketSection />
           <OfferSections sections={offerSections} noServiceData={noServiceData} />
 
           {sectionsForRenderer.length > 0 && (
-            <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-10 md:py-16">
+            <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-4 md:py-8">
               <SectionRenderer sections={sectionsForRenderer} productsById={productsById} categoriesById={categoryMap} subcategoriesById={subcategoryMap} />
             </div>
           )}

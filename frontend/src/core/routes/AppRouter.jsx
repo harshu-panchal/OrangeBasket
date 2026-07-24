@@ -12,6 +12,7 @@ import { CartProvider } from '../../modules/customer/context/CartContext';
 import { CartAnimationProvider } from '../../modules/customer/context/CartAnimationContext';
 import { ProductDetailProvider } from '../../modules/customer/context/ProductDetailContext';
 import { LocationProvider } from '../../modules/customer/context/LocationContext';
+import { PageTransitionProvider } from '../../modules/customer/context/PageTransitionContext';
 import ScrollToTop from '../../modules/customer/components/shared/ScrollToTop';
 
 // Public Pages
@@ -64,20 +65,22 @@ const CustomerLayoutWrapper = () => {
 
     return (
         <LocationProvider>
-            <WishlistProvider>
-                <CartProvider>
-                    <CartAnimationProvider>
-                        <ProductDetailProvider>
-                            <ScrollToTop />
-                            <CustomerLayout>
-                                <Suspense fallback={<div className="flex h-screen items-center justify-center font-outfit">Loading...</div>}>
-                                    <Outlet />
-                                </Suspense>
-                            </CustomerLayout>
-                        </ProductDetailProvider>
-                    </CartAnimationProvider>
-                </CartProvider>
-            </WishlistProvider>
+            <PageTransitionProvider>
+                <WishlistProvider>
+                    <CartProvider>
+                        <CartAnimationProvider>
+                            <ProductDetailProvider>
+                                <ScrollToTop />
+                                <CustomerLayout>
+                                    <Suspense fallback={<div className="flex h-screen items-center justify-center font-outfit">Loading...</div>}>
+                                        <Outlet />
+                                    </Suspense>
+                                </CustomerLayout>
+                            </ProductDetailProvider>
+                        </CartAnimationProvider>
+                    </CartProvider>
+                </WishlistProvider>
+            </PageTransitionProvider>
         </LocationProvider>
     );
 };

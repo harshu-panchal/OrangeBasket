@@ -13,6 +13,7 @@ import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
 import { customerApi } from '../../services/customerApi';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import ParticleBurst from './ParticleBurst';
 
 const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSection }) => {
     const isOpen = expandedSections.includes(id);
@@ -97,6 +98,7 @@ const ProductDetailSheet = () => {
     const [localHasReviewed, setLocalHasReviewed] = useState(false);
     const [extendedProduct, setExtendedProduct] = useState(null);
     const [expandedSections, setExpandedSections] = useState(['description']); // Start with description open
+    const [showHeartPopup, setShowHeartPopup] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev => 
@@ -116,9 +118,16 @@ const ProductDetailSheet = () => {
 
         if (selectedProduct.galleryImages && Array.isArray(selectedProduct.galleryImages)) {
             images.push(...selectedProduct.galleryImages);
+        } else if (selectedProduct.images && Array.isArray(selectedProduct.images)) {
+            const extra = selectedProduct.images.filter(img => img !== selectedProduct.mainImage && img !== selectedProduct.image);
+            images.push(...extra);
         }
-        return images.length > 0
-          ? images
+
+        // Deduplicate
+        const uniqueImages = [...new Set(images)];
+
+        return uniqueImages.length > 0
+          ? uniqueImages
           : [
               "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
             ];
@@ -292,6 +301,12 @@ const ProductDetailSheet = () => {
 
     const toggleWishlist = (e) => {
         e.stopPropagation();
+        
+        if (!isWishlisted) {
+            setShowHeartPopup(true);
+            setTimeout(() => setShowHeartPopup(false), 1000);
+        }
+
         toggleWishlistGlobal(selectedProduct);
         showToast(
             isWishlisted ? `${selectedProduct.name} removed from wishlist` : `${selectedProduct.name} added to wishlist`,
@@ -395,15 +410,36 @@ const ProductDetailSheet = () => {
                                             whileTap={{ scale: 0.9 }}
                                             onClick={toggleWishlist}
                                             className={cn(
-                                                "w-10 h-10 backdrop-blur-md rounded-xl shadow-md shadow-black/5 flex items-center justify-center hover:shadow-lg transition-all border",
+                                                "relative w-10 h-10 backdrop-blur-md rounded-xl shadow-md shadow-black/5 flex items-center justify-center hover:shadow-lg transition-all border",
                                                 isWishlisted ? "bg-red-50/95 border-red-100" : "bg-white/95 border-gray-100/80"
                                             )}
                                         >
-                                            <Heart size={18} className={cn(
-                                                "transition-all",
-                                                isWishlisted ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
-                                            )} />
+                                            <ParticleBurst isActive={showHeartPopup} />
+                                            <motion.div
+                                                animate={isWishlisted ? { scale: [1, 1.3, 1] } : {}}
+                                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                                className="relative z-10"
+                                            >
+                                                <Heart size={18} className={cn(
+                                                    "transition-all",
+                                                    isWishlisted ? 'text-red-500 fill-red-500' : 'text-gray-400 hover:text-red-400'
+                                                )} />
+                                            </motion.div>
                                         </motion.button>
+                                        
+                                        <AnimatePresence>
+                                            {showHeartPopup && (
+                                                <motion.div
+                                                    initial={{ scale: 0.5, opacity: 1, y: 0 }}
+                                                    animate={{ scale: 2.5, opacity: 0, y: -65 }}
+                                                    exit={{ opacity: 0 }}
+                                                    transition={{ duration: 0.9, ease: "easeOut" }}
+                                                    className="absolute top-4 right-4 z-50 pointer-events-none text-red-500"
+                                                >
+                                                    <Heart size={24} fill="currentColor" />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
                                     {/* Main content area: vertical thumbnails + main image */}
@@ -549,7 +585,20 @@ const ProductDetailSheet = () => {
                                                             <motion.button whileTap={{ scale: 0.85 }} onClick={handleDecrement} className="w-9 h-9 bg-brand-50 rounded-lg flex items-center justify-center text-brand-700 hover:bg-brand-100 transition-colors">
                                                                 <Minus size={16} strokeWidth={2.5} />
                                                             </motion.button>
-                                                            <span className="font-[800] text-base text-gray-800 w-8 text-center">{quantity}</span>
+                                                            <div className="w-8 flex justify-center items-center relative overflow-hidden h-6">
+                                                                <AnimatePresence mode="popLayout">
+                                                                    <motion.span
+                                                                        key={quantity}
+                                                                        initial={{ y: 15, opacity: 0 }}
+                                                                        animate={{ y: 0, opacity: 1 }}
+                                                                        exit={{ y: -15, opacity: 0 }}
+                                                                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                                                        className="font-[800] text-base text-gray-800 text-center absolute"
+                                                                    >
+                                                                        {quantity}
+                                                                    </motion.span>
+                                                                </AnimatePresence>
+                                                            </div>
                                                             <motion.button whileTap={{ scale: 0.85 }} onClick={handleIncrement} className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-white hover:bg-[var(--brand-400)] transition-colors shadow-sm">
                                                                 <Plus size={16} strokeWidth={2.5} />
                                                             </motion.button>
@@ -837,7 +886,7 @@ const ProductDetailSheet = () => {
                             onWheel={handleWheel}
                         >
                             {/* Product Image Carousel */}
-                            <div className="relative w-full bg-gradient-to-b from-[#F5F7F8] to-white py-2 h-[230px] sm:h-[260px]">
+                            <div className="relative w-full bg-gradient-to-b from-[#F5F7F8] to-white pt-12 pb-8 h-[380px] sm:h-[480px]">
                                 <div
                                     ref={scrollRef}
                                     className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full"
@@ -847,14 +896,14 @@ const ProductDetailSheet = () => {
                                     }}
                                 >
                                     {allImages.map((img, i) => (
-                                        <div key={i} className="flex-shrink-0 w-full h-full snap-center flex items-center justify-center px-0 sm:px-4">
+                                        <div key={i} className="flex-shrink-0 w-full h-full snap-center flex items-center justify-center px-0">
                                             <motion.img
-                                                initial={{ scale: 0.8, opacity: 0 }}
+                                                initial={{ scale: 0.95, opacity: 0 }}
                                                 animate={{ scale: 1, opacity: 1 }}
                                                 transition={{ duration: 0.4 }}
-                                                src={applyCloudinaryTransform(img, "f_auto,q_auto:best,w_1200,dpr_auto")}
+                                                src={applyCloudinaryTransform(img, "f_auto,q_auto:best,w_1000,dpr_auto")}
                                                 alt={`${selectedProduct.name} ${i + 1}`}
-                                                className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl"
+                                                className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl scale-110"
                                             />
                                         </div>
                                     ))}
@@ -875,6 +924,35 @@ const ProductDetailSheet = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Thumbnail Row (Mobile) */}
+                            {allImages.length > 1 && (
+                                <div className="px-5 pt-4 pb-1">
+                                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{allImages.length} Product Images</h4>
+                                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                                        {allImages.map((img, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => {
+                                                    setActiveImageIndex(i);
+                                                    if (scrollRef.current) {
+                                                        const width = scrollRef.current.offsetWidth;
+                                                        scrollRef.current.scrollTo({ left: width * i, behavior: 'smooth' });
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "w-[65px] h-[65px] flex-shrink-0 rounded-2xl overflow-hidden transition-all duration-300 border-2",
+                                                    i === activeImageIndex 
+                                                        ? "border-primary shadow-md shadow-brand-100 ring-2 ring-brand-50 bg-white scale-95" 
+                                                        : "border-slate-200 bg-slate-50 hover:border-primary/50"
+                                                )}
+                                            >
+                                                <img src={applyCloudinaryTransform(img, "f_auto,q_auto:best,w_150")} alt="" className="w-full h-full object-contain p-1.5 mix-blend-multiply" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Product Info Container */}
                             <div className="px-5 pt-3 pb-3 space-y-3">
@@ -1114,15 +1192,28 @@ const ProductDetailSheet = () => {
                                 {quantity > 0 ? (
                                     <div className="flex-1 bg-[#FF8200] text-white h-14 rounded-[20px] flex items-center justify-between px-2 shadow-xl shadow-brand-100 border border-white/20">
                                         <motion.button
-                                            whileTap={{ scale: 0.9 }}
+                                            whileTap={{ scale: 0.8 }}
                                             onClick={handleDecrement}
                                             className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
                                         >
                                             <Minus size={18} strokeWidth={3.5} />
                                         </motion.button>
-                                        <span className="font-[1000] text-sm uppercase tracking-wider">{quantity} in cart</span>
+                                        <div className="flex-1 flex justify-center items-center relative overflow-hidden h-6">
+                                            <AnimatePresence mode="popLayout">
+                                                <motion.span
+                                                    key={quantity}
+                                                    initial={{ y: 15, opacity: 0 }}
+                                                    animate={{ y: 0, opacity: 1 }}
+                                                    exit={{ y: -15, opacity: 0 }}
+                                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                                    className="font-[1000] text-sm uppercase tracking-wider absolute"
+                                                >
+                                                    {quantity} in cart
+                                                </motion.span>
+                                            </AnimatePresence>
+                                        </div>
                                         <motion.button
-                                            whileTap={{ scale: 0.9 }}
+                                            whileTap={{ scale: 0.8 }}
                                             onClick={handleIncrement}
                                             className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
                                         >

@@ -40,6 +40,10 @@ const categorySchema = new mongoose.Schema(
       enum: ["header", "category", "subcategory"],
       required: [true, "Category type is required"],
     },
+    isKitCategory: {
+      type: Boolean,
+      default: false,
+    },
     parentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

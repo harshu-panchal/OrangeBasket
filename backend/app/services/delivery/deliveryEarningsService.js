@@ -62,6 +62,16 @@ async function computeDeliveryStats(deliveryBoyId) {
     .lean();
   const totalDeliveries = orders.length;
 
+  const pendingOrders = await Order.countDocuments({
+    deliveryBoy: deliveryBoyId,
+    status: { $nin: ["delivered", "cancelled"] },
+  });
+
+  const cancelledOrders = await Order.countDocuments({
+    deliveryBoy: deliveryBoyId,
+    status: "cancelled",
+  });
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
@@ -69,7 +79,9 @@ async function computeDeliveryStats(deliveryBoyId) {
     user: deliveryBoyId,
     userModel: "Delivery",
     createdAt: { $gte: startOfToday },
-  }).lean();
+  })
+    .populate("order", "pricing paymentBreakdown")
+    .lean();
 
   const todayEarnings = allTransactions
     .filter(
@@ -89,6 +101,20 @@ async function computeDeliveryStats(deliveryBoyId) {
     )
     .reduce((acc, t) => acc + t.amount, 0);
 
+  const tipsReceived = allTransactions
+    .filter((t) => t.type === "Delivery Earning" && t.status === "Settled")
+    .reduce(
+      (acc, t) =>
+        acc +
+        Number(
+          t?.meta?.tipAmount ??
+            t?.order?.paymentBreakdown?.riderTipAmount ??
+            t?.order?.pricing?.tip ??
+            0,
+        ),
+      0,
+    );
+
   const wallet = await Wallet.findOne({
     ownerType: "DELIVERY_PARTNER",
     ownerId: deliveryBoyId,
@@ -97,9 +123,21 @@ async function computeDeliveryStats(deliveryBoyId) {
     .lean();
   const cashCollected = roundCurrency(wallet?.cashInHand || 0);
 
+  // Simple incentive tier mock logic for UI
+  const targetOrders = 10;
+  const remainingOrders = targetOrders - (totalDeliveries % targetOrders);
+  const incentiveAmount = 300;
+
   return {
     today: todayEarnings,
     deliveries: totalDeliveries,
+    pendingDeliveries: pendingOrders,
+    cancelledDeliveries: cancelledOrders,
+    incentiveData: {
+      remainingOrders: remainingOrders === 0 ? targetOrders : remainingOrders,
+      amount: incentiveAmount,
+      tipsReceived: tipsReceived
+    },
     incentives,
     cashCollected,
   };
@@ -109,25 +147,46 @@ async function computeDeliveryStats(deliveryBoyId) {
  * Earnings page payload: totals, 7-day chart, latest 20 transactions.
  * Cached for ~30s (`deliveryEarnings` TTL) to absorb dashboard polling.
  */
-export async function getDeliveryEarnings(rawId) {
+export async function getDeliveryEarnings(rawId, timeframe = "weekly", targetDateStr = null) {
   const deliveryBoyId = toDeliveryBoyId(rawId);
-  const cacheKey = buildKey("delivery", "earnings", String(deliveryBoyId));
+  const dateKey = targetDateStr ? targetDateStr.split('T')[0] : "now";
+  const cacheKey = buildKey("delivery", "earnings", String(deliveryBoyId), timeframe, dateKey);
   return getOrSet(
     cacheKey,
-    () => computeDeliveryEarnings(deliveryBoyId),
+    () => computeDeliveryEarnings(deliveryBoyId, timeframe, targetDateStr),
     getTTL("deliveryEarnings"),
   );
 }
 
-async function computeDeliveryEarnings(deliveryBoyId) {
+async function computeDeliveryEarnings(deliveryBoyId, timeframe = "weekly", targetDateStr = null) {
+  const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+  
+  let startBound = new Date(targetDate);
+  let endBound = new Date(targetDate);
+  
+  if (timeframe === "daily") {
+    startBound.setHours(0, 0, 0, 0);
+    endBound.setHours(23, 59, 59, 999);
+  } else if (timeframe === "monthly") {
+    startBound = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+    endBound = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else {
+    const day = targetDate.getDay(); 
+    const diffToMonday = targetDate.getDate() - day + (day === 0 ? -6 : 1);
+    startBound = new Date(targetDate.setDate(diffToMonday));
+    startBound.setHours(0, 0, 0, 0);
+    endBound = new Date(startBound);
+    endBound.setDate(startBound.getDate() + 6);
+    endBound.setHours(23, 59, 59, 999);
+  }
+
   const transactions = await Transaction.find({
     user: deliveryBoyId,
     userModel: "Delivery",
+    createdAt: { $gte: startBound, $lte: endBound }
   })
     .sort({ createdAt: -1 })
     .limit(200)
-    // Narrow projection on populated order keeps the response small and
-    // avoids accidental N+1 over un-needed fields.
     .populate("order", "orderId pricing paymentBreakdown");
 
   const wallet = await Wallet.findOne({
@@ -174,39 +233,76 @@ async function computeDeliveryEarnings(deliveryBoyId) {
 
   const cashCollected = roundCurrency(wallet?.cashInHand || 0);
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const dailyAggregation = await Transaction.aggregate([
-    {
-      $match: {
-        user: deliveryBoyId,
-        userModel: "Delivery",
-        status: "Settled",
-        createdAt: { $gte: sevenDaysAgo },
-        type: { $in: ["Delivery Earning", "Incentive", "Bonus"] },
-      },
-    },
-    {
-      $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-        amount: { $sum: "$amount" },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
-
   const chartData = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
-    const foundAt = dailyAggregation.find((a) => a._id === dateStr);
-    chartData.push({
-      name: DAY_NAMES[d.getDay()],
-      earnings: foundAt ? foundAt.amount : 0,
-      incentives: 0,
+  
+  if (timeframe === "daily") {
+    const blocks = ["12AM", "4AM", "8AM", "12PM", "4PM", "8PM"];
+    const blockTotals = [0, 0, 0, 0, 0, 0];
+    const blockIncentives = [0, 0, 0, 0, 0, 0];
+    
+    transactions.forEach(t => {
+      if (t.status === "Settled" && ["Delivery Earning", "Incentive", "Bonus"].includes(t.type)) {
+        const hour = new Date(t.createdAt).getHours();
+        const blockIndex = Math.floor(hour / 4);
+        blockTotals[blockIndex] += t.amount;
+        if (t.type === "Incentive" || t.type === "Bonus") {
+          blockIncentives[blockIndex] += t.amount;
+        }
+      }
     });
+    
+    for (let i = 0; i < 6; i++) {
+      chartData.push({
+        name: blocks[i],
+        earnings: blockTotals[i] - blockIncentives[i],
+        incentives: blockIncentives[i]
+      });
+    }
+  } else if (timeframe === "monthly") {
+    const weekTotals = [0, 0, 0, 0, 0];
+    const weekIncentives = [0, 0, 0, 0, 0];
+    
+    transactions.forEach(t => {
+      if (t.status === "Settled" && ["Delivery Earning", "Incentive", "Bonus"].includes(t.type)) {
+        const date = new Date(t.createdAt).getDate();
+        const weekIndex = Math.min(Math.floor((date - 1) / 7), 4);
+        weekTotals[weekIndex] += t.amount;
+        if (t.type === "Incentive" || t.type === "Bonus") {
+          weekIncentives[weekIndex] += t.amount;
+        }
+      }
+    });
+    
+    for (let i = 0; i < 5; i++) {
+      chartData.push({
+        name: `W${i+1}`,
+        earnings: weekTotals[i] - weekIncentives[i],
+        incentives: weekIncentives[i]
+      });
+    }
+  } else {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+    const dayIncentives = [0, 0, 0, 0, 0, 0, 0];
+    
+    transactions.forEach(t => {
+      if (t.status === "Settled" && ["Delivery Earning", "Incentive", "Bonus"].includes(t.type)) {
+        let dayIndex = new Date(t.createdAt).getDay() - 1;
+        if (dayIndex === -1) dayIndex = 6;
+        dayTotals[dayIndex] += t.amount;
+        if (t.type === "Incentive" || t.type === "Bonus") {
+          dayIncentives[dayIndex] += t.amount;
+        }
+      }
+    });
+    
+    for (let i = 0; i < 7; i++) {
+      chartData.push({
+        name: days[i],
+        earnings: dayTotals[i] - dayIncentives[i],
+        incentives: dayIncentives[i]
+      });
+    }
   }
 
   return {

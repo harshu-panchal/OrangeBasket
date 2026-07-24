@@ -152,4 +152,8 @@ export const customerApi = {
   // Notifications
   getNotifications: (params) => axiosInstance.get("/notifications", { params }),
   markNotificationsRead: () => axiosInstance.patch("/notifications/read"),
+
+  // Kits
+  getKitHomeData: (params) => getWithDedupe("/kits/home-data", params),
+  getKitById: (id, params) => getWithDedupe(`/kits/${id}`, params),
 };

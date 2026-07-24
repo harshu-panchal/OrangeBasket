@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Card from "@/shared/components/ui/Card";
 import { deliveryApi } from "../services/deliveryApi";
 import { toast } from "sonner";
+import DeliveryFooter from "../components/DeliveryFooter";
 
 const displayOrderStatus = (order) => {
   if (order?.workflowStatus === "DELIVERED" || order?.status === "delivered")
@@ -306,6 +307,7 @@ const OrderHistory = () => {
           </AnimatePresence>
         )}
       </div>
+      <DeliveryFooter />
     </div>
   );
 };

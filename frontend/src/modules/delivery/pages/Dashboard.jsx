@@ -9,6 +9,12 @@ import {
   XCircle,
   IndianRupee,
   AlertCircle,
+  Home,
+  CheckSquare,
+  UserX,
+  Sun,
+  Flame,
+  ChevronRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +25,7 @@ import Card from "@/shared/components/ui/Card";
 
 import { useAuth } from "@core/context/AuthContext";
 import { deliveryApi } from "../services/deliveryApi";
+import DeliveryFooter from "../components/DeliveryFooter";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -30,6 +37,8 @@ const Dashboard = () => {
   const [earnings, setEarnings] = useState({
     today: 0,
     deliveries: 0,
+    pendingDeliveries: 0,
+    cancelledDeliveries: 0,
     incentives: 0,
     cashCollected: 0,
   });
@@ -116,34 +125,12 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen pb-24 relative overflow-hidden font-sans">
+    <div className="bg-gray-50/50 min-h-screen pb-24 relative overflow-y-auto overflow-x-hidden font-sans">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-30 transition-all duration-300">
-        <div className="flex items-center space-x-3">
-          <div
-            className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary ring-2 ring-primary/20 shadow-sm cursor-pointer"
-            onClick={() => navigate("/delivery/profile")}>
-            <img
-              src={user?.profileImage || user?.avatar || "/placeholder-avatar.png"}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div
-            onClick={() => navigate("/delivery/profile")}
-            className="cursor-pointer">
-            <h2 className="ds-h2 leading-tight">
-              {user?.name || "Delivery Partner"}
-            </h2>
-            <div className="flex items-center text-sm font-medium">
-              <span className="flex items-center bg-yellow-50 text-yellow-600 px-1.5 py-0.5 rounded border border-yellow-100">
-                <Star size={12} fill="currentColor" className="mr-1" />
-                {user?.rating || "N/A"}
-              </span>
-              <span className="text-gray-300 mx-2">•</span>
-              <span className="ds-caption text-gray-500">ID: {user?.deliveryBoyId || user?._id?.slice(-6) || "N/A"}</span>
-            </div>
-          </div>
+      <header className="bg-white/80 backdrop-blur-md px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-30 transition-all duration-300">
+        <div className="flex items-center gap-2.5">
+          <Home size={22} className="text-gray-800" strokeWidth={2.5} />
+          <h1 className="text-[1.35rem] font-bold text-gray-900 tracking-tight">Dashboard</h1>
         </div>
         <div
           className="relative p-2.5 bg-gray-50 border border-gray-100 rounded-full hover:bg-gray-100 transition-colors cursor-pointer group"
@@ -159,77 +146,27 @@ const Dashboard = () => {
       </header>
 
       {/* Online/Offline Toggle */}
-      <div className="px-6 py-6">
-        <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 group">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Service Status</span>
-            <div className="flex items-center gap-1.5">
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full animate-pulse",
-                isOnline ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
-              )} />
-              <span className={cn(
-                "text-[11px] font-bold uppercase tracking-wider",
-                isOnline ? "text-emerald-600" : "text-rose-600"
-              )}>
-                {isOnline ? "Receiving Orders" : "Currently Offline"}
-              </span>
+      <div className="px-6 py-4">
+        <div className="bg-[#f2f7ef] rounded-2xl p-3 flex justify-between items-center border border-[#e1ecdd]">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 flex items-center justify-center ${isOnline ? "text-[#2e7d32]" : "text-gray-500"}`}>
+              {isOnline ? <Sun size={20} strokeWidth={2.5} /> : <XCircle size={20} strokeWidth={2.5} />}
             </div>
+            <span className={`text-sm font-semibold ${isOnline ? "text-[#2e7d32]" : "text-gray-500"}`}>
+              {isOnline ? "You are Online" : "You are Offline"}
+            </span>
           </div>
-
-          <div
-            className="relative w-full h-14 bg-gray-100/80 rounded-2xl flex items-center p-1.5 cursor-pointer shadow-inner overflow-hidden border border-gray-200/50"
+          
+          <button 
             onClick={handleOnlineToggle}
+            className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ease-in-out flex items-center ${isOnline ? 'bg-[#2e7d32]' : 'bg-gray-300'}`}
           >
-            {/* Background Labels */}
-            <div className="absolute inset-0 flex w-full">
-              <div className="w-1/2 flex items-center justify-center">
-                <span className={cn(
-                  "text-[10px] font-black tracking-widest transition-opacity duration-300",
-                  isOnline ? "opacity-0" : "opacity-40 text-gray-500"
-                )}>SLIDE TO GO ONLINE</span>
-              </div>
-              <div className="w-1/2 flex items-center justify-center">
-                <span className={cn(
-                  "text-[10px] font-black tracking-widest transition-opacity duration-300",
-                  !isOnline ? "opacity-0" : "opacity-40 text-gray-500"
-                )}>SLIDE TO GO OFFLINE</span>
-              </div>
-            </div>
-
-            <motion.div
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }} // We will use dragElastic for feel, but onDragEnd for logic
-              dragElastic={0.1}
-              onDragEnd={(_, info) => {
-                const swipePower = info.offset.x;
-                if (swipePower > 50 && !isOnline) {
-                  handleOnlineToggle();
-                } else if (swipePower < -50 && isOnline) {
-                  handleOnlineToggle();
-                }
-              }}
-              whileTap={{ scale: 0.98 }}
-              className={cn(
-                "w-1/2 h-full rounded-xl shadow-md flex items-center justify-center gap-2 z-10 border transition-all duration-500 cursor-grab active:cursor-grabbing",
-                isOnline 
-                  ? "bg-gradient-to-r from-primary to-[var(--brand-400)] border-[#389ecb] text-white" 
-                  : "bg-gradient-to-r from-slate-700 to-slate-800 border-slate-900 text-white"
-              )}
-              animate={{ x: isOnline ? "100%" : "0%" }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            >
-              <motion.div
-                initial={false}
-                animate={{ rotate: isOnline ? 0 : 0 }}
-              >
-                {isOnline ? <CheckCircle size={18} strokeWidth={3} /> : <XCircle size={18} strokeWidth={3} />}
-              </motion.div>
-              <span className="text-xs font-black uppercase tracking-widest select-none">
-                {isOnline ? "ONLINE" : "OFFLINE"}
-              </span>
-            </motion.div>
-          </div>
+            <motion.div 
+              className="w-6 h-6 bg-white rounded-full shadow-sm"
+              animate={{ x: isOnline ? 24 : 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            />
+          </button>
         </div>
       </div>
 
@@ -262,69 +199,94 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 space-y-6">
+      <div className="px-6 space-y-5">
         {/* Earnings Card */}
-        <Card className="bg-white shadow-sm border border-gray-100 overflow-hidden relative">
-          {/* Background Decoration */}
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
+        <div className="bg-gradient-to-br from-[#1b5e20] to-[#0d3b11] rounded-[24px] p-5 shadow-lg relative overflow-hidden text-white flex justify-between">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-lg"></div>
 
-          <div className="flex justify-between items-center mb-4 relative z-10">
-            <h3 className="ds-caption font-bold tracking-wider">
+          <div className="relative z-10 flex-1">
+            <h3 className="text-xs font-medium text-green-50 opacity-90 mb-2">
               Today's Earnings
             </h3>
-            <Button
-              variant="ghost"
-              size="sm"
+
+            <div className="mb-2">
+              <span className="text-[2rem] font-extrabold tracking-tight leading-none">
+                ₹{earnings.today?.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex items-center text-[10px] font-bold text-[#ffb74d] mb-6">
+              <Flame size={12} className="mr-1 fill-[#ffb74d]" /> 5% more than yesterday
+            </div>
+
+            <button 
               onClick={() => navigate("/delivery/earnings")}
-              className="text-primary hover:text-primary/80 hover:bg-primary/5 h-8 px-3 text-xs font-bold rounded-full">
-              View Details
-            </Button>
-          </div>
-
-          <div className="flex items-baseline mb-6 relative z-10">
-            <span className="text-2xl font-bold text-gray-400 mr-1">₹</span>
-            <span className="text-4xl font-extrabold text-gray-900 tracking-tight">
-              {earnings.today}
-            </span>
-            <span className="ml-3 text-brand-600 text-xs font-bold flex items-center bg-brand-50 border border-brand-100 px-2 py-1 rounded-full">
-              <TrendingUp size={12} className="mr-1" /> +12%
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 border-t border-gray-50 pt-4 relative z-10">
-            <div className="text-center group cursor-pointer">
-              <div className="flex justify-center mb-2 text-brand-600 bg-brand-50 group-hover:bg-brand-100 transition-colors w-10 h-10 rounded-full items-center mx-auto">
-                <Package size={18} />
-              </div>
-              <p className="ds-caption mb-0.5">Orders</p>
-              <p className="font-bold text-gray-900">{earnings.deliveries}</p>
-            </div>
-            <div className="text-center border-l border-r border-gray-50 group cursor-pointer">
-              <div className="flex justify-center mb-2 text-amber-500 bg-amber-50 group-hover:bg-amber-100 transition-colors w-10 h-10 rounded-full items-center mx-auto">
-                <Star size={18} />
-              </div>
-              <p className="ds-caption mb-0.5">Incentives</p>
-              <p className="font-bold text-gray-900">₹{earnings.incentives}</p>
-            </div>
-            <div
-              className="text-center group cursor-pointer"
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate("/delivery/cod-cash")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") navigate("/delivery/cod-cash");
-              }}
+              className="text-xs font-bold text-white hover:text-green-200 transition-colors flex items-center"
             >
-              <div className="flex justify-center mb-2 text-brand-600 bg-brand-50 group-hover:bg-brand-100 transition-colors w-10 h-10 rounded-full items-center mx-auto">
-                <IndianRupee size={18} />
-              </div>
-              <p className="ds-caption mb-0.5">COD Cash</p>
-              <p className="font-bold text-gray-900">
-                ₹{earnings.cashCollected}
-              </p>
+              View Details <ChevronRight size={14} className="ml-1" />
+            </button>
+          </div>
+
+          <div className="relative z-10 flex flex-col items-end justify-between shrink-0 ml-4">
+            <span className="text-[#a5d6a7] bg-[#2e7d32]/40 text-[10px] font-bold flex items-center px-2 py-0.5 rounded-full border border-[#4caf50]/30 mb-2">
+              <TrendingUp size={12} className="mr-1 text-[#81c784]" /> +12% ⇧
+            </span>
+            <div className="w-[80px] h-[70px] mt-auto">
+                <img 
+                    src="/wallet iamge .png" 
+                    alt="Wallet" 
+                    className="w-full h-full object-contain drop-shadow-md opacity-90"
+                />
             </div>
           </div>
-        </Card>
+        </div>
+
+        {/* Orders Summary Row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-between">
+            <p className="text-[10px] font-bold text-gray-800 mb-2">Completed</p>
+            <div className="flex justify-center mb-1 text-green-600 bg-green-50 rounded-md p-1">
+              <CheckSquare size={20} strokeWidth={2.5} />
+            </div>
+            <p className="text-xl font-black text-gray-900 mb-0.5">{earnings.deliveries}</p>
+            <p className="text-[10px] text-gray-500 font-medium">Orders</p>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-between">
+            <p className="text-[10px] font-bold text-gray-800 mb-2">Pending</p>
+            <div className="flex justify-center mb-1 text-orange-500 bg-orange-50 rounded-md p-1">
+              <Package size={20} strokeWidth={2.5} />
+            </div>
+            <p className="text-xl font-black text-gray-900 mb-0.5">{earnings.pendingDeliveries || 0}</p>
+            <p className="text-[10px] text-gray-500 font-medium">Orders</p>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-between">
+            <p className="text-[10px] font-bold text-gray-800 mb-2">Cancelled</p>
+            <div className="flex justify-center mb-1 text-[#ff8200] bg-orange-50 rounded-md p-1">
+              <UserX size={20} strokeWidth={2.5} />
+            </div>
+            <p className="text-xl font-black text-gray-900 mb-0.5">{earnings.cancelledDeliveries || 0}</p>
+            <p className="text-[10px] text-gray-500 font-medium">Orders</p>
+          </div>
+        </div>
+
+        {/* Incentive Zone (Tips) */}
+        <div className="bg-gradient-to-r from-orange-50 to-amber-100 rounded-[20px] p-4 border border-orange-200/50 shadow-sm flex items-center justify-between overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/30 rounded-full -mr-16 -mt-16 blur-xl"></div>
+          
+          <div className="relative z-10 pl-2">
+            <h3 className="text-orange-600 font-bold text-sm mb-1">Customer Tips</h3>
+            <p className="text-[11px] text-gray-600 font-medium leading-tight max-w-[140px]">
+              You have earned an extra <br/><span className="font-bold text-gray-900">₹{earnings.incentiveData?.tipsReceived || 0}</span> in tips today
+            </p>
+          </div>
+          
+          <div className="relative z-10 w-[100px] h-[90px] shrink-0 flex items-center justify-center -mr-2">
+            <img src="/tip image.png" alt="Tips Received" className="w-full h-full object-contain drop-shadow-sm" />
+          </div>
+        </div>
 
         {/* Active Order / Status */}
         <AnimatePresence mode="wait">
@@ -467,6 +429,7 @@ const Dashboard = () => {
           )}
         </AnimatePresence>
       </div>
+      <DeliveryFooter />
     </div>
   );
 };

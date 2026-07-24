@@ -74,7 +74,7 @@ const CategoriesPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white pb-24 md:pt-[100px] font-sans">
+        <div className="min-h-screen bg-white pb-16 md:pt-[80px] font-sans">
             {/* Header Area */}
             <div className="sticky top-0 z-30 bg-white px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -126,7 +126,7 @@ const CategoriesPage = () => {
                     )}
 
                     {!isLoading && categories.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
                             <div className="text-6xl mb-4">🛒</div>
                             <h2 className="text-xl font-bold text-gray-700 mb-2">No Categories Found</h2>
                             <p className="text-gray-400 text-sm">Add categories from the admin panel to see them here.</p>
@@ -139,7 +139,7 @@ const CategoriesPage = () => {
                                 <Link
                                     key={category.id}
                                     to={`/category/${category.id}`}
-                                    className="flex items-center justify-between py-4 hover:bg-slate-50/40 transition-colors px-2"
+                                    className="flex items-center justify-between py-2 hover:bg-slate-50/40 transition-colors px-2"
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">

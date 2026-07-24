@@ -1,34 +1,35 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   User,
   Phone,
   Truck,
   CreditCard,
-  FileText,
-  HelpCircle,
+  ClipboardCheck,
+  LifeBuoy,
   LogOut,
   ChevronRight,
-  Shield,
+  ShieldCheck,
   Bell,
   Settings,
-  IndianRupee,
+  Wallet,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Button from "@/shared/components/ui/Button";
-import Card from "@/shared/components/ui/Card";
 import { useAuth } from "@core/context/AuthContext";
 import { useSettings } from "@core/context/SettingsContext";
 import axiosInstance from '@core/api/axios';
 import { useEffect } from 'react';
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import DeliveryFooter from "../components/DeliveryFooter";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
-  const appName = settings?.appName || "App";
   const [faqs, setFaqs] = useState([]);
 
   useEffect(() => {
@@ -42,65 +43,6 @@ const Profile = () => {
     };
     fetchFaqs();
   }, []);
-
-  const menuItems = [
-    {
-      icon: User,
-      label: "Personal Details",
-      sub: "Name, Address, Email",
-      color: "text-brand-600 bg-brand-50",
-      path: "/delivery/profile/personal-details",
-    },
-    {
-      icon: Truck,
-      label: "Vehicle Information",
-      sub: "Bike, License, Insurance",
-      color: "text-orange-600 bg-orange-50",
-      path: "/delivery/profile/vehicle-info",
-    },
-    {
-      icon: CreditCard,
-      label: "Bank Account",
-      sub: "Manage your linked bank account",
-      color: "text-brand-600 bg-brand-50",
-      path: "/delivery/profile/bank-account",
-    },
-    {
-      icon: IndianRupee,
-      label: "Money Request",
-      sub: "Withdraw your earnings",
-      color: "text-brand-600 bg-brand-50",
-      path: "/delivery/profile/withdrawals",
-    },
-    {
-      icon: FileText,
-      label: "Documents",
-      sub: "View and update your documents",
-      color: "text-purple-600 bg-purple-50",
-      path: "/delivery/profile/documents",
-    },
-    {
-      icon: Shield,
-      label: "Safety & Privacy",
-      sub: "Emergency contacts, App permissions",
-      color: "text-red-600 bg-red-50",
-      path: "/delivery/profile/safety-privacy",
-    },
-    {
-      icon: Settings,
-      label: "Settings",
-      sub: "Notifications, Language, Theme",
-      color: "text-gray-600 bg-gray-50",
-      path: "/delivery/profile/settings",
-    },
-    {
-      icon: HelpCircle,
-      label: "Help & Support",
-      sub: "FAQs, Chat support",
-      color: "text-teal-600 bg-teal-50",
-      path: "/delivery/profile/help-support",
-    },
-  ];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -116,111 +58,101 @@ const Profile = () => {
   };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen pb-24">
+    <div className="bg-white min-h-screen pb-24">
       {/* Header */}
-      <div className="bg-primary pt-12 pb-24 px-6 rounded-b-[2.5rem] relative shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-white text-2xl font-bold">My Profile</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
-            onClick={() => toast.info("No new notifications")}>
-            <Bell size={24} />
-          </Button>
-        </div>
+      <div className="pt-12 pb-8 px-6 relative bg-transparent">
+        <h1 className="text-center text-gray-900 text-[16px] font-bold mb-8 tracking-wide">Profile</h1>
 
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <div className="w-20 h-20 bg-white rounded-full p-1 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-[60px] h-[60px] rounded-full flex-shrink-0 p-0.5 border border-gray-100 bg-white overflow-hidden shadow-sm">
               <img
                 src={user?.profileImage || user?.avatar || "/placeholder-avatar.png"}
                 alt="Profile"
-                className="w-full h-full rounded-full object-cover bg-gray-100"
+                className="w-full h-full rounded-full object-cover"
               />
             </div>
-            <div className="absolute bottom-0 right-0 w-6 h-6 bg-brand-500 border-2 border-white rounded-full"></div>
-          </div>
-          <div className="text-white">
-            <h2 className="font-bold text-xl">{user?.name || "Delivery Partner"}</h2>
-            <p className="text-white/80 text-sm flex items-center mb-1">
-              <Phone size={14} className="mr-1" /> {user?.phone || user?.mobile || "N/A"}
-            </p>
-            <div className="flex items-center space-x-2">
-              <span className="bg-white/20 px-2 py-0.5 rounded text-xs font-medium backdrop-blur-sm">
-                ID: {user?.deliveryBoyId || user?._id?.slice(-6) || "N/A"}
-              </span>
-              {(user?.status === 'active' || user?.isVerified) && (
-                <span className="bg-brand-500 text-primary-foreground px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                  VERIFIED
-                </span>
-              )}
+            <div>
+              <h2 className="font-bold text-[15px] text-gray-900">{user?.name || "Delivery Partner"}</h2>
+              <p className="text-gray-400 text-[13px] mt-0.5 font-medium">
+                Delivery Partner
+              </p>
             </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <span className="font-bold text-gray-900 text-[13px]">{user?.rating || "4.8"}</span>
+            <span className="text-yellow-400 text-[14px]">★</span>
           </div>
         </div>
       </div>
 
-      {/* Stats Card */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mx-6 -mt-12 bg-white rounded-2xl p-4 shadow-xl mb-6 flex justify-between text-center relative z-10">
-        <div className="flex-1">
-          <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
-            Joined
-          </p>
-          <p className="font-bold text-gray-900 text-lg">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : "N/A"}</p>
-        </div>
-        <div className="w-px bg-gray-100"></div>
-        <div className="flex-1">
-          <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
-            Trips
-          </p>
-          <p className="font-bold text-gray-900 text-lg">{user?.totalTrips || 0}</p>
-        </div>
-        <div className="w-px bg-gray-100"></div>
-        <div className="flex-1">
-          <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
-            Rating
-          </p>
-          <p className="font-bold text-gray-900 text-lg flex justify-center items-center">
-            {user?.rating || "N/A"} {user?.rating ? <span className="text-yellow-400 text-sm ml-1">★</span> : ""}
-          </p>
-        </div>
-      </motion.div>
-
       {/* Menu Options */}
       <motion.div
-        className="px-6 space-y-3 max-w-lg mx-auto"
+        className="px-6 space-y-6 max-w-lg mx-auto pb-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible">
-        {menuItems.map((item, index) => (
-          <motion.button
-            key={index}
-            variants={itemVariants}
-            className="w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-between hover:bg-gray-50 hover:shadow-md transition-all group"
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate(item.path)}>
-            <div className="flex items-center">
-              <div
-                className={`p-3 rounded-full mr-4 transition-colors ${item.color}`}>
-                <item.icon size={20} />
-              </div>
-              <div className="text-left">
-                <p className="font-bold text-gray-900 group-hover:text-primary transition-colors">
-                  {item.label}
-                </p>
-                <p className="text-xs text-gray-400">{item.sub}</p>
-              </div>
+        
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+            <div className="divide-y divide-slate-100">
+                <MenuItem
+                    icon={User}
+                    label="Personal Details"
+                    sub="Name, Address, Email"
+                    path="/delivery/profile/personal-details"
+                    badgeBg="bg-blue-50/80 border-blue-100/70 text-blue-700"
+                />
+                <MenuItem
+                    icon={ClipboardCheck}
+                    label="Document Verification"
+                    sub="View and update your documents"
+                    path="/delivery/profile/documents"
+                    badgeBg="bg-purple-50/80 border-purple-100/70 text-purple-700"
+                />
+                <MenuItem
+                    icon={Truck}
+                    label="Vehicle Information"
+                    sub="Bike, License, Insurance"
+                    path="/delivery/profile/vehicle-info"
+                    badgeBg="bg-orange-50/80 border-orange-100/70 text-orange-700"
+                />
+                <MenuItem
+                    icon={CreditCard}
+                    label="Bank Account"
+                    sub="Manage your linked bank account"
+                    path="/delivery/profile/bank-account"
+                    badgeBg="bg-amber-50/80 border-amber-100/70 text-amber-700"
+                />
+                <MenuItem
+                    icon={Wallet}
+                    label="Money Request"
+                    sub="Withdraw your earnings"
+                    path="/delivery/profile/withdrawals"
+                    badgeBg="bg-teal-50/80 border-teal-100/70 text-teal-700"
+                />
+                <MenuItem
+                    icon={ShieldCheck}
+                    label="Safety & Privacy"
+                    sub="Emergency contacts, App permissions"
+                    path="/delivery/profile/safety-privacy"
+                    badgeBg="bg-red-50/80 border-red-100/70 text-red-700"
+                />
+                <MenuItem
+                    icon={Settings}
+                    label="Settings"
+                    sub="Notifications, Language, Theme"
+                    path="/delivery/profile/settings"
+                    badgeBg="bg-gray-50/80 border-gray-100/70 text-gray-700"
+                />
+                <MenuItem
+                    icon={LifeBuoy}
+                    label="Help & Support"
+                    sub="FAQs, Chat support"
+                    path="/delivery/profile/help-support"
+                    badgeBg="bg-emerald-50/80 border-emerald-100/70 text-emerald-700"
+                />
             </div>
-            <ChevronRight
-              size={20}
-              className="text-gray-300 group-hover:text-primary transition-colors"
-            />
-          </motion.button>
-        ))}
+        </div>
 
         {/* FAQ Section */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 overflow-hidden">
@@ -240,21 +172,16 @@ const Profile = () => {
           </div>
         </div>
 
-        <motion.div variants={itemVariants} className="pt-4">
+        <motion.div variants={itemVariants} className="pt-2 pb-6">
           <Button
             onClick={logout}
-            variant="outline"
-            className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 py-6">
-            <LogOut size={20} className="mr-2" /> Logout
+            variant="ghost"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50/50 font-medium py-3 px-4">
+            <LogOut size={20} className="mr-4 text-red-500" strokeWidth={2} /> Logout
           </Button>
         </motion.div>
       </motion.div>
-
-      <div className="text-center text-gray-400 text-xs mt-8 pb-4">
-        {appName} Delivery Partner App
-        <br />
-        Version 1.2.0 (Build 450)
-      </div>
+      <DeliveryFooter />
     </div>
   );
 };
@@ -268,16 +195,36 @@ const DeliveryFAQItem = ({ question, answer }) => {
         {isOpen ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
       </div>
       {isOpen && (
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           className="mt-2 text-xs text-gray-500 font-medium leading-relaxed"
         >
           {answer}
-        </motion.p>
+        </motion.div>
       )}
     </div>
   );
+};
+
+const MenuItem = ({ icon: Icon, label, sub, path, onClick = undefined, badgeBg }) => {
+    const Component = onClick ? 'button' : Link;
+    return (
+        <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group">
+            <div className="flex items-center gap-4">
+                <div className={cn("w-10 h-10 rounded-full border flex items-center justify-center shadow-2xs group-hover:scale-108 transition-transform flex-shrink-0", badgeBg || "bg-slate-50 border-slate-100 text-slate-600")}>
+                    <Icon size={18} strokeWidth={2.5} />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 leading-tight">{label}</h3>
+                    {sub && <p className="text-[11px] font-medium text-slate-500 mt-0.5">{sub}</p>}
+                </div>
+            </div>
+            <div className="p-1.5 rounded-full group-hover:bg-slate-100 transition-colors">
+                <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-all group-hover:translate-x-0.5" />
+            </div>
+        </Component>
+    );
 };
 
 export default Profile;

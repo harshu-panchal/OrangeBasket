@@ -3,6 +3,7 @@ import { resolveApiBaseUrl } from './resolveApiBaseUrl';
 import { getStoredAuthToken } from '@core/utils/authStorage';
 import { getActiveRole, ROLES } from '@core/auth/activeRoleStore';
 import { rawGet, STORAGE_KEYS } from '@core/utils/storage';
+import { globalLoadingManager } from '../../modules/customer/context/PageTransitionContext';
 
 const ROLE_STORAGE_KEYS = [
     STORAGE_KEYS.AUTH_SELLER,
@@ -90,17 +91,55 @@ axiosInstance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Start loading overlay if request takes longer than 300ms
+        if (config.url && config.url.startsWith('/customer')) {
+            // @ts-ignore
+            config.metadata = { startTime: new Date() };
+            // @ts-ignore
+            config.timeoutId = setTimeout(() => {
+                if (globalLoadingManager.start) {
+                    globalLoadingManager.start();
+                }
+            }, 300);
+        }
+
         return config;
     },
     (error) => {
+        if (error.config?.timeoutId) {
+            clearTimeout(error.config.timeoutId);
+        }
+        if (globalLoadingManager.stop) {
+            globalLoadingManager.stop();
+        }
         return Promise.reject(error);
     }
 );
 
 // Response interceptor for API calls
 axiosInstance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // @ts-ignore
+        if (response.config?.timeoutId) {
+            // @ts-ignore
+            clearTimeout(response.config.timeoutId);
+        }
+        if (globalLoadingManager.stop) {
+            globalLoadingManager.stop();
+        }
+        return response;
+    },
     async (error) => {
+        // @ts-ignore
+        if (error.config?.timeoutId) {
+            // @ts-ignore
+            clearTimeout(error.config.timeoutId);
+        }
+        if (globalLoadingManager.stop) {
+            globalLoadingManager.stop();
+        }
+        
         const originalRequest = error.config;
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;

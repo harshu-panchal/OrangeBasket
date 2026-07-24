@@ -493,7 +493,7 @@ export const upsertHeroConfig = async (req, res) => {
   try {
     const { pageType, headerId, banners, categoryIds } = req.body;
 
-    if (!["home", "header"].includes(pageType)) {
+    if (!["home", "header", "monthly_basket"].includes(pageType)) {
       return handleResponse(res, 400, "Invalid pageType");
     }
 
