@@ -33,45 +33,25 @@ const MonthlyBasketSection = () => {
     return (
         <div className="w-full py-6 my-4">
             <div className="container mx-auto px-4 md:px-8 lg:px-[50px]">
-                
+
                 {/* Section Header */}
                 <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg shadow-orange-500/25">
-                            <Package className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-                                Monthly Baskets
-                            </h2>
-                            <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
-                                <Sparkles className="h-3 w-3 text-orange-500" />
-                                Subscribe & save on essentials
-                            </p>
-                        </div>
-                    </div>
-                    {kitData.kits?.length > 0 && (
-                        <button 
-                            onClick={() => navigate('/monthly-baskets')}
-                            className="flex items-center gap-1 text-sm font-bold text-orange-600 hover:text-orange-700 transition-colors"
-                        >
-                            View All <ChevronRight className="h-4 w-4" />
-                        </button>
-                    )}
+                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                        Monthly Baskets
+                    </h2>
                 </div>
-
-                {/* Banner Carousel */}
+                {/* Banner Grid (2 Banners side-by-side) */}
                 {kitData.banners?.length > 0 && (
-                    <div className="mb-6 overflow-x-auto no-scrollbar flex gap-3 snap-x snap-mandatory scroll-smooth -mx-4 px-4">
-                        {kitData.banners.map((banner, idx) => (
-                            <div 
-                                key={idx} 
-                                className="flex-shrink-0 w-[85%] md:w-[48%] lg:w-full rounded-2xl overflow-hidden shadow-md snap-start cursor-pointer group"
+                    <div className="mt-3 md:mt-5 mb-6 grid grid-cols-2 gap-2 md:gap-4">
+                        {kitData.banners.slice(0, 2).map((banner, idx) => (
+                            <div
+                                key={idx}
+                                className="w-full rounded-xl md:rounded-2xl overflow-hidden shadow-sm md:shadow-md cursor-pointer group"
                             >
-                                <img 
-                                    src={banner.imageUrl} 
-                                    alt={`Monthly Basket Banner ${idx + 1}`} 
-                                    className="w-full h-40 md:h-52 lg:h-56 object-cover group-hover:scale-105 transition-transform duration-700" 
+                                <img
+                                    src={banner.imageUrl}
+                                    alt={`Monthly Basket Banner ${idx + 1}`}
+                                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
                                 />
                             </div>
                         ))}
@@ -83,17 +63,17 @@ const MonthlyBasketSection = () => {
                     <div className="mb-6">
                         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth">
                             {kitData.categories.map((cat) => (
-                                <div 
-                                    key={cat._id} 
-                                    onClick={() => navigate(`/monthly-baskets?category=${cat._id}`)}
+                                <div
+                                    key={cat._id}
+                                    onClick={() => navigate(`/category/${cat._id}`)}
                                     className="flex-shrink-0 snap-start cursor-pointer group"
                                 >
                                     <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white group-hover:shadow-lg group-hover:-translate-y-1 transition-all duration-300">
                                         {cat.image ? (
-                                            <img 
-                                                src={cat.image} 
-                                                alt={cat.name} 
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                            <img
+                                                src={cat.image}
+                                                alt={cat.name}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
@@ -116,14 +96,15 @@ const MonthlyBasketSection = () => {
                 {kitData.kits?.length > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                         {kitData.kits.slice(0, 4).map((kit) => (
-                            <ProductCard 
-                                key={kit._id} 
-                                product={kit} 
+                            <ProductCard
+                                key={kit._id}
+                                product={kit}
                                 onClick={() => navigate(`/kit/${kit._id}`)}
                             />
                         ))}
                     </div>
                 )}
+
 
             </div>
         </div>

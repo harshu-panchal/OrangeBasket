@@ -26,6 +26,8 @@ import Card from "@/shared/components/ui/Card";
 import { useAuth } from "@core/context/AuthContext";
 import { deliveryApi } from "../services/deliveryApi";
 import DeliveryFooter from "../components/DeliveryFooter";
+import Lottie from "lottie-react";
+import deliveryRidingAnimation from "@/assets/lottie/Ey2fgNNOKZ.json";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -342,12 +344,8 @@ const Dashboard = () => {
                 className="bg-white rounded-2xl p-8 text-center border-2 border-dashed border-gray-200 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-tr from-brand-50/50 to-purple-50/50 opacity-50"></div>
                 <div className="relative z-10">
-                  <div className="relative w-24 h-24 mx-auto mb-6">
-                    <div className="absolute inset-0 bg-brand-100 rounded-full animate-ping opacity-20"></div>
-                    <div className="absolute inset-2 bg-brand-100 rounded-full animate-ping opacity-40 delay-150"></div>
-                    <div className="relative w-full h-full bg-brand-50 rounded-full flex items-center justify-center border border-brand-100 shadow-sm">
-                      <MapPin size={36} className="text-brand-600" />
-                    </div>
+                  <div className="relative w-40 h-40 mx-auto mb-2 flex items-center justify-center">
+                    <Lottie animationData={deliveryRidingAnimation} loop={true} />
                   </div>
                   <h3 className="ds-h3 mb-2 text-gray-800">
                     Finding Orders Nearby...

@@ -9,18 +9,18 @@ import logger from "../services/logger.js";
 export const getHomeData = async (req, res) => {
     try {
         // Fetch kit banners
-        const heroConfig = await HeroConfig.findOne({ pageType: "monthly_basket" });
+        const heroConfig = await HeroConfig.findOne({ pageType: "monthly_basket" }).lean();
         const banners = heroConfig ? heroConfig.banners.items : [];
 
         // Fetch kit categories
-        const categories = await Category.find({ isKitCategory: true, status: "active" });
+        const categories = await Category.find({ isKitCategory: true, status: "active" }).lean();
 
         // Fetch approved kits
         const kits = await Product.find({
             isMonthlyKit: true,
             status: "active",
             approvalStatus: "approved"
-        }).populate("categoryId", "name");
+        }).populate("categoryId", "name").lean();
 
         return handleResponse(res, 200, "Kit home data fetched successfully", {
             banners,

@@ -268,32 +268,34 @@ export const getProducts = async (req, res) => {
         coords.lng,
       );
 
-      if (!nearbySellerIds.length) {
-        return handleResponse(res, 200, "No sellers found in your area", {
-          items: [],
-          page: 1,
-          limit: 24,
-          total: 0,
-          totalPages: 1,
-        });
-      }
-
       const nearbySet = new Set(nearbySellerIds.map(String));
       const finalSellerIds = requestedSellerIds.length
         ? requestedSellerIds.filter((id) => nearbySet.has(String(id)))
         : nearbySellerIds;
 
-      if (!finalSellerIds.length) {
-        return handleResponse(res, 200, "No products available in your area", {
-          items: [],
-          page: 1,
-          limit: 24,
-          total: 0,
-          totalPages: 1,
-        });
+      if (requestedSellerIds.length > 0) {
+        // If specific sellers were requested but none are nearby, return empty
+        if (!finalSellerIds.length) {
+          return handleResponse(res, 200, "No products available in your area", {
+            items: [],
+            page: 1,
+            limit: 24,
+            total: 0,
+            totalPages: 1,
+          });
+        }
+        query.sellerId = { $in: finalSellerIds };
+      } else {
+        // If no specific seller requested, include nearby sellers OR monthly kits
+        if (!finalSellerIds.length) {
+          query.isMonthlyKit = true;
+        } else {
+          query.$or = [
+            { sellerId: { $in: finalSellerIds } },
+            { isMonthlyKit: true }
+          ];
+        }
       }
-
-      query.sellerId = { $in: finalSellerIds };
     }
 
     if (categoryIds && typeof categoryIds === "string") {
