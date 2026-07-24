@@ -430,7 +430,7 @@ const Home = () => {
 
             return (
               <motion.div ref={heroRef} className="block md:hidden will-change-transform pt-2" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-                <div className="mx-4 mt-4 mb-1 relative overflow-hidden rounded-[24px] shadow-md z-20">
+                <div className="mx-4 mt-12 mb-1 relative overflow-hidden rounded-[24px] shadow-md z-20">
                   <ExperienceBannerCarousel section={{ title: "" }} items={combinedItems} fullWidth edgeToEdge />
                 </div>
               </motion.div>
