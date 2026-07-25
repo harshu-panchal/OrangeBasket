@@ -325,11 +325,10 @@ const AddressesPage = () => {
                             )}
 
                             <div className="flex items-start gap-3.5">
-                                <div className={`w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs flex-shrink-0 ${
-                                    addr.type === 'Home' ? 'bg-blue-50/80 border-blue-100 text-blue-700' :
-                                    addr.type === 'Work' ? 'bg-purple-50/80 border-purple-100 text-purple-700' :
-                                    'bg-emerald-50/80 border-emerald-100 text-emerald-700'
-                                }`}>
+                                <div className={`w-11 h-11 rounded-full border flex items-center justify-center shadow-2xs flex-shrink-0 ${addr.type === 'Home' ? 'bg-blue-50/80 border-blue-100 text-blue-700' :
+                                        addr.type === 'Work' ? 'bg-purple-50/80 border-purple-100 text-purple-700' :
+                                            'bg-emerald-50/80 border-emerald-100 text-emerald-700'
+                                    }`}>
                                     <span className="text-lg">{addr.type === 'Home' ? '🏠' : addr.type === 'Work' ? '💼' : '📍'}</span>
                                 </div>
                                 <div className="flex-1">

@@ -37,7 +37,7 @@ const CartPage = ({ asOverlay = false, onClose }) => {
                                     loading="lazy"
                                 />
                             </div>
-                            
+
                             {/* Details */}
                             <div className="flex-1">
                                 <h3 className="text-[16px] font-bold text-gray-900 leading-tight">
@@ -47,7 +47,7 @@ const CartPage = ({ asOverlay = false, onClose }) => {
                                     {item.weight || '1 kg'} {item.quantity > 1 ? `(x${item.quantity})` : ''}
                                 </p>
                             </div>
-                            
+
                             {/* Price */}
                             <div className="text-[16px] font-bold text-gray-900 pl-4">
                                 ₹{(() => {

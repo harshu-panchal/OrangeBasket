@@ -1,4 +1,5 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import AppRouter from '@core/routes/AppRouter';
 import { AuthProvider } from '@core/context/AuthContext';
 import { SettingsProvider } from '@core/context/SettingsContext';
@@ -11,6 +12,30 @@ import LenisScroll from './shared/components/LenisScroll';
 import SplashScreen from './shared/components/ui/SplashScreen';
 
 function App() {
+    useEffect(() => {
+        // Setup hardware back button listener for Android apps
+        const setupBackButton = async () => {
+            try {
+                await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+                    if (canGoBack) {
+                        window.history.back();
+                    } else {
+                        CapacitorApp.exitApp();
+                    }
+                });
+            } catch (err) {
+                // Ignore errors if running in a standard web browser (not capacitor)
+            }
+        };
+        setupBackButton();
+        
+        return () => {
+            try {
+                CapacitorApp.removeAllListeners();
+            } catch (err) {}
+        };
+    }, []);
+
     return (
         <ErrorBoundary>
             <AuthProvider>

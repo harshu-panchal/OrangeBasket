@@ -4,6 +4,15 @@ import Lottie from 'lottie-react';
 import animationData from '../../../../assets/Thanksgiving basket.json';
 
 const LottieTransitionOverlay = ({ isVisible, isNetworkLoading, onComplete }) => {
+    const lottieRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (lottieRef.current) {
+            // Adjust the speed as necessary, 1.5 means 1.5x speed
+            lottieRef.current.setSpeed(1.5);
+        }
+    }, [isVisible]);
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -22,6 +31,7 @@ const LottieTransitionOverlay = ({ isVisible, isNetworkLoading, onComplete }) =>
                         className="w-64 h-64 md:w-80 md:h-80 flex flex-col items-center justify-center"
                     >
                         <Lottie 
+                            lottieRef={lottieRef}
                             animationData={animationData} 
                             loop={isNetworkLoading} 
                             autoplay={true} 

@@ -20,16 +20,15 @@ const CategoriesPage = () => {
                 const tree = res.data.results || res.data.result || [];
                 const flatCats = [];
                 tree.forEach(header => {
-                    if ((header.name || '').trim().toLowerCase() !== 'all') {
-                        (header.children || []).forEach(cat => {
-                            flatCats.push({
-                                id: cat._id,
-                                name: cat.name,
-                                image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
-                                productCount: cat.productCount || 0,
-                            });
+                    (header.children || []).forEach(cat => {
+                        flatCats.push({
+                            id: cat._id,
+                            name: cat.name,
+                            image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
+                            productCount: cat.productCount || 0,
+                            subcategories: cat.children || []
                         });
-                    }
+                    });
                 });
                 
                 if (flatCats.length > 0) {
@@ -136,31 +135,58 @@ const CategoriesPage = () => {
                     {!isLoading && categories.length > 0 && (
                         <div className="divide-y divide-slate-100/80">
                             {categories.map((category) => (
-                                <Link
-                                    key={category.id}
-                                    to={`/category/${category.id}`}
-                                    className="flex items-center justify-between py-2 hover:bg-slate-50/40 transition-colors px-2"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
-                                            <img
-                                                src={applyCloudinaryTransform(category.image)}
-                                                alt={category.name}
-                                                loading="lazy"
-                                                className="w-full h-full object-contain"
-                                            />
+                                <div key={category.id} className="flex flex-col py-2 px-2 hover:bg-slate-50/40 transition-colors">
+                                    <Link
+                                        to={`/category/${category.id}`}
+                                        className="flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
+                                                <img
+                                                    src={applyCloudinaryTransform(category.image)}
+                                                    alt={category.name}
+                                                    loading="lazy"
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-[15px] text-slate-800 leading-tight">
+                                                    {category.name}
+                                                </span>
+                                                <span className="text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                                                    {category.productCount || 0} {category.productCount === 1 ? 'item' : 'items'}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-[15px] text-slate-800 leading-tight">
-                                                {category.name}
-                                            </span>
-                                            <span className="text-[12px] font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                                                {category.productCount || 0} {category.productCount === 1 ? 'item' : 'items'}
-                                            </span>
+                                        <ChevronRight size={18} className="text-slate-400" strokeWidth={2.5} />
+                                    </Link>
+                                    
+                                    {category.subcategories && category.subcategories.length > 0 && (
+                                        <div className="pl-[6rem] pr-2 pt-2 pb-3">
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-3 gap-y-4">
+                                                {category.subcategories.map(sub => (
+                                                    <Link 
+                                                        key={sub._id} 
+                                                        to={`/category/${category.id}`} 
+                                                        state={{ activeSubcategoryId: sub._id }} 
+                                                        className="flex flex-col items-center gap-1 group"
+                                                    >
+                                                        <div className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shadow-sm border border-slate-200/50 group-hover:border-primary/50 group-hover:shadow-md transition-all">
+                                                            <img 
+                                                                src={applyCloudinaryTransform(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png")} 
+                                                                alt={sub.name} 
+                                                                className="w-full h-full object-cover" 
+                                                            />
+                                                        </div>
+                                                        <span className="text-[10px] sm:text-[11px] text-center font-bold leading-tight text-slate-600 group-hover:text-primary line-clamp-2">
+                                                            {sub.name}
+                                                        </span>
+                                                    </Link>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <ChevronRight size={18} className="text-slate-400" strokeWidth={2.5} />
-                                </Link>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     )}

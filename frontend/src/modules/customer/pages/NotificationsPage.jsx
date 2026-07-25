@@ -20,7 +20,7 @@ const NotificationsPage = () => {
             const response = await customerApi.getNotifications();
             const fetchedNotifications = response.data?.data?.notifications || [];
             setNotifications(fetchedNotifications);
-            
+
             // Auto mark as read if there are unread ones
             if (fetchedNotifications.some(n => !n.isRead)) {
                 markAllAsRead();
@@ -91,17 +91,15 @@ const NotificationsPage = () => {
             <div className="px-4 space-y-3 max-w-2xl mx-auto">
                 {notifications.length > 0 ? (
                     notifications.map((notification) => (
-                        <div 
-                            key={notification.id} 
-                            className={`p-4 rounded-2xl border flex gap-4 ${
-                                notification.isRead 
-                                ? "bg-white border-slate-100" 
-                                : "bg-primary/5 border-primary/20"
-                            }`}
+                        <div
+                            key={notification.id}
+                            className={`p-4 rounded-2xl border flex gap-4 ${notification.isRead
+                                    ? "bg-white border-slate-100"
+                                    : "bg-primary/5 border-primary/20"
+                                }`}
                         >
-                            <div className={`mt-1 h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${
-                                notification.isRead ? "bg-slate-100 text-slate-400" : "bg-primary/10 text-primary"
-                            }`}>
+                            <div className={`mt-1 h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${notification.isRead ? "bg-slate-100 text-slate-400" : "bg-primary/10 text-primary"
+                                }`}>
                                 {notification.isRead ? <Bell size={18} /> : <BellRing size={18} />}
                             </div>
                             <div className="flex-1">
