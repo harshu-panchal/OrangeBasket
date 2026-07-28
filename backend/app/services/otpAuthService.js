@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import Customer from "../models/customer.js";
+import Employee from "../models/employee.js";
 import { sendSmsIndiaHubOtp } from "./smsIndiaHubService.js";
 import { generateOTP, useRealSMS } from "../utils/otp.js";
 import { getRedisClient } from "../config/redis.js";
@@ -93,6 +94,7 @@ export async function issueCustomerOtp({
   name = "",
   rawPhone,
   flow,
+  referralCode,
   ipAddress = "unknown",
 }) {
   const phone = normalizeAndValidatePhone(rawPhone);
@@ -144,6 +146,13 @@ export async function issueCustomerOtp({
     customer = await Customer.findById(customer._id).select(
       "+otpHash +otpExpiresAt +otpFailedAttempts +otpLockedUntil +otpLastSentAt +otpSessionVersion +otp +otpExpiry",
     );
+  }
+
+  if (referralCode && !customer.referredBy) {
+    const employee = await Employee.findOne({ referralCode: referralCode.toUpperCase() });
+    if (employee) {
+      customer.referredBy = employee._id;
+    }
   }
 
   if (customer.otpLockedUntil && customer.otpLockedUntil > now) {

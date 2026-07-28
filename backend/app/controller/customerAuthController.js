@@ -32,6 +32,7 @@ export const signupCustomer = async (req, res) => {
             name: payload.name,
             rawPhone: payload.phone,
             flow: "signup",
+            referralCode: payload.referralCode,
             ipAddress: req.ip,
         });
 

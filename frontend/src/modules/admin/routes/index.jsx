@@ -22,6 +22,7 @@ import {
   Sparkles,
   User,
   AlertTriangle,
+  UserCheck,
 } from "lucide-react";
 
 const Dashboard = React.lazy(() => import("../pages/Dashboard"));
@@ -101,6 +102,9 @@ const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBann
 const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
 
 const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
+
+const EmployeeManagement = React.lazy(() => import("../pages/EmployeeManagement"));
+const EmployeeDetail = React.lazy(() => import("../pages/EmployeeDetail"));
 
 const navItems = [
   {
@@ -204,6 +208,7 @@ const navItems = [
     icon: CircleDollarSign,
     color: "green",
   },
+  { label: "Employees", path: "/admin/employees", icon: UserCheck, color: "green" },
   { label: "Customers", path: "/admin/customers", icon: Users, color: "sky" },
   { label: "FAQs", path: "/admin/faqs", icon: HelpCircle, color: "pink" },
   {
@@ -304,6 +309,8 @@ const AdminRoutes = () => {
         <Route path="/withdrawals" element={<WithdrawalRequests />} />
         <Route path="/seller-transactions" element={<SellerTransactions />} />
         <Route path="/cash-collection" element={<CashCollection />} />
+        <Route path="/employees" element={<EmployeeManagement />} />
+        <Route path="/employees/:id" element={<EmployeeDetail />} />
         <Route path="/customers" element={<CustomerManagement />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
         <Route path="/faqs" element={<FAQManagement />} />

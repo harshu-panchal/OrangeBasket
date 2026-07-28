@@ -125,6 +125,12 @@ const userSchema = new mongoose.Schema(
             default: true,
         },
 
+        referredBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Employee",
+            default: null,
+        },
+
         lastLogin: Date,
     },
     {

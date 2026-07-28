@@ -19,7 +19,8 @@ const CustomerAuth = () => {
     const [formData, setFormData] = useState({
         phone: '',
         otp: '',
-        name: ''
+        name: '',
+        referralCode: new URLSearchParams(window.location.search).get('ref') || ''
     });
 
     useEffect(() => {
@@ -46,7 +47,11 @@ const CustomerAuth = () => {
             if (isLogin) {
                 await customerApi.sendLoginOtp({ phone: formData.phone });
             } else {
-                await customerApi.sendSignupOtp({ name: formData.name, phone: formData.phone });
+                await customerApi.sendSignupOtp({ 
+                    name: formData.name, 
+                    phone: formData.phone,
+                    referralCode: formData.referralCode
+                });
             }
             setShowOtp(true);
             setTimer(30);
@@ -105,16 +110,28 @@ const CustomerAuth = () => {
 
                         <form className="space-y-4" onSubmit={handleSendOtp}>
                             {!isLogin && (
-                                <div className="relative">
-                                    <input
-                                        required
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        placeholder="Full Name"
-                                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all"
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    />
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <input
+                                            required
+                                            type="text"
+                                            name="name"
+                                            value={formData.name}
+                                            placeholder="Full Name"
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all"
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            name="referralCode"
+                                            value={formData.referralCode}
+                                            placeholder="Referral Code (Optional)"
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all uppercase"
+                                            onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
