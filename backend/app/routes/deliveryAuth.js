@@ -15,6 +15,10 @@ import {
   requestWithdrawal,
   updateDeliveryLocation,
 } from "../controller/deliveryController.js";
+import {
+  triggerSOS,
+  updateEmergencyContacts,
+} from "../controller/sosController.js";
 import { getRiderWalletSummaryController } from "../controller/adminFinanceController.js";
 
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
@@ -47,6 +51,10 @@ router.get(
 );
 router.post("/request-withdrawal", verifyToken, requestWithdrawal);
 router.post("/location", verifyToken, updateDeliveryLocation);
+
+// SOS & Emergency Contacts
+router.post("/sos/trigger", verifyToken, allowRoles("delivery"), triggerSOS);
+router.put("/emergency-contacts", verifyToken, allowRoles("delivery"), updateEmergencyContacts);
 
 // NOTE: Delivery-completion OTP generation/validation lives on the
 // canonical workflow routes:

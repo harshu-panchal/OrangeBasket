@@ -262,3 +262,14 @@ export function onDeliveryOtpValidated(getToken, handler) {
     s.off("delivery:otp:validated", wrappedHandler);
   };
 }
+
+/**
+ * SOS emergency alert from a delivery partner. Fires when a rider
+ * triggers the SOS button from the Safety & Privacy page.
+ */
+export function onSOSAlert(getToken, handler) {
+  const s = getOrderSocket(getToken);
+  if (!s || typeof handler !== "function") return () => {};
+  s.on("sos:alert", handler);
+  return () => s.off("sos:alert", handler);
+}

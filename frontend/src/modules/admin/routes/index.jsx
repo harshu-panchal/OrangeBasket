@@ -21,6 +21,7 @@ import {
   Terminal,
   Sparkles,
   User,
+  AlertTriangle,
 } from "lucide-react";
 
 const Dashboard = React.lazy(() => import("../pages/Dashboard"));
@@ -98,6 +99,8 @@ const AdminProfile = React.lazy(() => import("../pages/AdminProfile"));
 const MonthlyBasketCategories = React.lazy(() => import("../pages/MonthlyBasketCategories"));
 const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBanners"));
 const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
+
+const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 
 const navItems = [
   {
@@ -179,6 +182,7 @@ const navItems = [
       { label: "Waiting for Review", path: "/admin/delivery-boys/pending" },
       { label: "Track Drivers", path: "/admin/tracking" },
       { label: "Send Money", path: "/admin/delivery-funds" },
+      { label: "SOS Alerts", path: "/admin/sos-alerts" },
     ],
   },
   { label: "Wallet", path: "/admin/wallet", icon: Wallet, color: "violet" },
@@ -295,6 +299,7 @@ const AdminRoutes = () => {
         />
         <Route path="/tracking" element={<FleetTracking />} />
         <Route path="/delivery-funds" element={<DeliveryFunds />} />
+        <Route path="/sos-alerts" element={<SOSAlerts />} />
         <Route path="/wallet" element={<AdminWallet />} />
         <Route path="/withdrawals" element={<WithdrawalRequests />} />
         <Route path="/seller-transactions" element={<SellerTransactions />} />

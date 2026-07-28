@@ -21,6 +21,7 @@ import { adminOrdersApi } from './ordersApi';
 import { adminSupportApi } from './supportApi';
 import { adminDeliveryApi } from './deliveryApi';
 import { adminContentApi } from './contentApi';
+import { adminSOSApi } from './sosApi';
 
 export {
     adminAuthApi,
@@ -32,6 +33,7 @@ export {
     adminSupportApi,
     adminDeliveryApi,
     adminContentApi,
+    adminSOSApi,
 };
 
 /**
@@ -48,6 +50,7 @@ export const adminApi = {
     ...adminSupportApi,
     ...adminDeliveryApi,
     ...adminContentApi,
+    ...adminSOSApi,
 };
 
 export default adminApi;

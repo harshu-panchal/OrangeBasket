@@ -7,12 +7,12 @@ import BottomNav from './BottomNav';
 import { sellerApi } from '@/modules/seller/services/sellerApi';
 import { useAuth } from "@core/context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
-import { BellRing, Check, X, Clock, Truck } from 'lucide-react';
+import { BellRing, Check, X, Clock, Truck, AlertTriangle, Phone, MapPin, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import SellerOrdersContext from '@/modules/seller/context/SellerOrdersContext';
 import SellerEarningsContext, { defaultEarnings } from '@/modules/seller/context/SellerEarningsContext';
-import { getOrderSocket, onSellerOrderNew, onReturnDropOtp } from '@/core/services/orderSocket';
+import { getOrderSocket, onSellerOrderNew, onReturnDropOtp, onSOSAlert } from '@/core/services/orderSocket';
 import { createSocketTokenReader } from '@core/utils/authStorage';
 import { STORAGE_KEYS } from '@core/utils/storage';
 import orderAlertSound from '@/assets/sounds/order_alert.mp3';
@@ -54,6 +54,8 @@ const DashboardLayout = ({ children, navItems, title }) => {
     const acceptWindowTotalRef = useRef(60);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [returnDropOtpAlert, setReturnDropOtpAlert] = useState(null); // { orderId, otp, expiresAt }
+    const [sosAlert, setSOSAlert] = useState(null);
+    const sosRingtoneRef = useRef(null);
     const { user, logout, role } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
@@ -269,6 +271,45 @@ const DashboardLayout = ({ children, navItems, title }) => {
             unsubscribeDrop();
         };
     }, [role]);
+
+    // Admin SOS socket listener
+    useEffect(() => {
+        if (role !== 'admin') return undefined;
+        const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_ADMIN);
+        getOrderSocket(getToken);
+
+        const unsubscribeSOS = onSOSAlert(getToken, (payload) => {
+            console.log('[DashboardLayout] SOS Alert received:', payload);
+            setSOSAlert(payload);
+            // Play alarm sound (same as order alert)
+            try {
+                if (sosRingtoneRef.current) {
+                    sosRingtoneRef.current.pause();
+                    sosRingtoneRef.current.currentTime = 0;
+                }
+                const audio = new Audio(orderAlertSound);
+                audio.loop = true;
+                audio.volume = 1;
+                sosRingtoneRef.current = audio;
+                audio.play().catch(() => {});
+            } catch(e) {
+                console.error('[SOS] Audio play error:', e);
+            }
+        });
+
+        return () => {
+            unsubscribeSOS();
+        };
+    }, [role]);
+
+    const dismissSOSAlert = () => {
+        setSOSAlert(null);
+        if (sosRingtoneRef.current) {
+            sosRingtoneRef.current.pause();
+            sosRingtoneRef.current.currentTime = 0;
+            sosRingtoneRef.current = null;
+        }
+    };
 
     // Single earnings fetch when seller is on earnings/withdrawals/transactions – no duplicate calls
     useEffect(() => {
@@ -523,6 +564,91 @@ const DashboardLayout = ({ children, navItems, title }) => {
                                 >
                                     Dismiss Alert
                                 </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* SOS Emergency Alert Modal (Admin) */}
+            <AnimatePresence>
+                {sosAlert && role === 'admin' && (
+                    <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-md">
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 30 }}
+                            className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl border-2 border-red-300"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                <div className="h-24 w-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                                    <AlertTriangle className="h-12 w-12 text-red-600 animate-pulse" />
+                                </div>
+
+                                <h2 className="text-2xl font-black text-red-600 mb-2">🚨 SOS EMERGENCY ALERT</h2>
+                                <p className="text-slate-600 font-medium mb-6">
+                                    A delivery partner needs immediate assistance!
+                                </p>
+
+                                <div className="w-full bg-red-50 rounded-2xl p-5 mb-6 text-left">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-12 w-12 rounded-full bg-red-200 flex items-center justify-center">
+                                            <AlertTriangle className="h-6 w-6 text-red-700" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 text-lg">{sosAlert.deliveryName || 'Unknown Rider'}</h3>
+                                            <a href={`tel:${sosAlert.deliveryPhone}`} className="text-sm text-red-600 font-medium flex items-center gap-1 hover:underline">
+                                                <Phone size={13} /> {sosAlert.deliveryPhone}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {sosAlert.location?.coordinates && sosAlert.location.coordinates[0] !== 0 && (
+                                        <a
+                                            href={`https://www.google.com/maps?q=${sosAlert.location.coordinates[1]},${sosAlert.location.coordinates[0]}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors mb-3"
+                                        >
+                                            <MapPin size={14} /> View Location
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    )}
+
+                                    {sosAlert.emergencyContacts?.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="text-xs font-bold text-slate-500 mb-2">EMERGENCY CONTACTS</p>
+                                            <div className="space-y-1">
+                                                {sosAlert.emergencyContacts.map((c, i) => (
+                                                    <a key={i} href={`tel:${c.phone}`} className="flex items-center justify-between p-2 bg-white rounded-lg hover:bg-red-50 transition-colors">
+                                                        <span className="text-sm font-semibold text-slate-800">{c.name}</span>
+                                                        <span className="text-xs text-slate-500 flex items-center gap-1"><Phone size={11} /> {c.phone}</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 w-full">
+                                    <button
+                                        onClick={dismissSOSAlert}
+                                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
+                                    >
+                                        <X className="h-5 w-5" />
+                                        Dismiss
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            dismissSOSAlert();
+                                            navigate('/admin/sos-alerts');
+                                        }}
+                                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95"
+                                    >
+                                        <AlertTriangle className="h-5 w-5" />
+                                        View Details
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>

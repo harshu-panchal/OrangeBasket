@@ -49,6 +49,11 @@ import {
     processAdminFinancePayoutsController,
     updateDeliverySettingsController,
 } from "../controller/adminFinanceController.js";
+import {
+    getSOSAlerts,
+    acknowledgeSOSAlert,
+    resolveSOSAlert,
+} from "../controller/sosController.js";
 
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
 import {
@@ -241,6 +246,13 @@ router.get("/seller-withdrawals", verifyToken, allowRoles("admin"), getSellerWit
 router.get("/delivery-withdrawals", verifyToken, allowRoles("admin"), getDeliveryWithdrawals);
 router.get("/seller-transactions", verifyToken, allowRoles("admin"), getSellerTransactions);
 router.put("/withdrawals/:id", verifyToken, allowRoles("admin"), updateWithdrawalStatus);
+
+// =======================
+// SOS ALERTS
+// =======================
+router.get("/sos-alerts", verifyToken, allowRoles("admin"), getSOSAlerts);
+router.put("/sos-alerts/:id/acknowledge", verifyToken, allowRoles("admin"), acknowledgeSOSAlert);
+router.put("/sos-alerts/:id/resolve", verifyToken, allowRoles("admin"), resolveSOSAlert);
 
 // Protected admin route example
 router.get(

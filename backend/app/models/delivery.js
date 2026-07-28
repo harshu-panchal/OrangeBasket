@@ -92,6 +92,13 @@ const deliverySchema = new mongoose.Schema(
                 default: [0, 0],
             },
         },
+        emergencyContacts: [
+            {
+                name: { type: String, required: true, trim: true },
+                phone: { type: String, required: true, trim: true },
+            },
+        ],
+
         role: {
             type: String,
             default: "delivery",
