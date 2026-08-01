@@ -7,6 +7,8 @@ import { useLocation } from "../../context/LocationContext";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import { useSettings } from "@core/context/SettingsContext";
 import { cn } from "@/lib/utils";
+import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
 import {
   buildHeaderGradient,
@@ -26,6 +28,8 @@ import FavoriteBorderOutlinedIcon from "@mui/icons-material/FavoriteBorderOutlin
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import LanguageIcon from "@mui/icons-material/Language";
+import { useTranslation } from "@core/context/LanguageContext";
 
 /** Full-width bottom stroke + tab curve; l/r are 0–100% of column where the inner bump sits. */
 function buildActiveTabPath(l, r) {
@@ -148,6 +152,20 @@ const MainLocationHeader = ({
   onCategorySelect,
 }) => {
   const { scrollY } = useScroll();
+  const { t, language, setLanguage, languages } = useTranslation();
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const langDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const isMobileView = typeof window !== "undefined" && window.innerWidth < 768;
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [cartAnimData, setCartAnimData] = useState(null);
@@ -162,6 +180,8 @@ const MainLocationHeader = ({
     useLocation();
   const { isOpen: isProductDetailOpen } = useProductDetail();
   const { settings } = useSettings();
+  const { cartCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const appName = settings?.appName || "App";
   const logoUrl = settings?.logoUrl;
   const navigate = useNavigate();
@@ -274,8 +294,8 @@ const MainLocationHeader = ({
   const displayCart = useTransform(scrollY, (value) => "block");
 
   const baseHeaderColor = activeCategory?.headerColor || "var(--primary)";
-  const headerFontColor = activeCategory?.headerFontColor || "#111827";
-  const headerIconColor = activeCategory?.headerIconColor || "#111111";
+  const headerFontColor = "#111827";
+  const headerIconColor = "#111111";
 
   const headerGradient = buildHeaderGradient(baseHeaderColor);
   const searchBarBg = buildSearchBarBackgroundColor(baseHeaderColor);
@@ -306,9 +326,9 @@ const MainLocationHeader = ({
             borderBottomLeftRadius: headerRoundness,
             borderBottomRightRadius: headerRoundness,
             opacity: bgOpacity,
-            backgroundColor: isMobileView ? "#ffffff" : baseHeaderColor,
+            backgroundColor: "#ffffff",
           }}
-          className="px-4 overflow-visible transform-gpu will-change-transform bg-white md:bg-transparent border-b border-slate-100/60 md:border-b-0">
+          className="px-4 overflow-visible transform-gpu will-change-transform bg-white border-b border-slate-100/60 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
           {/* Subtle Glow Overlay */}
           <div className="absolute inset-0 bg-white/8 pointer-events-none" />
 
@@ -372,30 +392,78 @@ const MainLocationHeader = ({
                 onClick={handleSearchClick}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                className="bg-white rounded-full px-4 h-11 shadow-md flex items-center border border-white/50 transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 cursor-pointer">
-                <SearchIcon sx={{ color: "#000000", fontSize: 20 }} />
+                className="bg-slate-50/80 rounded-full px-4 h-11 border border-slate-200/50 flex items-center transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 focus-within:bg-white cursor-pointer shadow-3xs hover:shadow-2xs">
+                <SearchIcon sx={{ color: "#64748b", fontSize: 20 }} />
                 <input
                   type="text"
                   placeholder={searchPlaceholder || "Search Products..."}
                   readOnly
-                  className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-semibold placeholder:text-black text-[15px] cursor-pointer"
+                  className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-semibold placeholder:text-slate-400 text-[15px] cursor-pointer"
                 />
-                <div className="flex items-center gap-2 border-l border-slate-100 pl-3">
-                  <MicIcon sx={{ color: "#000000", fontSize: 20 }} />
+                <div className="flex items-center gap-2 border-l border-slate-200/60 pl-3">
+                  <MicIcon sx={{ color: "#64748b", fontSize: 20 }} />
                 </div>
               </motion.div>
             </div>
 
             {/* Right Section: Action Icons */}
             <div className="flex items-center gap-5 lg:gap-8 shrink-0">
+              {/* Language Selector Dropdown */}
+              <div className="relative" ref={langDropdownRef}>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200/60 bg-slate-50/50 hover:bg-slate-100/60 transition-all text-slate-700 hover:text-slate-900 cursor-pointer text-xs font-bold shadow-3xs"
+                >
+                  <LanguageIcon sx={{ fontSize: 16 }} className="text-slate-500" />
+                  <span>{languages.find(l => l.code === language)?.flag}</span>
+                  <span className="uppercase text-[11px]">{language}</span>
+                  <ChevronDownIcon sx={{ fontSize: 14, opacity: 0.5 }} className={cn("transition-transform duration-200", isLangDropdownOpen ? "rotate-180" : "")} />
+                </motion.button>
+
+                {isLangDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-2xl border border-slate-100 shadow-xl py-1.5 z-[250] animate-in fade-in slide-in-from-top-1 duration-150">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-4 py-2 text-xs font-bold transition-colors flex items-center justify-between",
+                          language === lang.code
+                            ? "bg-orange-50 text-orange-600"
+                            : "text-slate-600 hover:bg-slate-50"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-base">{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </span>
+                        {language === lang.code && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <motion.button
                 whileHover={{ scale: 1.15, rotate: 5 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => navigate("/wishlist")}
-                className="transition-all hover:text-red-500"
+                className="transition-all hover:text-red-500 relative group"
                 style={{ color: headerFontColor }}
               >
                 <FavoriteBorderOutlinedIcon sx={{ fontSize: 24 }} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform group-hover:-translate-y-0.5 animate-in zoom-in duration-300">
+                    {wishlistCount}
+                  </span>
+                )}
               </motion.button>
 
               <motion.button
@@ -416,16 +484,18 @@ const MainLocationHeader = ({
                 style={{ color: headerFontColor }}
               >
                 <ShoppingCartOutlinedIcon sx={{ fontSize: 24 }} />
-                <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-brand-900 text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-brand-800 shadow-sm transition-transform group-hover:-translate-y-0.5">
-                  0
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-brand-900 text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform group-hover:-translate-y-0.5 animate-in zoom-in duration-300">
+                    {cartCount}
+                  </span>
+                )}
               </motion.button>
 
               <motion.button
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => navigate("/profile")}
-                className="lg:bg-white/30 p-1.5 lg:rounded-full hover:bg-white transition-all"
+                className="lg:bg-slate-100/60 p-1.5 lg:rounded-full hover:bg-slate-200/50 transition-all"
                 style={{ color: headerFontColor }}
               >
                 <AccountCircleOutlinedIcon sx={{ fontSize: 28 }} />
@@ -453,16 +523,55 @@ const MainLocationHeader = ({
                 </div>
               </div>
 
-              {/* Notification Bell Button */}
-              <button
-                onClick={() => navigate("/notifications")}
-                className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center relative cursor-pointer active:scale-95 transition-all text-slate-800 shadow-3xs"
-              >
-                <NotificationsNoneOutlinedIcon sx={{ fontSize: 22 }} />
-                <span className="absolute -top-0.5 -right-0.5 bg-[#FF8200] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                  3
-                </span>
-              </button>
+              {/* Right actions: Language Dropdown + Notification Bell Button */}
+              <div className="flex items-center gap-2.5">
+                {/* Language Selector Dropdown (Mobile) */}
+                <div className="relative" ref={langDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                    className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center relative cursor-pointer active:scale-95 transition-all text-slate-800 shadow-3xs"
+                  >
+                    <LanguageIcon sx={{ fontSize: 20 }} className="text-slate-500" />
+                  </button>
+
+                  {isLangDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-36 bg-white rounded-2xl border border-slate-100 shadow-xl py-1.5 z-[250] animate-in fade-in slide-in-from-top-1 duration-150">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            setLanguage(lang.code);
+                            setIsLangDropdownOpen(false);
+                          }}
+                          className={cn(
+                            "w-full text-left px-3.5 py-2 text-xs font-bold transition-colors flex items-center justify-between",
+                            language === lang.code
+                              ? "bg-orange-50 text-orange-600"
+                              : "text-slate-600 hover:bg-slate-50"
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="text-base">{lang.flag}</span>
+                            <span>{lang.name}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notification Bell Button */}
+                <button
+                  onClick={() => navigate("/notifications")}
+                  className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center relative cursor-pointer active:scale-95 transition-all text-slate-800 shadow-3xs"
+                >
+                  <NotificationsNoneOutlinedIcon sx={{ fontSize: 22 }} />
+                  <span className="absolute -top-0.5 -right-0.5 bg-[#FF8200] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                    3
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Middle row: Deliver to Address capsule (w-fit) */}
