@@ -25,6 +25,7 @@ import metricsRoute from "./metricsRoutes.js";
 import kitRoute from "./kitRoutes.js";
 import authOtpRoute from "../modules/otp/otp.routes.js";
 import employeeRoute from "./employeeRoutes.js";
+import translationRoute from "./translationRoutes.js";
 
 import express from "express";
 
@@ -74,6 +75,7 @@ const setupRoutes = (app) => {
     router.use("/public/faqs", faqRoute); // For public access without admin prefix
     router.use("/kits", kitRoute);
     router.use("/employees", employeeRoute);
+    router.use("/translate", translationRoute);
 
     app.use("/api", router);
 }

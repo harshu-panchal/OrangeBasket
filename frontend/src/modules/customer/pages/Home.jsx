@@ -30,6 +30,9 @@ import { useSettings } from "@core/context/SettingsContext";
 import Lottie from "lottie-react";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
 import { getJSON, remove as removeStorage, STORAGE_KEYS } from "@core/utils/storage";
+import { useTranslation } from "@core/context/LanguageContext";
+import { usePageTranslation } from "@/core/hooks/usePageTranslation";
+import { useDynamicTranslation } from "@/core/hooks/useDynamicTranslation";
 
 import {
   MARQUEE_MESSAGES,
@@ -167,6 +170,14 @@ const getHomePageDataCacheKey = (location) => {
   return `home:${lat.toFixed(5)}:${lng.toFixed(5)}`;
 };
 
+const homeStaticTexts = [
+  "Subcategories",
+  "View All",
+  "No subcategories found.",
+  "Latest in",
+  "Search"
+];
+
 const getCachedHomePageData = (location) =>
   homePageDataCache.get(getHomePageDataCacheKey(location)) || null;
 
@@ -178,6 +189,10 @@ const Home = () => {
   const navigate = useNavigate();
   const quickCatsRef = useRef(null);
   const cachedHomePageData = getCachedHomePageData(currentLocation);
+
+  const { language } = useTranslation();
+  const { getTranslatedText } = usePageTranslation(homeStaticTexts);
+  const { translateObject } = useDynamicTranslation();
 
   const { ref: particleContainerRef, isVisible: particlesVisible } = useInViewAnimation();
   const heroRef = useRef(null);
@@ -213,6 +228,80 @@ const Home = () => {
   const [pendingReturn, setPendingReturn] = useState(null);
   const [offerSections, setOfferSections] = useState(() => cachedHomePageData?.offerSections || []);
   const [noServiceData, setNoServiceData] = useState(null);
+
+  const [displayCategories, setDisplayCategories] = useState(categories);
+  const [displayProducts, setDisplayProducts] = useState(products);
+  const [displayQuickCategories, setDisplayQuickCategories] = useState(quickCategories);
+  const [displayCategoryMap, setDisplayCategoryMap] = useState(categoryMap);
+  const [displaySubcategoryMap, setDisplaySubcategoryMap] = useState(subcategoryMap);
+  const [displayOfferSections, setDisplayOfferSections] = useState(offerSections);
+  const [displayExperienceSections, setDisplayExperienceSections] = useState(experienceSections);
+  const [displayHeaderSections, setDisplayHeaderSections] = useState(headerSections);
+
+  useEffect(() => {
+    if (language === "en") {
+      setDisplayCategories(categories);
+      setDisplayProducts(products);
+      setDisplayQuickCategories(quickCategories);
+      setDisplayCategoryMap(categoryMap);
+      setDisplaySubcategoryMap(subcategoryMap);
+      setDisplayOfferSections(offerSections);
+      setDisplayExperienceSections(experienceSections);
+      setDisplayHeaderSections(headerSections);
+      return;
+    }
+
+    let isMounted = true;
+    const translateHomeContent = async () => {
+      try {
+        const txCategories = await translateObject(categories, ["name"]);
+        const txProducts = await translateObject(products, ["name", "weight", "description"]);
+        const txQuickCats = await translateObject(quickCategories, ["name"]);
+        const txOfferSections = await translateObject(offerSections, ["title", "subtitle"]);
+        const txExperienceSections = await translateObject(experienceSections, ["title", "subtitle"]);
+        const txHeaderSections = await translateObject(headerSections, ["title", "subtitle"]);
+
+        // Maps
+        const catArray = Object.values(categoryMap);
+        const txCatArray = await translateObject(catArray, ["name"]);
+        const txCatMap = {};
+        txCatArray.forEach((c) => { txCatMap[c._id] = c; });
+
+        const subArray = Object.values(subcategoryMap);
+        const txSubArray = await translateObject(subArray, ["name"]);
+        const txSubcatMap = {};
+        txSubArray.forEach((s) => { txSubcatMap[s._id] = s; });
+
+        if (isMounted) {
+          setDisplayCategories(txCategories);
+          setDisplayProducts(txProducts);
+          setDisplayQuickCategories(txQuickCats);
+          setDisplayCategoryMap(txCatMap);
+          setDisplaySubcategoryMap(txSubcatMap);
+          setDisplayOfferSections(txOfferSections);
+          setDisplayExperienceSections(txExperienceSections);
+          setDisplayHeaderSections(txHeaderSections);
+        }
+      } catch (err) {
+        console.error("Translation of home content failed:", err);
+      }
+    };
+
+    translateHomeContent();
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    language,
+    categories,
+    products,
+    quickCategories,
+    categoryMap,
+    subcategoryMap,
+    offerSections,
+    experienceSections,
+    headerSections,
+  ]);
 
   useEffect(() => {
     productsRef.current = products || [];
@@ -388,14 +477,14 @@ const Home = () => {
   const handleBannerTransitionEnd = () => { if (mobileBannerIndex === 2) { setIsInstantBannerJump(true); setMobileBannerIndex(0); } };
   useEffect(() => { if (!isInstantBannerJump) return; const id = requestAnimationFrame(() => setIsInstantBannerJump(false)); return () => cancelAnimationFrame(id); }, [isInstantBannerJump]);
 
-  const productsById = useMemo(() => { const map = {}; products.forEach((p) => { map[p._id || p.id] = p; }); return map; }, [products]);
+  const productsById = useMemo(() => { const map = {}; displayProducts.forEach((p) => { map[p._id || p.id] = p; }); return map; }, [displayProducts]);
   const effectiveQuickCategories = useMemo(() => {
     const ids = heroConfig.categoryIds || [];
-    if (ids.length > 0) { const resolved = ids.map((id) => categoryMap[id]).filter(Boolean).map((c) => ({ id: c._id, name: c.name, image: c.image || "https://cdn-icons-png.flaticon.com/128/2321/2321831.png" })); if (resolved.length > 0) return resolved; }
-    return quickCategories;
-  }, [heroConfig.categoryIds, categoryMap, quickCategories]);
+    if (ids.length > 0) { const resolved = ids.map((id) => displayCategoryMap[id]).filter(Boolean).map((c) => ({ id: c._id, name: c.name, image: c.image || "https://cdn-icons-png.flaticon.com/128/2321/2321831.png" })); if (resolved.length > 0) return resolved; }
+    return displayQuickCategories;
+  }, [heroConfig.categoryIds, displayCategoryMap, displayQuickCategories]);
 
-  const sectionsForRenderer = headerSections.length ? headerSections : experienceSections;
+  const sectionsForRenderer = displayHeaderSections.length ? displayHeaderSections : displayExperienceSections;
   const isMobile = useMemo(() => isMobileOrWebView(), []);
   const opacity = useTransform(scrollY, (heroVisible && !isMobile) ? [0, 300] : [0, 0], [1, 0.6]);
   const y = useTransform(scrollY, (heroVisible && !isMobile) ? [0, 300] : [0, 0], [0, 80]);
@@ -404,10 +493,10 @@ const Home = () => {
 
   useEffect(() => {
     if (!pendingReturn?.sectionId) return;
-    const allSections = headerSections.length ? headerSections : experienceSections;
+    const allSections = displayHeaderSections.length ? displayHeaderSections : displayExperienceSections;
     if (!allSections.length) return;
     if (allSections.some((s) => s._id === pendingReturn.sectionId)) { const el = document.getElementById(`section-${pendingReturn.sectionId}`); if (el) { el.scrollIntoView({ behavior: "instant", block: "start" }); removeStorage(STORAGE_KEYS.EXPERIENCE_RETURN, { storage: "session" }); setPendingReturn(null); } }
-  }, [headerSections, experienceSections, pendingReturn]);
+  }, [displayHeaderSections, displayExperienceSections, pendingReturn]);
 
   const renderFloatingElements = (type, isVisible = true) => {
     if (isMobile) return null;
@@ -417,7 +506,7 @@ const Home = () => {
   return (
     <div className="min-h-screen pt-[120px] md:pt-[95px] bg-white">
       <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
-        <MainLocationHeader categories={categories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
+        <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>
 
         <>
@@ -457,7 +546,7 @@ const Home = () => {
                   <div className="bg-slate-50/80 rounded-2xl p-3 border border-slate-100 shadow-sm">
                       <div className="flex items-center justify-between mb-3 px-1">
                           <h4 className="text-sm font-bold text-slate-800">
-                              {effectiveQuickCategories.find(c => c.id === expandedCategoryId)?.name} Subcategories
+                              {effectiveQuickCategories.find(c => c.id === expandedCategoryId)?.name} {getTranslatedText("Subcategories")}
                           </h4>
                           <button 
                               onClick={() => {
@@ -466,11 +555,11 @@ const Home = () => {
                               }}
                               className="text-xs font-bold text-primary hover:underline"
                           >
-                              View All
+                              {getTranslatedText("View All")}
                           </button>
                       </div>
                       <div className="grid grid-cols-4 gap-2">
-                          {Object.values(subcategoryMap)
+                          {Object.values(displaySubcategoryMap)
                               .filter(sub => sub.parentId === expandedCategoryId)
                               .map(sub => (
                                   <div 
@@ -493,9 +582,9 @@ const Home = () => {
                                       </span>
                                   </div>
                               ))}
-                          {Object.values(subcategoryMap).filter(sub => sub.parentId === expandedCategoryId).length === 0 && (
+                          {Object.values(displaySubcategoryMap).filter(sub => sub.parentId === expandedCategoryId).length === 0 && (
                               <div className="col-span-4 text-center py-4 text-xs text-slate-400 font-medium">
-                                  No subcategories found.
+                                  {getTranslatedText("No subcategories found.")}
                               </div>
                           )}
                       </div>
@@ -505,7 +594,7 @@ const Home = () => {
                               if (!productField) return false;
                               return productField === targetId || productField._id === targetId || productField.id === targetId;
                           };
-                          const categoryProducts = products.filter(p => 
+                          const categoryProducts = displayProducts.filter(p => 
                               isMatch(p.categoryId, expandedCategoryId) || 
                               isMatch(p.headerId, expandedCategoryId) ||
                               isMatch(p.subcategoryId, expandedCategoryId)
@@ -515,7 +604,7 @@ const Home = () => {
                               <div className="mt-5 pt-4 border-t border-slate-200/60">
                                   <div className="flex items-center justify-between mb-3 px-1">
                                       <h4 className="text-[13px] font-bold text-slate-700">
-                                          Latest in {effectiveQuickCategories.find(c => c.id === expandedCategoryId)?.name || "Category"}
+                                          {getTranslatedText("Latest in")} {effectiveQuickCategories.find(c => c.id === expandedCategoryId)?.name || "Category"}
                                       </h4>
                                   </div>
                                   <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
@@ -531,13 +620,13 @@ const Home = () => {
                   </div>
               </div>
           )}
-          <LowestPriceSection products={products} onSeeAll={() => navigate("/category/all")} />
+          <LowestPriceSection products={displayProducts} onSeeAll={() => navigate("/category/all")} />
           <MonthlyBasketSection />
-          <OfferSections sections={offerSections} noServiceData={noServiceData} />
+          <OfferSections sections={displayOfferSections} noServiceData={noServiceData} />
 
           {sectionsForRenderer.length > 0 && (
             <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-4 md:py-8">
-              <SectionRenderer sections={sectionsForRenderer} productsById={productsById} categoriesById={categoryMap} subcategoriesById={subcategoryMap} />
+              <SectionRenderer sections={sectionsForRenderer} productsById={productsById} categoriesById={displayCategoryMap} subcategoriesById={displaySubcategoryMap} />
             </div>
           )}
         </>

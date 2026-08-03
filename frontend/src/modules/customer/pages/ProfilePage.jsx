@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
     User, MapPin, Package, CreditCard, Wallet, ChevronRight,
     LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell, ShoppingCart,
-    ClipboardCheck, Ticket, LifeBuoy, MapPinned, CalendarCheck, BadgePercent
+    ClipboardCheck, Ticket, LifeBuoy, MapPinned, CalendarCheck, BadgePercent, Globe
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
+import { useTranslation } from '@core/context/LanguageContext';
 import CartPage from './CartPage';
 import { cn } from '@/lib/utils';
 
@@ -14,9 +15,11 @@ const ProfilePage = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { settings } = useSettings();
+    const { t, language, setLanguage, languages } = useTranslation();
     const appName = settings?.appName || 'App';
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
     const [isCartOpen, setIsCartOpen] = React.useState(false);
+    const [isLangExpanded, setIsLangExpanded] = React.useState(false);
 
     const formatIndiaPhone = (value) => {
         const raw = String(value || '').trim();
@@ -36,7 +39,7 @@ const ProfilePage = () => {
                 >
                     <ChevronLeft size={22} className="text-slate-800" />
                 </button>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">My Profile</h1>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">{t('myProfile')}</h1>
                 <div className="ml-auto flex items-center gap-2">
                     <button
                         type="button"
@@ -81,7 +84,7 @@ const ProfilePage = () => {
                             <div className="w-12 h-12 rounded-full bg-emerald-50/80 border border-emerald-100 text-emerald-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
                                 <CalendarCheck size={22} strokeWidth={2.5} />
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Your<br/>Orders</span>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">{t('yourOrders')}</span>
                         </button>
                         <button
                             onClick={() => navigate('/wallet')}
@@ -90,7 +93,7 @@ const ProfilePage = () => {
                             <div className="w-12 h-12 rounded-full bg-teal-50/80 border border-teal-100 text-teal-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
                                 <Wallet size={22} strokeWidth={2.5} />
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 leading-tight">My<br/>Wallet</span>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">{t('wallet')}</span>
                         </button>
                         <button
                             onClick={() => navigate('/wishlist')}
@@ -99,7 +102,7 @@ const ProfilePage = () => {
                             <div className="w-12 h-12 rounded-full bg-rose-50/80 border border-rose-100 text-rose-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
                                 <BadgePercent size={22} strokeWidth={2.5} />
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Wishlist</span>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">{t('wishlist')}</span>
                         </button>
                         <button
                             onClick={() => navigate('/addresses')}
@@ -108,7 +111,7 @@ const ProfilePage = () => {
                             <div className="w-12 h-12 rounded-full bg-blue-50/80 border border-blue-100 text-blue-700 flex items-center justify-center shadow-2xs mb-1.5 group-hover:scale-108 transition-transform">
                                 <MapPinned size={22} strokeWidth={2.5} />
                             </div>
-                            <span className="text-[11px] font-bold text-slate-700 leading-tight">Saved<br/>Addresses</span>
+                            <span className="text-[11px] font-bold text-slate-700 leading-tight">{t('savedAddresses')}</span>
                         </button>
                     </div>
                 </div>
@@ -118,48 +121,48 @@ const ProfilePage = () => {
                     {/* Account Section */}
                     <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
                         <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Personal Account</p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('personalAccount')}</p>
                         </div>
                         <div className="divide-y divide-slate-100">
                             <MenuItem
                                 icon={ShoppingCart}
-                                label="My Cart"
-                                sub="View your added products"
+                                label={t('myCart')}
+                                sub={t('viewAdded')}
                                 onClick={() => setIsCartOpen(true)}
                                 badgeBg="bg-amber-50/80 border-amber-100/70 text-amber-700"
                             />
                             <MenuItem
                                 icon={CalendarCheck}
-                                label="Your Orders"
-                                sub="Track, return or buy things again"
+                                label={t('yourOrders')}
+                                sub={t('trackReturn')}
                                 path="/orders"
                                 badgeBg="bg-emerald-50/80 border-emerald-100/70 text-emerald-700"
                             />
                             <MenuItem
                                 icon={CreditCard}
-                                label="Order Transactions"
-                                sub="View all payments & refunds"
+                                label={t('transactions')}
+                                sub={t('viewPayments')}
                                 path="/transactions"
                                 badgeBg="bg-orange-50/80 border-orange-100/70 text-orange-700"
                             />
                             <MenuItem
                                 icon={Wallet}
-                                label="Wallet"
-                                sub="Balance & return refunds"
+                                label={t('wallet')}
+                                sub={t('balanceRefunds')}
                                 path="/wallet"
                                 badgeBg="bg-teal-50/80 border-teal-100/70 text-teal-700"
                             />
                             <MenuItem
                                 icon={BadgePercent}
-                                label="Your Wishlist"
-                                sub="Your saved items"
+                                label={t('wishlist')}
+                                sub={t('savedItems')}
                                 path="/wishlist"
                                 badgeBg="bg-rose-50/80 border-rose-100/70 text-rose-700"
                             />
                             <MenuItem
                                 icon={MapPinned}
-                                label="Saved Addresses"
-                                sub="Manage your delivery locations"
+                                label={t('savedAddresses')}
+                                sub={t('manageLocations')}
                                 path="/addresses"
                                 badgeBg="bg-blue-50/80 border-blue-100/70 text-blue-700"
                             />
@@ -169,24 +172,75 @@ const ProfilePage = () => {
                     {/* Support Section */}
                     <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
                         <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Help & Settings</p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('helpSettings')}</p>
                         </div>
                         <div className="divide-y divide-slate-100">
+                            {/* Select Language Accordion */}
+                            <div>
+                                <button
+                                    onClick={() => setIsLangExpanded(!isLangExpanded)}
+                                    className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full border bg-orange-50/80 border-orange-100/70 text-orange-600 flex items-center justify-center shadow-2xs group-hover:scale-108 transition-transform flex-shrink-0">
+                                            <Globe size={18} strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-800 leading-tight">{t('selectLanguage')}</h3>
+                                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                                                {languages.find(l => l.code === language)?.flag} {languages.find(l => l.code === language)?.name}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="p-1.5 rounded-full group-hover:bg-slate-100 transition-colors">
+                                        <ChevronRight 
+                                            size={16} 
+                                            className={cn("text-slate-400 group-hover:text-slate-600 transition-all", isLangExpanded ? "rotate-90 text-slate-600" : "")} 
+                                        />
+                                    </div>
+                                </button>
+                                
+                                {isLangExpanded && (
+                                    <div className="bg-slate-50/50 border-t border-slate-100/60 divide-y divide-slate-100/60 transition-all duration-300">
+                                        {languages.map((lang) => (
+                                            <button
+                                                key={lang.code}
+                                                type="button"
+                                                onClick={() => setLanguage(lang.code)}
+                                                className="w-full flex items-center justify-between px-6 py-3 hover:bg-slate-100/40 transition-colors text-left"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg leading-none">{lang.flag}</span>
+                                                    <span className={`text-xs font-bold transition-colors ${
+                                                        language === lang.code ? 'text-orange-500' : 'text-slate-600'
+                                                    }`}>
+                                                        {lang.name}
+                                                    </span>
+                                                </div>
+                                                {language === lang.code && (
+                                                    <div className="w-2 h-2 rounded-full bg-orange-500 shadow-xs" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             <MenuItem
                                 icon={LifeBuoy}
-                                label="Help & Support"
+                                label={t('helpSupport')}
                                 path="/support"
                                 badgeBg="bg-purple-50/80 border-purple-100/70 text-purple-700"
                             />
                             <MenuItem
                                 icon={ShieldCheck}
-                                label="Privacy Policy"
+                                label={t('privacy')}
                                 path="/privacy"
                                 badgeBg="bg-indigo-50/80 border-indigo-100/70 text-indigo-700"
                             />
                             <MenuItem
                                 icon={Info}
-                                label="About Us"
+                                label={t('aboutUs')}
                                 path="/about"
                                 badgeBg="bg-cyan-50/80 border-cyan-100/70 text-cyan-700"
                             />
@@ -200,7 +254,7 @@ const ProfilePage = () => {
                     className="w-full py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold bg-white hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 mt-2 shadow-2xs"
                 >
                     <LogOut size={18} className="text-slate-600" />
-                    Sign out
+                    {t('signOut')}
                 </button>
 
                 <div className="text-center pb-8 mt-4">
@@ -217,16 +271,16 @@ const ProfilePage = () => {
                     <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                         <LogOut size={24} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-900 text-center mb-2">Sign out?</h3>
+                    <h3 className="text-xl font-black text-slate-900 text-center mb-2">{t('signOutTitle')}</h3>
                     <p className="text-sm font-medium text-slate-500 text-center mb-6">
-                        Are you sure you want to sign out from your account? You will need to login again to access your orders.
+                        {t('signOutConfirm')}
                     </p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setShowLogoutModal(false)}
                             className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
                         >
-                            Cancel
+                            {t('cancel')}
                         </button>
                         <button
                             onClick={() => {
@@ -235,7 +289,7 @@ const ProfilePage = () => {
                             }}
                             className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
                         >
-                            Yes, Sign out
+                            {t('yesSignOut')}
                         </button>
                     </div>
                 </div>
@@ -270,7 +324,7 @@ const ProfilePage = () => {
     );
 };
 
-const MenuItem = ({ icon: Icon, label, sub, path, onClick, badgeBg }) => {
+const MenuItem = ({ icon: Icon, label, sub = '', path = '', onClick = undefined, badgeBg = '' }) => {
     const Component = onClick ? 'button' : Link;
     return (
     <Component to={path || undefined} onClick={onClick} className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-slate-50/80 cursor-pointer transition-colors group">

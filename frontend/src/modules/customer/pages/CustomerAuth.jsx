@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
-import { ChevronLeft } from 'lucide-react';
+import { useTranslation } from '@core/context/LanguageContext';
+import { ChevronLeft, Globe, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { customerApi } from '../services/customerApi';
 
@@ -13,6 +14,9 @@ const CustomerAuth = () => {
     const [timer, setTimer] = useState(0);
     const { login } = useAuth();
     const { settings } = useSettings();
+    const { t, language, setLanguage, languages } = useTranslation();
+    const [isLangOpen, setIsLangOpen] = useState(false);
+    const dropdownRef = useRef(null);
     const appName = settings?.appName || 'App';
     const navigate = useNavigate();
 
@@ -31,14 +35,24 @@ const CustomerAuth = () => {
         return () => clearInterval(interval);
     }, [timer]);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsLangOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleSendOtp = async (e) => {
         e?.preventDefault();
         if (formData.phone.length !== 10) {
-            toast.error('Enter valid 10-digit number');
+            toast.error(t('enterValidPhone'));
             return;
         }
         if (!isLogin && !formData.name.trim()) {
-            toast.error('Please enter your full name');
+            toast.error(t('enterFullName'));
             return;
         }
         
@@ -55,7 +69,7 @@ const CustomerAuth = () => {
             }
             setShowOtp(true);
             setTimer(30);
-            toast.success('OTP sent!');
+            toast.success(t('otpSent'));
         } catch (error) {
             const apiMessage = error?.response?.data?.message || 'Failed to send OTP';
             toast.error(apiMessage);
@@ -75,11 +89,11 @@ const CustomerAuth = () => {
             const response = await customerApi.verifyOtp({ phone: formData.phone, otp: formData.otp });
             const { token, customer } = response.data.result;
             login({ ...customer, token, role: 'customer' });
-            toast.success('Successfully Logged In!');
+            toast.success(t('loggedInSuccess'));
             navigate('/');
         } catch (error) {
             const apiMessage = error?.response?.data?.message;
-            toast.error(apiMessage || 'Invalid OTP');
+            toast.error(apiMessage || t('invalidOtp'));
         } finally {
             setIsLoading(false);
         }
@@ -96,15 +110,78 @@ const CustomerAuth = () => {
                         className="h-28 w-auto object-contain" 
                     />
                 </div>
+
+                {/* Language Switcher Section */}
+                <div className="mb-6 pb-4 border-b border-gray-100 flex flex-col items-center">
+                    {/* Desktop Dropdown */}
+                    <div ref={dropdownRef} className="hidden md:block relative w-full">
+                        <button
+                            type="button"
+                            onClick={() => setIsLangOpen(!isLangOpen)}
+                            className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-700 transition-all focus:outline-none"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Globe size={16} className="text-gray-400" />
+                                <span>{languages.find(l => l.code === language)?.flag} {languages.find(l => l.code === language)?.name}</span>
+                            </div>
+                            <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {isLangOpen && (
+                            <div className="absolute right-0 left-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                {languages.map((lang) => (
+                                    <button
+                                        key={lang.code}
+                                        type="button"
+                                        onClick={() => {
+                                            setLanguage(lang.code);
+                                            setIsLangOpen(false);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-gray-50 ${language === lang.code ? 'bg-orange-50/50 text-[#f97316] font-semibold' : 'text-gray-700'}`}
+                                    >
+                                        <span className="text-base">{lang.flag}</span>
+                                        <span>{lang.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile pills (dropdown nhi) */}
+                    <div className="block md:hidden w-full">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Globe size={12} /> Language / भाषा
+                            </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-start">
+                            {languages.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    type="button"
+                                    onClick={() => setLanguage(lang.code)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                                        language === lang.code
+                                            ? 'bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-500/20'
+                                            : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span>{lang.flag}</span>
+                                    <span>{lang.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
                 
                 {!showOtp ? (
                     <>
                         <div className="text-left mb-6">
                             <h2 className="text-xl font-bold text-gray-900">
-                                Login / Signup
+                                {t('loginSignup')}
                             </h2>
                             <p className="mt-1 text-sm text-gray-500">
-                                {isLogin ? 'Enter your mobile number' : 'Create a new account'}
+                                {isLogin ? t('enterMobile') : t('createAccount')}
                             </p>
                         </div>
 
@@ -117,7 +194,7 @@ const CustomerAuth = () => {
                                             type="text"
                                             name="name"
                                             value={formData.name}
-                                            placeholder="Full Name"
+                                            placeholder={t('fullName')}
                                             className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all"
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         />
@@ -127,7 +204,7 @@ const CustomerAuth = () => {
                                             type="text"
                                             name="referralCode"
                                             value={formData.referralCode}
-                                            placeholder="Referral Code (Optional)"
+                                            placeholder={t('referralCode')}
                                             className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all uppercase"
                                             onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
                                         />
@@ -148,7 +225,7 @@ const CustomerAuth = () => {
                                     name="phone"
                                     value={formData.phone}
                                     maxLength={10}
-                                    placeholder={isLogin ? "9671310143" : "Mobile Number"}
+                                    placeholder={isLogin ? "9671310143" : t('mobileNumber')}
                                     className="w-full px-4 py-3.5 text-sm font-semibold text-gray-800 outline-none bg-transparent"
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
                                 />
@@ -159,7 +236,7 @@ const CustomerAuth = () => {
                                 disabled={isLoading}
                                 className="w-full mt-2 text-white bg-[#f97316] hover:bg-orange-600 py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center gap-3 transition-all"
                             >
-                                {isLoading ? 'Please wait...' : 'Continue'}
+                                {isLoading ? t('pleaseWait') : t('continue')}
                             </button>
                         </form>
 
@@ -168,7 +245,7 @@ const CustomerAuth = () => {
                                 onClick={() => setIsLogin(!isLogin)}
                                 className="text-sm font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
                             >
-                                {isLogin ? "New user? Create an account" : "Already have an account? Login"}
+                                {isLogin ? t('newUser') : t('alreadyAccount')}
                             </button>
                         </div>
                     </>
@@ -183,11 +260,11 @@ const CustomerAuth = () => {
                                     <ChevronLeft size={20} />
                                 </button>
                                 <h2 className="text-xl font-bold text-gray-900">
-                                    Verify OTP
+                                    {t('verifyOtp')}
                                 </h2>
                             </div>
                             <p className="mt-1 text-sm text-gray-500 ml-8">
-                                Sent to +91 {formData.phone}
+                                {t('sentTo')} +91 {formData.phone}
                             </p>
                         </div>
 
@@ -222,7 +299,7 @@ const CustomerAuth = () => {
                                     disabled={isLoading}
                                     className="w-full text-white bg-[#f97316] hover:bg-orange-600 py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center transition-all"
                                 >
-                                    {isLoading ? 'Verifying...' : `Verify & Proceed`}
+                                    {isLoading ? t('verifying') : t('verifyProceed')}
                                 </button>
                                 <div className="flex justify-center">
                                     <button
@@ -231,7 +308,7 @@ const CustomerAuth = () => {
                                         onClick={handleSendOtp}
                                         className={`text-sm font-semibold ${timer > 0 ? 'text-gray-400' : 'text-[#f97316] hover:underline'}`}
                                     >
-                                        {timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
+                                        {timer > 0 ? `${t('resendIn')} ${timer}s` : t('resendCode')}
                                     </button>
                                 </div>
                             </div>
@@ -242,21 +319,21 @@ const CustomerAuth = () => {
                 {/* Legal Agreement Footer */}
                 <div className="pt-8 flex flex-col items-center gap-1.5">
                     <p className="text-[11px] text-gray-400 text-center font-medium">
-                        By continuing, you agree to our
+                        {t('agreeText')}
                     </p>
                     <div className="flex items-center gap-2">
                         <button 
                             onClick={() => navigate('/terms')}
                             className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
                         >
-                            Terms & Conditions
+                            {t('terms')}
                         </button>
                         <span className="text-[10px] text-gray-300">•</span>
                         <button 
                             onClick={() => navigate('/privacy-policy')}
                             className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
                         >
-                            Privacy Policy
+                            {t('privacy')}
                         </button>
                     </div>
                 </div>
