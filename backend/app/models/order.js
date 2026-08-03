@@ -571,13 +571,13 @@ orderSchema.index({ checkoutGroupId: 1, createdAt: -1 });
 orderSchema.index({ checkoutGroupId: 1, checkoutGroupIndex: 1 });
 orderSchema.index(
   { "placement.idempotencyKeyExpiry": 1 },
-  { 
+  {
     expireAfterSeconds: 0,
     partialFilterExpression: { "placement.idempotencyKeyExpiry": { $type: "date" } }
   }
 );
 
-orderSchema.pre('save', function(next) {
+orderSchema.pre('save', function (next) {
   if (!this.orderStatus) {
     this.orderStatus = this.status || "pending";
   }
@@ -683,7 +683,7 @@ function mirrorCanonicalToLegacy(update) {
   if (update.$set) update.$set = set;
 }
 
-orderSchema.pre('findOneAndUpdate', function(next) {
+orderSchema.pre('findOneAndUpdate', function (next) {
   const update = this.getUpdate() || {};
   if (update.$unset && update.$unset.customer) {
     const error = new Error('Cannot unset customer field from order');
