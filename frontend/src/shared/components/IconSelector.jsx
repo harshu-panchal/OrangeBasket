@@ -32,26 +32,34 @@ const IconSelector = ({ selectedIcon, onSelect, onClose }) => {
 
   // Map our internal icon ids to MUI icon components
   const iconComponents = {
-    electronics: DevicesIcon,
-    fashion: CheckroomIcon,
-    home: HomeIcon,
-    food: LocalCafeIcon,
-    sports: SportsSoccerIcon,
-    books: MenuBookIcon,
-    beauty: SpaIcon,
-    toys: ToysIcon,
-    automotive: DirectionsCarIcon,
-    pets: PetsIcon,
-    health: LocalHospitalIcon,
-    garden: YardIcon,
-    office: BusinessCenterIcon,
-    music: MusicNoteIcon,
-    jewelry: DiamondIcon,
-    baby: ChildCareIcon,
-    tools: BuildIcon,
-    luggage: LuggageIcon,
-    art: ColorLensIcon,
-    grocery: LocalGroceryStoreIcon,
+    electronics: "📱",
+    fashion: "👕",
+    home: "🏠",
+    food: "🍔",
+    sports: "⚽",
+    books: "📚",
+    beauty: "💄",
+    toys: "🧸",
+    automotive: "🚗",
+    pets: "🐾",
+    health: "💊",
+    garden: "🌱",
+    office: "💼",
+    music: "🎵",
+    jewelry: "💎",
+    baby: "🍼",
+    tools: "🔧",
+    luggage: "🧳",
+    art: "🎨",
+    grocery: "🛒",
+    beverages: "🥤",
+    dairy: "🥛",
+    bakery: "🥐",
+    snacks: "🍿",
+    meat: "🥩",
+    cleaning: "🧹",
+    stationery: "✏️",
+    festival: "🎉",
   };
 
   const filteredIcons = categoryIcons.filter(icon =>
@@ -98,33 +106,39 @@ const IconSelector = ({ selectedIcon, onSelect, onClose }) => {
                 key={icon.id}
                 onClick={() => onSelect(icon.id)}
                 className={`
-                  flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all
-                  hover:border-brand-500 hover:bg-brand-50 group
+                  flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-300 group
                   ${selectedIcon === icon.id
-                    ? 'border-brand-600 bg-brand-50'
-                    : 'border-gray-200 bg-white'
+                    ? 'bg-brand-50 shadow-sm border border-brand-200'
+                    : 'bg-white hover:bg-slate-50 border border-slate-100 hover:border-slate-200 hover:shadow-sm'
                   }
                 `}
                 title={icon.name}>
                 <div
-                  className={`w-8 h-8 flex items-center justify-center transition-colors ${selectedIcon === icon.id
-                      ? 'text-brand-600'
-                      : 'text-gray-600 group-hover:text-brand-600'
+                  className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.1)] ${selectedIcon === icon.id
+                      ? 'bg-brand-100/50 text-brand-600 scale-110'
+                      : 'bg-slate-50 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-500 group-hover:scale-105'
                     }`}
                 >
                   {iconComponents[icon.id] ? (
-                    (() => {
-                      const IconComp = iconComponents[icon.id];
-                      return <IconComp fontSize="medium" />;
-                    })()
+                    <span 
+                      className="transition-all duration-300 drop-shadow-sm"
+                      style={{
+                        fontSize: selectedIcon === icon.id ? '28px' : '24px',
+                        filter: selectedIcon === icon.id ? 'none' : 'grayscale(15%) opacity(90%)'
+                      }}
+                    >
+                      {iconComponents[icon.id]}
+                    </span>
                   ) : (
                     <div
-                      className="w-6 h-6"
+                      className="w-6 h-6 transition-all duration-300"
                       dangerouslySetInnerHTML={{ __html: icon.svg }}
                     />
                   )}
                 </div>
-                <span className="text-xs text-gray-500 mt-2 text-center line-clamp-1">
+                <span className={`text-[11px] sm:text-xs mt-3 text-center line-clamp-1 font-semibold transition-colors duration-300 ${
+                  selectedIcon === icon.id ? 'text-brand-700' : 'text-slate-600'
+                }`}>
                   {icon.name}
                 </span>
               </button>

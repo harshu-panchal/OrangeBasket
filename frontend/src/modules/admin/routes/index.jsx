@@ -105,6 +105,7 @@ const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 
 const EmployeeManagement = React.lazy(() => import("../pages/EmployeeManagement"));
 const EmployeeDetail = React.lazy(() => import("../pages/EmployeeDetail"));
+const WarehouseQueueDashboard = React.lazy(() => import("../pages/WarehouseQueueDashboard"));
 
 const navItems = [
   {
@@ -165,6 +166,7 @@ const navItems = [
     children: [
       { label: "Active Warehouses", path: "/admin/warehouses/active" },
       { label: "Waiting for Review", path: "/admin/warehouses/pending" },
+      { label: "Queue Monitor", path: "/admin/warehouse-queues" },
     ],
   },
   {
@@ -281,6 +283,7 @@ const AdminRoutes = () => {
         {/* Warehouse routes */}
         <Route path="/warehouses/active" element={<ActiveWarehouses />} />
         <Route path="/warehouses/pending" element={<PendingWarehouses />} />
+        <Route path="/warehouse-queues" element={<WarehouseQueueDashboard />} />
         <Route path="/support-tickets" element={<SupportTickets />} />
         <Route path="/moderation" element={<ReviewModeration />} />
         {/* Monthly Baskets */}

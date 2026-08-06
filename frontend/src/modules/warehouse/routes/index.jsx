@@ -30,6 +30,8 @@ const Withdrawals = React.lazy(() => import("../pages/Withdrawals"));
 
 const AddMonthlyKit = React.lazy(() => import("../pages/AddMonthlyKit"));
 const MonthlyKits = React.lazy(() => import("../pages/MonthlyKits"));
+const QRManager = React.lazy(() => import("../pages/QRManager"));
+const QueueMonitor = React.lazy(() => import("../pages/QueueMonitor"));
 
 const navItems = [
   { label: "Dashboard", path: "/warehouse", icon: HiOutlineSquares2X2, end: true },
@@ -44,6 +46,8 @@ const navItems = [
   { label: "Payment History", path: "/warehouse/transactions", icon: HiOutlineCreditCard },
   { label: "Earnings", path: "/warehouse/earnings", icon: HiOutlineCurrencyDollar },
   { label: "Profile", path: "/warehouse/profile", icon: HiOutlineUser },
+  { label: "QR Check-in", path: "/warehouse/qr-manager", icon: HiOutlineMapPin },
+  { label: "Queue Monitor", path: "/warehouse/queue-monitor", icon: HiOutlineBuildingStorefront },
 ];
 
 const WarehouseRoutes = () => {
@@ -68,6 +72,8 @@ const WarehouseRoutes = () => {
         <Route path="/earnings" element={<Earnings />} />
         <Route path="/withdrawals" element={<Withdrawals />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/qr-manager" element={<QRManager />} />
+        <Route path="/queue-monitor" element={<QueueMonitor />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>

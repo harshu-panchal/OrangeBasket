@@ -46,8 +46,26 @@ export const returnPickupTimeoutQueue = isRedisEnabled()
     })
   : createNoopQueue();
 
+export const queueOfferTimeoutQueue = isRedisEnabled()
+  ? new Bull("warehouse-queue-offer-timeout", {
+      redis: redisOpts,
+      createClient: createBullRedisClient,
+      settings: queueSettings,
+    })
+  : createNoopQueue();
+
+export const warehouseGpsWatchdogQueue = isRedisEnabled()
+  ? new Bull("warehouse-gps-watchdog", {
+      redis: redisOpts,
+      createClient: createBullRedisClient,
+      settings: queueSettings,
+    })
+  : createNoopQueue();
+
 export const JOB_NAMES = {
   SELLER_TIMEOUT: "seller-timeout",
   DELIVERY_TIMEOUT: "delivery-timeout",
   RETURN_PICKUP_TIMEOUT: "return-pickup-timeout",
+  QUEUE_OFFER_TIMEOUT: "queue-offer-timeout",
+  WAREHOUSE_GPS_WATCHDOG: "warehouse-gps-watchdog",
 };

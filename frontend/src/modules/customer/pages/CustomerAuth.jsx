@@ -278,13 +278,19 @@ const CustomerAuth = () => {
                                         className="w-12 h-14 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:bg-white focus:border-[#f97316] focus:ring-1 focus:ring-[#f97316] transition-all"
                                         value={formData.otp[i] || ''}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Backspace' && !e.target.value && i > 0) {
-                                                e.target.previousElementSibling.focus();
+                                            const target = /** @type {HTMLInputElement} */ (e.currentTarget);
+                                            if (e.key === 'Backspace' && !target.value && i > 0) {
+                                                const prev = /** @type {HTMLInputElement | null} */ (target.previousElementSibling);
+                                                if (prev) prev.focus();
                                             }
                                         }}
                                         onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (val && i < 3) (e.target.nextElementSibling).focus();
+                                            const target = /** @type {HTMLInputElement} */ (e.currentTarget);
+                                            const val = target.value;
+                                            if (val && i < 3) {
+                                                const next = /** @type {HTMLInputElement | null} */ (target.nextElementSibling);
+                                                if (next) next.focus();
+                                            }
                                             const otpArr = formData.otp.split('');
                                             otpArr[i] = val;
                                             setFormData({ ...formData, otp: otpArr.join('') });

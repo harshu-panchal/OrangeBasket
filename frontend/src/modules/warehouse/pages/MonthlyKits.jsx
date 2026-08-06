@@ -12,7 +12,7 @@ const MonthlyKits = () => {
         const fetchKits = async () => {
             try {
                 const response = await warehouseApi.get('/kits/warehouse');
-                setKits(response.data.data || []);
+                setKits(response.data.results || response.data.result || response.data.data || []);
             } catch (err) {
                 console.error(err);
                 toast.error("Failed to load kits");

@@ -2,6 +2,84 @@ import Product from "../models/product.js";
 import Order from "../models/order.js";
 import Review from "../models/review.js";
 import { handleResponse } from "../utils/helper.js";
+import https from "https";
+
+// Helper function to translate input search terms to English dynamically
+function translateToEnglish(text) {
+  return new Promise((resolve) => {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && parsed[0] && parsed[0][0] && parsed[0][0][0]) {
+            resolve(parsed[0][0][0].trim());
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+        resolve(text);
+      });
+    }).on('error', (err) => {
+      logger.error("Translation helper error in products search: " + err.message);
+      resolve(text);
+    });
+  });
+}
+
+const SYNONYMS = {
+  "lentil": ["dal", "pulse", "pulses"],
+  "lentils": ["dal", "pulse", "pulses"],
+  "pulse": ["dal", "lentil", "lentils"],
+  "pulses": ["dal", "lentil", "lentils"],
+  "dal": ["lentil", "lentils", "pulse", "pulses"],
+  "oil": ["tel", "oil"],
+  "tel": ["oil", "tel"],
+  "flour": ["atta", "flour"],
+  "atta": ["flour", "atta", "wheat flour"],
+  "potato": ["aloo", "potato", "potatoes"],
+  "potatoes": ["aloo", "potato", "potatoes"],
+  "aloo": ["potato", "potatoes", "aloo"],
+  "onion": ["pyaz", "onion", "onions"],
+  "onions": ["pyaz", "onion", "onions"],
+  "pyaz": ["onion", "onions", "pyaz"],
+  "tomato": ["tamatar", "tomato", "tomatoes"],
+  "tomatoes": ["tamatar", "tomato", "tomatoes"],
+  "tamatar": ["tomato", "tomatoes", "tamatar"],
+  "ginger": ["adrak", "ginger"],
+  "adrak": ["ginger", "adrak"],
+  "garlic": ["lahsun", "garlic"],
+  "lahsun": ["garlic", "lahsun"],
+  "rice": ["chawal", "rice"],
+  "chawal": ["rice", "chawal"],
+  "milk": ["doodh", "milk"],
+  "doodh": ["milk", "doodh"],
+  "cottage cheese": ["paneer", "cottage cheese"],
+  "paneer": ["cottage cheese", "paneer"],
+  "blessings": ["aashirvaad", "aashirwad", "blessings"],
+  "blessing": ["aashirvaad", "aashirwad", "blessing"],
+  "bless": ["aashirvaad", "aashirwad", "bless"],
+  "aashirvaad": ["blessings", "blessing", "aashirwad", "aashirvaad"],
+  "aashirwad": ["blessings", "blessing", "aashirvaad", "aashirwad"]
+};
+
+function buildSearchRegexWithSynonyms(word) {
+  const normalized = word.toLowerCase().trim();
+  const list = [word];
+  if (SYNONYMS[normalized]) {
+    list.push(...SYNONYMS[normalized]);
+  }
+  const escapedList = list.map(item => item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = escapedList.length > 1 ? `(${escapedList.join("|")})` : escapedList[0];
+  return {
+    $regex: pattern,
+    $options: "i"
+  };
+}
+
 import { slugify } from "../utils/slugify.js";
 import getPagination from "../utils/pagination.js";
 import {
@@ -235,10 +313,46 @@ export const getProducts = async (req, res) => {
         if (isProductTextSearchEnabled() && term.length >= 3) {
           query.$text = { $search: term };
         } else {
-          // P3-5: substring search is preserved (so customer-facing UX
-          // doesn't shift) but the term is now regex-escaped to avoid
-          // injection and runtime errors on `(`, `*`, etc.
-          query.name = buildSearchRegex(term, { anchored: false });
+          const englishTerm = await translateToEnglish(term);
+          const originalWords = term.split(/\s+/).filter(Boolean);
+          const englishWords = englishTerm.split(/\s+/).filter(Boolean);
+          const orClauses = [];
+
+          if (originalWords.length > 0) {
+            orClauses.push({
+              $and: originalWords.map((word) => {
+                const regex = buildSearchRegexWithSynonyms(word);
+                return {
+                  $or: [
+                    { name: regex },
+                    { tags: regex },
+                    { description: regex }
+                  ]
+                };
+              })
+            });
+          }
+
+          if (englishWords.length > 0 && englishTerm.toLowerCase() !== term.toLowerCase()) {
+            orClauses.push({
+              $and: englishWords.map((word) => {
+                const regex = buildSearchRegexWithSynonyms(word);
+                return {
+                  $or: [
+                    { name: regex },
+                    { tags: regex },
+                    { description: regex }
+                  ]
+                };
+              })
+            });
+          }
+
+          if (orClauses.length > 1) {
+            query.$or = orClauses;
+          } else if (orClauses.length === 1) {
+            Object.assign(query, orClauses[0]);
+          }
         }
       }
     }
@@ -290,10 +404,22 @@ export const getProducts = async (req, res) => {
         if (!finalSellerIds.length) {
           query.isMonthlyKit = true;
         } else {
-          query.$or = [
-            { sellerId: { $in: finalSellerIds } },
-            { isMonthlyKit: true }
-          ];
+          if (query.$or) {
+            query.$and = query.$and || [];
+            query.$and.push({ $or: query.$or });
+            delete query.$or;
+            query.$and.push({
+              $or: [
+                { sellerId: { $in: finalSellerIds } },
+                { isMonthlyKit: true }
+              ]
+            });
+          } else {
+            query.$or = [
+              { sellerId: { $in: finalSellerIds } },
+              { isMonthlyKit: true }
+            ];
+          }
         }
       }
     }
@@ -768,8 +894,8 @@ export const updateProduct = async (req, res) => {
 
     // Handle multipart files (mainImage and galleryImages)
     const files = req.files || [];
+    let galleryUrls = [];
     if (files.length > 0) {
-      const galleryUrls = [];
       for (const file of files) {
         try {
           if (file.fieldname === "mainImage") {
@@ -791,9 +917,6 @@ export const updateProduct = async (req, res) => {
             error: err,
           });
         }
-      }
-      if (galleryUrls.length > 0) {
-        productData.galleryImages = galleryUrls;
       }
     }
 
@@ -831,6 +954,20 @@ export const updateProduct = async (req, res) => {
       return handleResponse(res, 404, "Product not found or unauthorized");
     }
 
+    if (galleryUrls.length > 0) {
+      let existingGallery = [];
+      if (productData.galleryImages !== undefined) {
+        existingGallery = Array.isArray(productData.galleryImages)
+          ? productData.galleryImages
+          : (typeof productData.galleryImages === "string"
+              ? productData.galleryImages.split(",")
+              : [productData.galleryImages]);
+      } else {
+        existingGallery = product.galleryImages || [];
+      }
+      productData.galleryImages = [...existingGallery, ...galleryUrls];
+    }
+
     if (productData.name) {
       if (!productData.slug || productData.slug.trim() === "") {
         productData.slug = slugify(productData.name);
@@ -849,6 +986,9 @@ export const updateProduct = async (req, res) => {
     const skuBaseName = productData.name || product.name;
     if (!productData.sku || String(productData.sku).trim() === "") {
       productData.sku = product.sku || makeProductSku(skuBaseName, 1);
+    }
+    if (productData.mainImage === undefined && product.mainImage) {
+      productData.mainImage = product.mainImage;
     }
 
     applyMediaFields(productData);

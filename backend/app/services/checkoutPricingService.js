@@ -432,13 +432,11 @@ export async function buildCheckoutPricingSnapshot({
   const sellerBreakdownEntries = [];
 
   const globalHandling = await computeGlobalHandlingFeeForCheckout(hydratedItems, { session });
-
-  // Pre-compute each seller's subtotal for proportional discount/wallet distribution
   const sellerSubtotals = new Map();
   let totalSubtotal = 0;
   for (const sellerId of sellerIds) {
     const items = itemsBySeller.get(sellerId) || [];
-    const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    const subtotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
     sellerSubtotals.set(sellerId, subtotal);
     totalSubtotal += subtotal;
   }
@@ -453,10 +451,7 @@ export async function buildCheckoutPricingSnapshot({
     // Distribute discount proportionally by seller subtotal
     const sellerRatio = totalSubtotal > 0 ? (sellerSubtotals.get(sellerId) || 0) / totalSubtotal : 1 / sellerIds.length;
     const sellerDiscount = round2(effectiveDiscount * sellerRatio);
-    // Per-seller wallet allocation is applied LAST (after tip) by
-    // `applyWalletAllocationToSellerBreakdowns` so it can clamp against
-    // the post-tip grandTotal — matching the customer-facing clamp on the
-    // frontend. We deliberately do NOT pass walletAmount through here.
+
     const breakdown = await generateOrderPaymentBreakdown({
       preHydratedItems: sellerItems,
       distanceKm,
@@ -464,9 +459,16 @@ export async function buildCheckoutPricingSnapshot({
       taxTotal: 0,
       session,
     });
+
+    const isWarehouse = !!sellerItems[0]?.warehouseId && !sellerItems[0]?.sellerId;
+    const actualSellerId = isWarehouse ? null : sellerId;
+    const actualWarehouseId = isWarehouse ? sellerId : null;
+
     sellerBreakdownEntries.push({
       sellerId,
-      distanceKm,
+      actualSellerId,
+      actualWarehouseId,
+      isWarehouse,
       items: sellerItems,
       breakdown: {
         ...breakdown,

@@ -41,6 +41,14 @@ function normalizeDeliveryId(deliveryId) {
   return String(deliveryId);
 }
 
+function normalizeWarehouseId(warehouseId) {
+  if (warehouseId == null) return null;
+  if (typeof warehouseId === "object" && warehouseId._id) {
+    return warehouseId._id.toString();
+  }
+  return String(warehouseId);
+}
+
 /**
  * Emit workflow status to the order room (clients that joined `join_order`)
  * and optionally to the customer’s personal room so the app updates even before
@@ -67,9 +75,21 @@ export function emitOrderStatusUpdate(orderId, payload, customerId) {
 }
 
 export function emitToSeller(sellerId, { event, payload }) {
+  const sid = normalizeSellerId(sellerId);
+  if (!sid) return;
   const s = getIo();
-  if (!s || !sellerId) return;
-  s.to(`seller:${sellerId}`).emit(event, payload);
+  if (s) {
+    s.to(`seller:${sid}`).emit(event, payload);
+  }
+}
+
+export function emitToWarehouse(warehouseId, { event, payload }) {
+  const wid = normalizeWarehouseId(warehouseId);
+  if (!wid) return;
+  const s = getIo();
+  if (s) {
+    s.to(`warehouse:${wid}`).emit(event, payload);
+  }
 }
 
 export function emitToDelivery(deliveryId, { event, payload }) {

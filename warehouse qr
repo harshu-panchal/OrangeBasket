@@ -1,0 +1,555 @@
+# Warehouse QR Check-in, GPS Queue & Smart Order Assignment — Implementation Plan
+
+## Goal
+
+Build a complete, production-ready system for:
+1. **QR/GPS Warehouse Check-in** — riders scan a warehouse QR code, GPS is verified against the warehouse radius before check-in is accepted.
+2. **FIFO Rider Queue** — checked-in riders are queued by arrival time; the first rider in queue gets the first order.
+3. **Smart Order Assignment** — orders auto-assign only to riders satisfying all eligibility conditions (GPS inside radius, online, no active delivery, vehicle match, same warehouse).
+4. **20-Second Accept/Reject Timer** — sequential offer with auto-skip to next queue position.
+5. **Auto-Eviction from Queue** — riders removed when they leave radius, go offline, logout, or are inactive.
+6. **Queue Monitoring Dashboard** — real-time visibility for Admin and Warehouse staff.
+
+> [!IMPORTANT]
+> The existing **admin → seller → delivery** order flow is **NOT changed**. This module adds a parallel warehouse-centric rider management layer on top of the existing workflow. The seller step remains intact.
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         FLOW OVERVIEW                               │
+│                                                                     │
+│  [Warehouse Admin]                                                  │
+│    • Generate QR Code (contains warehouseId + signed token)         │
+│    • Set GPS coordinates + check-in radius                          │
+│                                                                     │
+│  [Delivery Partner App]                                             │
+│    • Scan QR → POST /api/warehouse/checkin                          │
+│    • Backend verifies: GPS distance ≤ warehouse checkinRadius       │
+│    • On success → rider added to WarehouseQueue (sorted by time)    │
+│                                                                     │
+│  [Background GPS Watchdog] (every 60s via BullMQ)                  │
+│    • For each checked-in rider, verify current GPS vs warehouse     │
+│    • If outside radius → auto-evict from queue                      │
+│                                                                     │
+│  [Order Assignment Engine]                                          │
+│    • When seller accepts → find warehouse for this order            │
+│    • Pick eligible rider from top of warehouse queue (FIFO)         │
+│    • Emit order offer with 20s timer                                │
+│    • If rejected/timeout → next rider in queue                      │
+│                                                                     │
+│  [Queue Dashboard] (WebSocket + REST)                               │
+│    • Admin and Warehouse see live queue, GPS status, order state    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Q1: Warehouse–Order Linkage**
+> Currently orders are linked to a **seller**, not directly to a warehouse. Should we:
+> - **Option A**: Use the warehouse's GPS coordinates to determine which warehouse queue handles the order (closest warehouse to seller location) — **Recommended**
+> - **Option B**: Add an explicit `warehouseId` field to orders at placement time
+>
+> This affects how the order assignment engine picks which warehouse queue to pull from.
+
+> [!IMPORTANT]
+> **Q2: Multi-warehouse rider**
+> Can a delivery partner check in to **only one warehouse at a time**, or multiple?
+> The plan assumes **one active check-in per rider** at any time.
+
+> [!IMPORTANT]
+> **Q3: Vehicle Type Filtering**
+> Do orders currently carry a `requiredVehicleType` field? Looking at the Order model — it does not appear to have this field. Should we:
+> - **Option A**: Add `requiredVehicleType` to the Order model and let warehouse/seller set it
+> - **Option B**: Skip vehicle type filtering for now (all vehicle types eligible)
+
+> [!NOTE]
+> **Q4: Inactivity timeout**
+> The configurable inactivity timeout — should this be global (admin setting) or per-warehouse? Recommend: admin-level setting with default of 30 minutes.
+
+---
+
+## Proposed Changes
+
+---
+
+### 1. Database Layer — New & Modified Models
+
+#### [NEW] `WarehouseCheckin` Model
+**Path**: `backend/app/models/warehouseCheckin.js`
+
+Tracks each rider's check-in session at a warehouse.
+
+```
+Fields:
+  - deliveryId: ObjectId (ref: Delivery)
+  - warehouseId: ObjectId (ref: Warehouse)
+  - checkinTime: Date (indexed)
+  - checkoutTime: Date (nullable)
+  - checkinMethod: "qr_scan"
+  - gpsLat, gpsLng: Number (rider's GPS at check-in time)
+  - status: enum ["active", "checked_out", "auto_evicted", "offline", "inactive"]
+  - lastGpsVerifiedAt: Date
+  - lastActivityAt: Date
+  - currentOrderId: ObjectId (ref: Order, nullable)
+  - queuePosition: Number (computed, not stored — derived from sort)
+```
+
+Index: `{ warehouseId, status, checkinTime }`, `{ deliveryId, status }`
+
+---
+
+#### [MODIFY] `Warehouse` Model
+**Path**: `backend/app/models/warehouse.js`
+
+Add new fields:
+```
+  - checkinRadius: Number (meters, default: 100)
+  - qrCodeSecret: String (unique secret for QR token signing)
+  - qrCodeGeneratedAt: Date
+  - gpsAutoEvict: Boolean (default: true)
+  - inactivityTimeoutMinutes: Number (default: 30)
+```
+
+Note: `location` (GeoJSON Point) and `serviceRadius` already exist.
+`checkinRadius` is separate — it's the **check-in gate radius** (meters), vs `serviceRadius` (km) which is the order delivery coverage area.
+
+---
+
+#### [MODIFY] `Delivery` Model
+**Path**: `backend/app/models/delivery.js`
+
+Add fields:
+```
+  - activeCheckinId: ObjectId (ref: WarehouseCheckin, nullable)
+  - activeWarehouseId: ObjectId (ref: Warehouse, nullable)
+  - queueStatus: enum ["not_checked_in", "waiting", "order_assigned", "delivering", "offline"]
+```
+
+---
+
+### 2. Backend Services
+
+#### [NEW] `warehouseQrService.js`
+**Path**: `backend/app/services/warehouseQrService.js`
+
+Responsibilities:
+- `generateWarehouseQR(warehouseId)` — creates a signed JWT-like token with `{ warehouseId, secret, iat }`. Returns a URL or raw token string that the frontend renders as QR.
+- `verifyWarehouseQRToken(token)` — validates signature and returns `warehouseId`. Tokens do NOT expire (permanent per warehouse) but are regeneratable.
+
+Implementation: Use `crypto.createHmac('sha256', secret)` with the warehouse's stored `qrCodeSecret`. No heavy JWT library needed — keeps it simple.
+
+---
+
+#### [NEW] `warehouseCheckinService.js`
+**Path**: `backend/app/services/warehouseCheckinService.js`
+
+Core functions:
+```
+checkInRider(deliveryId, qrToken, riderLat, riderLng)
+  → Verify QR → Fetch warehouse GPS → Haversine distance ≤ checkinRadius
+  → Upsert WarehouseCheckin (active) → Update Delivery.activeCheckinId
+  → Emit socket event "queue:rider_joined" to warehouse room
+  → Return { success, position, warehouseId }
+
+checkOutRider(deliveryId, reason)
+  → Set checkin.status = "checked_out" / "auto_evicted"
+  → Clear Delivery.activeCheckinId, activeWarehouseId, queueStatus
+  → Emit "queue:rider_left" socket event
+
+getWarehouseQueue(warehouseId)
+  → Find all WarehouseCheckin where { warehouseId, status: "active" }
+  → Sort by checkinTime ASC (FIFO)
+  → Populate rider name, vehicle, currentOrder
+  → Return ordered array with position numbers
+
+getNextEligibleRider(warehouseId, orderRequirements)
+  → Get sorted queue
+  → Filter: isOnline, no activeDelivery, GPS still valid, vehicle match
+  → Return first matching rider
+
+verifyRiderStillPresent(checkinId)
+  → Fetch rider's current location from Delivery.location
+  → Compare to warehouse coordinates
+  → Return boolean; if false, trigger checkOutRider(auto_evicted)
+```
+
+---
+
+#### [NEW] `warehouseGpsWatchdog.js`
+**Path**: `backend/app/services/warehouseGpsWatchdog.js`
+
+A BullMQ/Bull periodic job that runs every **60 seconds**:
+- Fetches all active WarehouseCheckin records
+- For each: fetches rider's current GPS from `Delivery.location`
+- Runs Haversine check vs warehouse `checkinRadius`
+- If outside: calls `checkOutRider(id, "gps_evicted")`
+- Emits real-time socket update to warehouse room
+
+Registration: Add to existing job scheduler in `backend/app/jobs/`.
+
+---
+
+#### [MODIFY] `orderWorkflowService.js`
+**Path**: `backend/app/services/orderWorkflowService.js`
+
+Modify `sellerAcceptAtomic()`:
+- After seller accepts, instead of broadcasting to all nearby riders using `emitDeliveryBroadcastForSeller`, also attempt **warehouse queue assignment**:
+  1. Find the warehouse serving this order area (closest to seller GPS)
+  2. Call `getNextEligibleRider(warehouseId, { vehicleType })`
+  3. If found: emit targeted `delivery:order_offer` to that rider with 20s timer
+  4. If no eligible rider in queue: fall back to existing radius-based broadcast
+
+New function `offerOrderToWarehouseQueue(order, warehouseId)`:
+- Gets top FIFO rider
+- Creates/updates `DeliveryAssignment` with `assignmentType: "queue"`
+- Emits `delivery:order_offer` (with 20s TTL) to that specific rider's socket room
+- Schedules a `queue_offer_timeout` BullMQ job with 20s delay
+- If timeout fires: move to next rider and repeat
+
+---
+
+#### [NEW] `warehouseQueueAssignmentService.js`
+**Path**: `backend/app/services/warehouseQueueAssignmentService.js`
+
+Separates queue-assignment logic from the main workflow service:
+```
+offerToNextInQueue(orderId, warehouseId, attemptedRiderIds = [])
+  → Get queue, skip already-attempted riders
+  → Validate all conditions (GPS, online, no active delivery, vehicle)
+  → Schedule 20s BullMQ job
+  → Emit socket offer to single rider
+
+handleRiderResponse(riderId, orderId, accepted)
+  → If accepted: deliveryAcceptAtomic() (existing)
+  → If rejected: offerToNextInQueue(orderId, warehouseId, [...attemptedRiderIds, riderId])
+  → If no more riders: fall back to broadcast mode
+```
+
+---
+
+#### [NEW] `warehouseMonitorService.js`
+**Path**: `backend/app/services/warehouseMonitorService.js`
+
+Provides structured data for the monitoring dashboard:
+```
+getQueueSnapshot(warehouseId)
+  → Returns full queue with positions, GPS status, order assignments
+
+getAllWarehouseSnapshots()  (for Admin view)
+  → Returns snapshot for all warehouses
+
+getQueueStats(warehouseId)
+  → waiting count, delivering count, total, first/last in queue
+```
+
+---
+
+### 3. Backend Controllers
+
+#### [NEW] `warehouseCheckinController.js`
+**Path**: `backend/app/controller/warehouseCheckinController.js`
+
+```
+POST /api/warehouse/checkin
+  Body: { qrToken, riderLat, riderLng }
+  Auth: delivery role
+  → warehouseCheckinService.checkInRider()
+
+POST /api/warehouse/checkout
+  Auth: delivery role
+  → warehouseCheckinService.checkOutRider()
+
+GET /api/warehouse/:warehouseId/queue
+  Auth: warehouse | admin
+  → warehouseCheckinService.getWarehouseQueue()
+
+GET /api/warehouse/:warehouseId/queue/stats
+  Auth: warehouse | admin
+  → warehouseMonitorService.getQueueStats()
+
+GET /api/admin/warehouse-queue/all
+  Auth: admin
+  → warehouseMonitorService.getAllWarehouseSnapshots()
+```
+
+#### [MODIFY] `warehouseController.js`
+**Path**: `backend/app/controller/warehouseController.js`
+
+Add:
+```
+POST /api/warehouse/generate-qr
+  Auth: warehouse role
+  → warehouseQrService.generateWarehouseQR(req.user.id)
+  → Returns QR token + URL
+
+PUT /api/warehouse/checkin-settings
+  Auth: warehouse role
+  Body: { lat, lng, checkinRadius }
+  → Updates warehouse GPS + checkinRadius
+```
+
+---
+
+### 4. BullMQ Jobs
+
+#### [NEW] `warehouseGpsWatchdogJob.js`
+**Path**: `backend/app/jobs/warehouseGpsWatchdogJob.js`
+
+Periodic job (every 60s) for GPS presence verification of all checked-in riders.
+
+#### [NEW] `queueOfferTimeoutJob.js`
+**Path**: `backend/app/jobs/queueOfferTimeoutJob.js`
+
+20-second timeout job for order offers. When fired:
+- If rider hasn't responded → mark as skipped
+- Call `offerToNextInQueue()`
+
+#### [MODIFY] `orderQueues.js`
+**Path**: `backend/app/queues/orderQueues.js`
+
+Add new queue names:
+- `QUEUE_OFFER_TIMEOUT`
+- `WAREHOUSE_GPS_WATCHDOG`
+
+---
+
+### 5. Routes
+
+#### [MODIFY] `warehouseAuth.js`
+**Path**: `backend/app/routes/warehouseAuth.js`
+
+Add new routes:
+```
+POST   /warehouse/generate-qr          (warehouse auth)
+PUT    /warehouse/checkin-settings      (warehouse auth)
+GET    /warehouse/:id/queue             (warehouse | admin auth)
+GET    /warehouse/:id/queue/stats       (warehouse | admin auth)
+```
+
+#### [MODIFY] `deliveryAuth.js`
+**Path**: `backend/app/routes/deliveryAuth.js`
+
+Add:
+```
+POST   /delivery/warehouse/checkin      (delivery auth)
+POST   /delivery/warehouse/checkout     (delivery auth)
+GET    /delivery/warehouse/checkin-status (delivery auth)
+```
+
+#### [MODIFY] `adminAuth.js`
+**Path**: `backend/app/routes/adminAuth.js`
+
+Add:
+```
+GET    /admin/warehouse-queue/all       (admin auth)
+GET    /admin/warehouse/:id/queue       (admin auth)
+```
+
+---
+
+### 6. Socket Events
+
+#### [MODIFY] `socketManager.js`
+**Path**: `backend/app/socket/socketManager.js`
+
+Add warehouse room:
+```javascript
+if (role === "warehouse") {
+  socket.join(`warehouse:${userId}`);
+  socket.join("warehouse:monitors"); // for admin to listen
+}
+```
+
+New events emitted by server:
+| Event | Room | Payload |
+|---|---|---|
+| `queue:rider_joined` | `warehouse:{id}` + `admin:monitors` | `{ rider, position, warehouseId }` |
+| `queue:rider_left` | `warehouse:{id}` + `admin:monitors` | `{ riderId, reason }` |
+| `queue:order_offered` | `delivery:{riderId}` | `{ orderId, countdown: 20, preview }` |
+| `queue:order_offer_expired` | `delivery:{riderId}` | `{ orderId }` |
+| `queue:updated` | `warehouse:{id}` + `admin:monitors` | Full queue snapshot |
+| `queue:gps_evicted` | `warehouse:{id}` | `{ riderId, reason }` |
+
+---
+
+### 7. Frontend — Delivery Partner App
+
+#### [NEW] `WarehouseCheckin.jsx`
+**Path**: `frontend/src/modules/delivery/pages/WarehouseCheckin.jsx`
+
+Features:
+- QR scanner component (uses device camera via `@zxing/browser` or similar)
+- GPS permission request with live location
+- Check-in success screen showing queue position
+- Check-out button
+- Live queue position indicator
+- GPS status badge (✅ Inside radius / ⚠️ Moving away)
+
+#### [NEW] `OrderOfferModal.jsx`
+**Path**: `frontend/src/modules/delivery/components/OrderOfferModal.jsx`
+
+- Full-screen modal with 20s countdown ring animation
+- Order preview: pickup (warehouse name), drop (customer address), value
+- Accept / Reject buttons
+- Auto-dismiss at 0s with "offer expired" message
+
+#### [MODIFY] `Dashboard.jsx` (Delivery)
+**Path**: `frontend/src/modules/delivery/pages/Dashboard.jsx`
+
+- Add "Check in to Warehouse" card/button
+- Show current queue position badge if checked in
+- Render `OrderOfferModal` when socket fires `queue:order_offered`
+
+---
+
+### 8. Frontend — Warehouse Panel
+
+#### [NEW] `QRManager.jsx`
+**Path**: `frontend/src/modules/warehouse/pages/QRManager.jsx`
+
+- Generate/regenerate QR code button
+- Display QR code (using `qrcode.react` or `react-qr-code`)
+- Set/update warehouse GPS (map picker or manual lat/lng)
+- Configure check-in radius slider (50m → 500m)
+- Live preview of radius on map
+
+#### [NEW] `QueueMonitor.jsx`
+**Path**: `frontend/src/modules/warehouse/pages/QueueMonitor.jsx`
+
+Real-time dashboard showing:
+- Queue table: position | rider name | ID | check-in time | status | GPS | assigned order
+- Stats cards: waiting, delivering, removed, total
+- Color-coded status chips
+- Auto-updates via Socket.IO `queue:updated` event
+
+#### [MODIFY] Warehouse Sidebar/Routes
+Add navigation for "QR Manager" and "Queue Monitor" pages.
+
+---
+
+### 9. Frontend — Admin Panel
+
+#### [NEW] `WarehouseQueueDashboard.jsx`
+**Path**: `frontend/src/modules/admin/pages/WarehouseQueueDashboard.jsx`
+
+- Dropdown/tabs to select warehouse
+- Same queue table as Warehouse's `QueueMonitor.jsx` but across ALL warehouses
+- Summary cards per warehouse: active riders, orders in flight, evictions today
+- Filter by status, warehouse, date
+
+#### [MODIFY] Admin Sidebar/Routes
+Add "Warehouse Queue" under delivery/operations section.
+
+---
+
+## Data Flow Diagram
+
+```
+Rider scans QR
+     │
+     ▼
+POST /delivery/warehouse/checkin
+  ├─ Verify QR token (HMAC) → warehouseId
+  ├─ Fetch rider GPS (from request body)
+  ├─ Fetch warehouse location + checkinRadius
+  ├─ Haversine distance ≤ checkinRadius? 
+  │    NO  → 403 "Outside warehouse radius"
+  │    YES ↓
+  ├─ Create WarehouseCheckin { deliveryId, warehouseId, checkinTime, status:"active" }
+  ├─ Update Delivery { activeCheckinId, activeWarehouseId, queueStatus:"waiting" }
+  └─ Emit socket "queue:rider_joined" → warehouse room
+
+         [Every 60s — GPS Watchdog Job]
+              │
+              ▼
+         For each active checkin:
+           ├─ Get Delivery.location
+           ├─ Haversine check
+           ├─ Outside? → checkOutRider("gps_evicted")
+           └─ Emit "queue:gps_evicted"
+
+Seller accepts order
+     │
+     ▼
+sellerAcceptAtomic()  ← existing code, no breaking change
+     │
+     ├─ existing broadcast logic (retained as fallback)
+     │
+     └─ NEW: find warehouse for this order
+              │
+              ▼
+         offerToNextInQueue(orderId, warehouseId)
+              │
+              ├─ Get FIFO queue → pick top eligible rider
+              ├─ Emit "queue:order_offered" to rider socket
+              ├─ Schedule 20s BullMQ job (QUEUE_OFFER_TIMEOUT)
+              │
+              ├─ Rider accepts within 20s:
+              │    └─ deliveryAcceptAtomic() (existing) → order assigned
+              │
+              └─ Timeout / Reject:
+                   └─ offerToNextInQueue(orderId, warehouseId, [skippedIds])
+                        └─ If queue exhausted → fallback to broadcast
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- `backend/__tests__/warehouseCheckin.test.js` — unit tests for GPS verification, QR token signing/validation, queue FIFO ordering
+- `backend/__tests__/queueAssignment.test.js` — tests for eligibility filtering, 20s timeout, fallback to broadcast
+
+### Manual Verification
+1. Warehouse admin generates QR code → renders on screen
+2. Set warehouse GPS + 100m radius
+3. Rider scans QR with GPS inside radius → check-in succeeds, queue position shown
+4. Rider scans QR with GPS outside radius → rejected with clear error
+5. Seller accepts order → offer appears on correct rider's screen with 20s countdown
+6. Rider rejects → offer moves to next rider
+7. Rider walks away (GPS update outside radius) → auto-evicted from queue within 60s
+8. Rider goes offline → evicted from queue
+9. Admin dashboard shows live queue updates
+10. Warehouse dashboard shows live queue updates
+
+---
+
+## File Change Summary
+
+| # | Type | Path |
+|---|---|---|
+| 1 | NEW | `backend/app/models/warehouseCheckin.js` |
+| 2 | MOD | `backend/app/models/warehouse.js` |
+| 3 | MOD | `backend/app/models/delivery.js` |
+| 4 | NEW | `backend/app/services/warehouseQrService.js` |
+| 5 | NEW | `backend/app/services/warehouseCheckinService.js` |
+| 6 | NEW | `backend/app/services/warehouseQueueAssignmentService.js` |
+| 7 | NEW | `backend/app/services/warehouseGpsWatchdog.js` |
+| 8 | NEW | `backend/app/services/warehouseMonitorService.js` |
+| 9 | MOD | `backend/app/services/orderWorkflowService.js` |
+| 10 | NEW | `backend/app/controller/warehouseCheckinController.js` |
+| 11 | MOD | `backend/app/controller/warehouseController.js` |
+| 12 | MOD | `backend/app/routes/warehouseAuth.js` |
+| 13 | MOD | `backend/app/routes/deliveryAuth.js` |
+| 14 | MOD | `backend/app/routes/adminAuth.js` |
+| 15 | MOD | `backend/app/socket/socketManager.js` |
+| 16 | NEW | `backend/app/jobs/warehouseGpsWatchdogJob.js` |
+| 17 | NEW | `backend/app/jobs/queueOfferTimeoutJob.js` |
+| 18 | MOD | `backend/app/queues/orderQueues.js` |
+| 19 | MOD | `backend/app/queues/orderQueueProcessors.js` |
+| 20 | NEW | `frontend/src/modules/delivery/pages/WarehouseCheckin.jsx` |
+| 21 | NEW | `frontend/src/modules/delivery/components/OrderOfferModal.jsx` |
+| 22 | MOD | `frontend/src/modules/delivery/pages/Dashboard.jsx` |
+| 23 | NEW | `frontend/src/modules/warehouse/pages/QRManager.jsx` |
+| 24 | NEW | `frontend/src/modules/warehouse/pages/QueueMonitor.jsx` |
+| 25 | MOD | `frontend/src/modules/warehouse/routes/` |
+| 26 | NEW | `frontend/src/modules/admin/pages/WarehouseQueueDashboard.jsx` |
+| 27 | MOD | `frontend/src/modules/admin/routes/` |
+
+**Total: 27 files — 8 new backend files, 9 modified backend files, 10 frontend files**

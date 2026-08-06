@@ -10,7 +10,6 @@ const router = express.Router();
 
 // Customer endpoints (public)
 router.get("/home-data", kitController.getHomeData);
-router.get("/:id", kitController.getKitById);
 
 // Warehouse endpoints
 router.post("/warehouse", verifyToken, allowRoles("warehouse"), upload.any(), kitController.createKit);
@@ -20,5 +19,8 @@ router.put("/warehouse/:id", verifyToken, allowRoles("warehouse"), upload.any(),
 // Admin endpoints
 router.get("/admin/approvals", verifyToken, allowRoles("admin"), kitController.getPendingKits);
 router.put("/admin/:id/approve", verifyToken, allowRoles("admin"), kitController.approveKit);
+
+// Put ID route last to prevent it from matching other paths like /warehouse
+router.get("/:id", kitController.getKitById);
 
 export default router;

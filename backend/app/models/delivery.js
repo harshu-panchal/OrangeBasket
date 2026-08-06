@@ -120,6 +120,28 @@ const deliverySchema = new mongoose.Schema(
         lastLocationAt: {
             type: Date,
         },
+
+        // ── Warehouse Queue System ───────────────────────────────────────────
+        /** Reference to the rider's current active check-in session (null = not checked in) */
+        activeCheckinId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "WarehouseCheckin",
+            default: null,
+        },
+
+        /** The warehouse where the rider is currently checked in */
+        activeWarehouseId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Warehouse",
+            default: null,
+        },
+
+        /** Current queue/delivery status */
+        queueStatus: {
+            type: String,
+            enum: ["not_checked_in", "waiting", "order_offered", "order_assigned", "delivering", "offline"],
+            default: "not_checked_in",
+        },
     },
     {
         timestamps: true,

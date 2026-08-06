@@ -51,10 +51,15 @@ export const initSocket = (io) => {
       socket.join("admin:orders");
       socket.join("admin:support");
       socket.join("admin:sos");
+      socket.join("admin:monitors"); // for warehouse queue monitoring
       // Per-admin room — used by the notification service to push
       // `notification:new` deltas to the specific admin who owns the
       // Notification row, so the topbar can refresh without polling.
       socket.join(`admin:${userId}`);
+    }
+    if (role === "warehouse") {
+      socket.join(`warehouse:${userId}`);
+      socket.join("admin:monitors"); // warehouse managers also get queue events
     }
 
     socket.on("join_order", (orderId) => {
@@ -95,6 +100,26 @@ export const initSocket = (io) => {
       if (deliveryId && socket.user?.role === "delivery") {
         deliverySockets.set(deliveryId.toString(), socket.id);
       }
+    });
+
+    // Queue offer: rider explicitly accepts or rejects an order offer
+    socket.on("queue:offer_response", async ({ orderId, accepted }) => {
+      if (socket.user?.role !== "delivery" || !orderId) return;
+      try {
+        const { handleQueueRiderResponse } = await import("../services/warehouseQueueAssignmentService.js");
+        await handleQueueRiderResponse(userId, orderId, !!accepted);
+      } catch (err) {
+        socket.emit("queue:offer_response_error", { orderId, error: err.message });
+      }
+    });
+
+    // Rider manual checkout from warehouse
+    socket.on("warehouse:checkout", async () => {
+      if (socket.user?.role !== "delivery") return;
+      try {
+        const { checkOutRider } = await import("../services/warehouseCheckinService.js");
+        await checkOutRider(userId, "manual");
+      } catch {}
     });
 
     socket.on("disconnect", () => {

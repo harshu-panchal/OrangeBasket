@@ -86,24 +86,41 @@ function CategoryNavColumn({
       }}
       onClick={() => onCategorySelect && onCategorySelect(cat)}
       className="relative z-[2] flex min-w-[48px] shrink-0 cursor-pointer flex-col items-center gap-0.5 px-2 pb-0.5 pt-0.5 snap-start md:min-w-[58px]">
-      <div className="relative z-10 flex h-9 w-9 items-center justify-center md:h-11 md:w-11">
+      <div 
+        className={cn(
+          "relative z-10 flex items-center justify-center rounded-full transition-all duration-300",
+          isActive ? "h-12 w-12 md:h-14 md:w-14 shadow-sm" : "h-11 w-11 md:h-12 md:w-12 opacity-90"
+        )}
+        style={{
+          backgroundColor: `${iconColor}15`,
+        }}
+      >
         {typeof cat.icon === "function" ||
           (typeof cat.icon === "object" && cat.icon.$$typeof) ? (
           <cat.icon
             sx={{
-              fontSize: { xs: 20, md: 24 },
+              fontSize: isActive ? { xs: 24, md: 28 } : { xs: 20, md: 24 },
               color: iconColor,
-              opacity: isActive ? 1 : 0.62,
-              transition: "opacity 0.2s, transform 0.2s",
+              transition: "color 0.2s, font-size 0.2s",
             }}
           />
+        ) : typeof cat.icon === "string" && !cat.icon.startsWith("http") && !cat.icon.includes("/") ? (
+          <span 
+            className="transition-all duration-300 drop-shadow-sm" 
+            style={{ 
+              fontSize: isActive ? '26px' : '22px', 
+              filter: isActive ? 'none' : 'grayscale(15%) opacity(90%)' 
+            }}
+          >
+            {cat.icon}
+          </span>
         ) : (
           <img
             src={applyCloudinaryTransform(cat.icon, "f_auto,q_auto,w_100")}
             alt={cat.name}
             loading="lazy"
-            className="h-5 w-5 object-contain md:h-6 md:w-6"
-            style={{ opacity: isActive ? 1 : 0.62 }}
+            className="h-6 w-6 md:h-7 md:w-7 object-contain drop-shadow-sm transition-all duration-300"
+            style={{ filter: isActive ? 'none' : 'brightness(0.95)' }}
           />
         )}
       </div>
@@ -121,27 +138,7 @@ function CategoryNavColumn({
           {cat.name}
         </span>
       </div>
-      {isActive && (
-        <motion.svg
-          layoutId="active-category-curve"
-          aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 right-0 z-[6] h-[22px] w-full overflow-visible"
-          viewBox="0 0 100 20"
-          preserveAspectRatio="none"
-          shapeRendering="geometricPrecision"
-          transition={{
-            layout: { type: "spring", stiffness: 560, damping: 40, mass: 0.5 },
-          }}>
-          <path
-            d={pathD}
-            fill="none"
-            stroke={categoryAccent}
-            strokeWidth="2"
-            strokeLinecap="butt"
-            strokeLinejoin="round"
-          />
-        </motion.svg>
-      )}
+
     </motion.div>
   );
 }
@@ -281,9 +278,9 @@ const MainLocationHeader = ({
   // Content animations
   const contentHeight = useTransform(scrollY, [0, 160], ["64px", "64px"]);
   const contentOpacity = useTransform(scrollY, [0, 160], [1, 1]);
-  const navHeight = useTransform(scrollY, [0, 200], ["60px", "60px"]);
+  const navHeight = useTransform(scrollY, [0, 200], ["80px", "80px"]);
   const navOpacity = useTransform(scrollY, [0, 200], [1, 1]);
-  const navMargin = useTransform(scrollY, [0, 200], [4, 4]);
+  const navMargin = useTransform(scrollY, [0, 200], [8, 8]);
   const categorySpacing = useTransform(scrollY, [0, 200], [3, 3]);
   const cartOpacity = useTransform(scrollY, [0, 110, 150], [1, 1, 1]);
   const cartScale = useTransform(scrollY, [0, 110, 150], [1, 1, 1]);
@@ -343,7 +340,7 @@ const MainLocationHeader = ({
                 className="flex items-center gap-3 cursor-pointer group shrink-0">
                 <div className="group-hover:scale-110 transition-all duration-300 drop-shadow-[0_2px_8px_rgba(255,255,255,0.2)]">
                   <img
-                    src={logoUrl}
+                    src={logoUrl || null}
                     alt={`${appName} Logo`}
                     loading="lazy"
                     className="h-14 w-auto object-contain"
@@ -510,7 +507,7 @@ const MainLocationHeader = ({
               {/* Brand Logo & Name */}
               <div onClick={() => navigate("/")} className="flex items-center gap-2.5 cursor-pointer">
                 <img
-                  src={logoUrl}
+                  src={logoUrl || null}
                   alt="Orange Basket"
                   className="h-14 w-auto object-contain shrink-0"
                 />
@@ -612,6 +609,24 @@ const MainLocationHeader = ({
               </div>
             </div>
           </div>
+
+          {/* Categories Navigation Row (Shared for Desktop & Mobile) */}
+          <motion.div
+            style={{ height: navHeight, opacity: navOpacity, marginTop: navMargin }}
+            className="relative z-10 -mx-2 flex items-end gap-1 overflow-x-auto overflow-y-visible px-2 pb-0 no-scrollbar md:gap-4 md:px-4"
+          >
+            {categories.map((cat) => (
+              <CategoryNavColumn
+                key={cat.id || cat._id}
+                cat={cat}
+                isActive={activeCategory?.id === (cat.id || cat._id)}
+                categoryAccent={categoryAccent}
+                onCategorySelect={onCategorySelect}
+                headerFontColor={headerFontColor}
+                headerIconColor={headerIconColor}
+              />
+            ))}
+          </motion.div>
 
           {/* Background Decorative patterns */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none" />

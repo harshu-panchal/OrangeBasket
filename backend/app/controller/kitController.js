@@ -128,6 +128,7 @@ export const getWarehouseKits = async (req, res) => {
         }).populate("categoryId", "name");
         return handleResponse(res, 200, "Kits fetched successfully", kits);
     } catch (error) {
+        console.error("getWarehouseKits error:", error);
         return handleResponse(res, 500, "Failed to fetch kits");
     }
 };

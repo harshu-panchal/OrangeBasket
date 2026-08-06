@@ -52,7 +52,7 @@ const DEFAULT_CATEGORY_THEME = {
 
 const CATEGORY_METADATA = {
   All: {
-    icon: HomeIcon,
+    icon: "🏪",
     theme: DEFAULT_CATEGORY_THEME,
     banner: {
       title: "HOUSEFULL",
@@ -61,7 +61,7 @@ const CATEGORY_METADATA = {
     },
   },
   Grocery: {
-    icon: LocalGroceryStoreIcon,
+    icon: "🛒",
     theme: {
       gradient: "linear-gradient(to bottom, #FF9F1C, #FFBF69)",
       shadow: "shadow-orange-500/20",
@@ -74,7 +74,7 @@ const CATEGORY_METADATA = {
     },
   },
   Wedding: {
-    icon: CardGiftcardIcon,
+    icon: "💍",
     theme: {
       gradient: "linear-gradient(to bottom, #FF4D6D, #FF8FA3)",
       shadow: "shadow-rose-500/20",
@@ -83,7 +83,7 @@ const CATEGORY_METADATA = {
     banner: { title: "WEDDING", subtitle: "BLISS", floatingElements: "hearts" },
   },
   "Home & Kitchen": {
-    icon: KitchenIcon,
+    icon: "🍳",
     theme: {
       gradient: "linear-gradient(to bottom, #BC6C25, #DDA15E)",
       shadow: "shadow-amber-500/20",
@@ -92,7 +92,7 @@ const CATEGORY_METADATA = {
     banner: { title: "HOME", subtitle: "KITCHEN", floatingElements: "smoke" },
   },
   Electronics: {
-    icon: DevicesIcon,
+    icon: "📱",
     theme: {
       gradient: "linear-gradient(to bottom, #7209B7, #B5179E)",
       shadow: "shadow-purple-500/20",
@@ -105,7 +105,7 @@ const CATEGORY_METADATA = {
     },
   },
   Kids: {
-    icon: ChildCareIcon,
+    icon: "🧸",
     theme: {
       gradient: "linear-gradient(to bottom, #4CC9F0, #A0E7E5)",
       shadow: "shadow-brand-500/20",
@@ -118,7 +118,7 @@ const CATEGORY_METADATA = {
     },
   },
   "Pet Supplies": {
-    icon: PetsIcon,
+    icon: "🐾",
     theme: {
       gradient: "linear-gradient(to bottom, #FB8500, #FFB703)",
       shadow: "shadow-yellow-500/20",
@@ -127,7 +127,7 @@ const CATEGORY_METADATA = {
     banner: { title: "PAWSOME", subtitle: "DEALS", floatingElements: "bones" },
   },
   Sports: {
-    icon: SportsSoccerIcon,
+    icon: "⚽",
     theme: {
       gradient: "linear-gradient(to bottom, #4361EE, #4895EF)",
       shadow: "shadow-brand-500/20",
@@ -141,7 +141,7 @@ const ALL_CATEGORY = {
   id: "all",
   _id: "all",
   name: "All",
-  icon: HomeIcon,
+  icon: "🌟",
   theme: DEFAULT_CATEGORY_THEME,
   headerColor: "#0e7490",
   headerFontColor: "#111111",
@@ -386,8 +386,8 @@ const Home = () => {
         nextHomeData.subcategoryMap = subMap;
         const formattedHeaders = dbCats.filter((cat) => cat.type === "header").map((cat) => {
           const catName = cat.name;
-          const meta = CATEGORY_METADATA[catName] || CATEGORY_METADATA[catName.toUpperCase()] || { icon: Sparkles, theme: DEFAULT_CATEGORY_THEME, banner: { title: catName.toUpperCase(), subtitle: "TOP PICKS", floatingElements: "sparkles" } };
-          const IconComp = (cat.iconId && ICON_COMPONENTS[cat.iconId]) || meta.icon || Sparkles;
+          const meta = CATEGORY_METADATA[catName] || CATEGORY_METADATA[catName.toUpperCase()] || { icon: "✨", theme: DEFAULT_CATEGORY_THEME, banner: { title: catName.toUpperCase(), subtitle: "TOP PICKS", floatingElements: "sparkles" } };
+          const IconComp = (cat.iconId && ICON_COMPONENTS[cat.iconId]) || meta.icon || "✨";
           return { ...cat, id: cat._id, icon: IconComp, theme: meta.theme, banner: { ...meta.banner, textColor: "text-white" } };
         });
         nextHomeData.formattedHeaders = formattedHeaders;
@@ -504,7 +504,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pt-[120px] md:pt-[95px] bg-white">
+    <div className="min-h-screen pt-[210px] md:pt-[160px] bg-white">
       <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
         <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>

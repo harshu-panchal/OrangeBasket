@@ -9,9 +9,22 @@ import {
     resetWarehousePassword,
     checkWarehouseExists,
 } from "../controller/warehouseAuthController.js";
-import { getWarehouseProfile, updateWarehouseProfile, requestWarehouseWithdrawal, getNearbyWarehouses } from "../controller/warehouseController.js";
+import { 
+    getWarehouseProfile, 
+    updateWarehouseProfile, 
+    requestWarehouseWithdrawal, 
+    getNearbyWarehouses, 
+    generateQRCode, 
+    getCurrentQR, 
+    updateCheckinSettings 
+} from "../controller/warehouseController.js";
 import { getWarehouseStats, getWarehouseEarnings } from "../controller/warehouseStatsController.js";
 import { getSellerWalletSummaryController } from "../controller/adminFinanceController.js";
+import {
+  getWarehouseQueueHandler,
+  getQueueSnapshotHandler,
+  getQueueStatsHandler,
+} from "../controller/warehouseCheckinController.js";
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
 import {
     authRouteRateLimiter,
@@ -73,5 +86,15 @@ router.get("/stats", verifyToken, allowRoles("warehouse"), getWarehouseStats);
 router.get("/earnings", verifyToken, allowRoles("warehouse"), getWarehouseEarnings);
 router.get("/wallet/summary", verifyToken, allowRoles("warehouse"), getSellerWalletSummaryController);
 router.post("/request-withdrawal", verifyToken, allowRoles("warehouse"), requestWarehouseWithdrawal);
+
+// QR Code & Check-in Settings
+router.post("/generate-qr", verifyToken, allowRoles("warehouse"), generateQRCode);
+router.get("/current-qr", verifyToken, allowRoles("warehouse"), getCurrentQR);
+router.put("/checkin-settings", verifyToken, allowRoles("warehouse"), updateCheckinSettings);
+
+// Queue Monitoring (warehouse sees their own queue, admin sees all via adminAuth)
+router.get("/:warehouseId/queue", verifyToken, allowRoles("warehouse", "admin"), getWarehouseQueueHandler);
+router.get("/:warehouseId/queue/snapshot", verifyToken, allowRoles("warehouse", "admin"), getQueueSnapshotHandler);
+router.get("/:warehouseId/queue/stats", verifyToken, allowRoles("warehouse", "admin"), getQueueStatsHandler);
 
 export default router;
