@@ -853,7 +853,7 @@ const ProductDetailSheet = () => {
                         className={cn(
                             "md:hidden fixed z-[590] bg-white shadow-2xl overflow-hidden flex flex-col",
                         )}
-                        style={{ willChange: "transform, top, height, border-radius" }}
+                        style={{ willChange: "transform, top, height, border-radius", touchAction: isExpanded ? "auto" : "none" }}
                     >
                         {/* Drag Handle (Visible only when not fully expanded) */}
                         {!isExpanded && (

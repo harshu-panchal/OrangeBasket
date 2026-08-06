@@ -894,8 +894,8 @@ export const updateProduct = async (req, res) => {
 
     // Handle multipart files (mainImage and galleryImages)
     const files = req.files || [];
+    let galleryUrls = [];
     if (files.length > 0) {
-      const galleryUrls = [];
       for (const file of files) {
         try {
           if (file.fieldname === "mainImage") {
@@ -917,9 +917,6 @@ export const updateProduct = async (req, res) => {
             error: err,
           });
         }
-      }
-      if (galleryUrls.length > 0) {
-        productData.galleryImages = galleryUrls;
       }
     }
 
@@ -957,6 +954,20 @@ export const updateProduct = async (req, res) => {
       return handleResponse(res, 404, "Product not found or unauthorized");
     }
 
+    if (galleryUrls.length > 0) {
+      let existingGallery = [];
+      if (productData.galleryImages !== undefined) {
+        existingGallery = Array.isArray(productData.galleryImages)
+          ? productData.galleryImages
+          : (typeof productData.galleryImages === "string"
+              ? productData.galleryImages.split(",")
+              : [productData.galleryImages]);
+      } else {
+        existingGallery = product.galleryImages || [];
+      }
+      productData.galleryImages = [...existingGallery, ...galleryUrls];
+    }
+
     if (productData.name) {
       if (!productData.slug || productData.slug.trim() === "") {
         productData.slug = slugify(productData.name);
@@ -975,6 +986,9 @@ export const updateProduct = async (req, res) => {
     const skuBaseName = productData.name || product.name;
     if (!productData.sku || String(productData.sku).trim() === "") {
       productData.sku = product.sku || makeProductSku(skuBaseName, 1);
+    }
+    if (productData.mainImage === undefined && product.mainImage) {
+      productData.mainImage = product.mainImage;
     }
 
     applyMediaFields(productData);
