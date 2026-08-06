@@ -290,7 +290,17 @@ const SearchPage = () => {
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{results.length} found</span>
                         </div>
 
-                        {results.length > 0 ? (
+                        {isLoading || debouncedQuery !== query ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 md:gap-x-4 gap-y-6 md:gap-y-10">
+                                {[...Array(8)].map((_, i) => (
+                                    <div key={i} className="w-full h-64 bg-slate-50/50 border border-slate-100 rounded-3xl animate-pulse flex flex-col p-3">
+                                        <div className="w-full aspect-square bg-slate-100/50 rounded-2xl mb-4" />
+                                        <div className="h-4 bg-slate-100/50 rounded-md w-3/4 mb-2" />
+                                        <div className="h-3 bg-slate-100/50 rounded-md w-1/2" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : results.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 md:gap-x-4 gap-y-6 md:gap-y-10">
                                 {results.map((product) => (
                                     <div key={product.id} onClick={() => saveSearch(query)} className="flex justify-center">

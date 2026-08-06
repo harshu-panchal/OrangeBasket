@@ -343,7 +343,7 @@ const MainLocationHeader = ({
                 className="flex items-center gap-3 cursor-pointer group shrink-0">
                 <div className="group-hover:scale-110 transition-all duration-300 drop-shadow-[0_2px_8px_rgba(255,255,255,0.2)]">
                   <img
-                    src={logoUrl}
+                    src={logoUrl || null}
                     alt={`${appName} Logo`}
                     loading="lazy"
                     className="h-14 w-auto object-contain"
@@ -510,7 +510,7 @@ const MainLocationHeader = ({
               {/* Brand Logo & Name */}
               <div onClick={() => navigate("/")} className="flex items-center gap-2.5 cursor-pointer">
                 <img
-                  src={logoUrl}
+                  src={logoUrl || null}
                   alt="Orange Basket"
                   className="h-14 w-auto object-contain shrink-0"
                 />

@@ -501,7 +501,7 @@ const ProductDetailSheet = () => {
                                 </div>
 
                                 {/* Right: Product Info (scrollable naturally) */}
-                                <div className="flex-1 flex flex-col bg-white">
+                                <div className="flex-1 flex flex-col bg-white overflow-y-auto">
                                     <div className="flex-1 px-7 py-6 lg:px-8 lg:py-7 space-y-3">
 
                                         {/* Top badges row */}
@@ -897,10 +897,7 @@ const ProductDetailSheet = () => {
                                 >
                                     {allImages.map((img, i) => (
                                         <div key={i} className="flex-shrink-0 w-full h-full snap-center flex items-center justify-center px-0">
-                                            <motion.img
-                                                initial={{ scale: 0.95, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                transition={{ duration: 0.4 }}
+                                            <img
                                                 src={applyCloudinaryTransform(img, "f_auto,q_auto:best,w_1000,dpr_auto")}
                                                 alt={`${selectedProduct.name} ${i + 1}`}
                                                 className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl scale-110"
