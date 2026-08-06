@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Card from '@shared/components/ui/Card';
 import Button from '@shared/components/ui/Button';
 import Badge from '@shared/components/ui/Badge';
@@ -136,7 +136,8 @@ const Orders = () => {
                 location: order.address?.location || null,
                 payment: order.payment?.method === 'cash' || order.payment?.method === 'cod'
                     ? 'Cash on Delivery'
-                    : 'Online Paid'
+                    : 'Online Paid',
+                deliveryBoy: order.deliveryBoy || null,
             }));
 
             setOrders(formattedOrders);
@@ -825,6 +826,22 @@ const Orders = () => {
                                                         <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.customer.phone}</p>
                                                     </div>
                                                 </div>
+                                                {selectedOrder.deliveryBoy && (
+                                                    <div>
+                                                        <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <HiOutlineTruck className="h-3 w-3 text-brand-500" /> Assigned Delivery Partner
+                                                        </h4>
+                                                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                                                            <div className="h-10 w-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                                                                {(selectedOrder.deliveryBoy.name || 'D').substring(0, 2)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-bold text-slate-800">{selectedOrder.deliveryBoy.name}</p>
+                                                                <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.deliveryBoy.phone}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-3 sm:space-y-4">
                                                 <div className="bg-primary/5 p-3 sm:p-4 rounded-3xl border border-primary/10">

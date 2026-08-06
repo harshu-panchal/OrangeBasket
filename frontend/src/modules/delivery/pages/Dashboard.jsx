@@ -28,6 +28,10 @@ import { deliveryApi } from "../services/deliveryApi";
 import DeliveryFooter from "../components/DeliveryFooter";
 import Lottie from "lottie-react";
 import deliveryRidingAnimation from "@/assets/lottie/Ey2fgNNOKZ.json";
+import OrderOfferModal from "../components/OrderOfferModal";
+import { getOrderSocket } from "@core/services/orderSocket";
+import { createSocketTokenReader } from "@core/utils/authStorage";
+import { STORAGE_KEYS } from "@core/utils/storageKeys";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +40,8 @@ const Dashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeTab, setActiveTab] = useState("delivery"); // 'delivery' or 'return'
   const [availableOrders, setAvailableOrders] = useState([]);
+  const [checkinStatus, setCheckinStatus] = useState(null);
+  const [pendingOffer, setPendingOffer] = useState(null); // active queue order offer
   const [earnings, setEarnings] = useState({
     today: 0,
     deliveries: 0,
@@ -93,8 +99,56 @@ const Dashboard = () => {
   useEffect(() => {
     fetchStats();
     fetchNotifications();
+    fetchCheckinStatus();
     if (isOnline) fetchAvailableOrders();
   }, [isOnline, activeTab]);
+
+  // Fetch warehouse check-in status
+  const fetchCheckinStatus = async () => {
+    try {
+      const res = await deliveryApi.getCheckinStatus();
+      setCheckinStatus(res.data?.data);
+    } catch { /* non-fatal */ }
+  };
+
+  // Listen for queue order offers from socket
+  useEffect(() => {
+    const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+    const socket = getOrderSocket(getToken);
+    if (!socket) return;
+    const handleOffer = (offer) => {
+      toast.info(`📦 New order offered! ${offer.countdown}s to respond`);
+      setPendingOffer(offer);
+    };
+    const handleExpired = () => {
+      setPendingOffer(null);
+      toast.warning("Order offer expired — moving to next rider");
+    };
+    socket.on("queue:order_offered", handleOffer);
+    socket.on("queue:order_offer_expired", handleExpired);
+    return () => {
+      socket.off("queue:order_offered", handleOffer);
+      socket.off("queue:order_offer_expired", handleExpired);
+    };
+  }, []);
+
+  const handleOfferAccept = (orderId) => {
+    const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+    const socket = getOrderSocket(getToken);
+    socket?.emit("queue:offer_response", { orderId, accepted: true });
+    setPendingOffer(null);
+    toast.success("Order accepted! Preparing for pickup...");
+  };
+
+  const handleOfferReject = (reason) => {
+    if (pendingOffer?.orderId) {
+      const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+      const socket = getOrderSocket(getToken);
+      socket?.emit("queue:offer_response", { orderId: pendingOffer.orderId, accepted: false });
+    }
+    setPendingOffer(null);
+    if (reason !== "timeout") toast.info("Order declined.");
+  };
 
   const handleOnlineToggle = async () => {
     const newStatus = !isOnline;
@@ -128,6 +182,14 @@ const Dashboard = () => {
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-24 relative overflow-y-auto overflow-x-hidden font-sans">
+      {/* Queue Order Offer Modal */}
+      {pendingOffer && (
+        <OrderOfferModal
+          offer={pendingOffer}
+          onAccept={handleOfferAccept}
+          onReject={handleOfferReject}
+        />
+      )}
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-2.5">
@@ -170,6 +232,41 @@ const Dashboard = () => {
             />
           </button>
         </div>
+      </div>
+
+      {/* Warehouse Check-in Card */}
+      <div className="px-6 pb-2">
+        {checkinStatus?.isCheckedIn ? (
+          <div
+            className="rounded-2xl p-3.5 flex items-center justify-between cursor-pointer"
+            style={{ background: "linear-gradient(135deg,rgba(34,197,94,0.12),rgba(16,185,129,0.08))", border: "1px solid rgba(34,197,94,0.25)" }}
+            onClick={() => navigate("/delivery/warehouse-checkin")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: "rgba(34,197,94,0.15)" }}>🏭</div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "#22c55e" }}>Checked In — Queue #{checkinStatus.queuePosition ?? "—"}</p>
+                <p className="text-xs" style={{ color: "#64748b" }}>{checkinStatus.warehouseName}</p>
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: "#22c55e" }} />
+          </div>
+        ) : (
+          <div
+            className="rounded-2xl p-3.5 flex items-center justify-between cursor-pointer"
+            style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)" }}
+            onClick={() => navigate("/delivery/warehouse-checkin")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: "rgba(59,130,246,0.12)" }}>📷</div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "#3b82f6" }}>Warehouse Check-in</p>
+                <p className="text-xs" style={{ color: "#64748b" }}>Scan QR to join delivery queue</p>
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: "#3b82f6" }} />
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

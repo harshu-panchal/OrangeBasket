@@ -141,6 +141,41 @@ const warehouseSchema = new mongoose.Schema(
       default: 5,
     },
     lastLogin: Date,
+
+    // ── Warehouse Check-in / QR System ──────────────────────────────────
+    /** Radius in METERS within which riders must be to check in (default 100m) */
+    checkinRadius: {
+      type: Number,
+      default: 100,
+      min: 10,
+      max: 2000,
+    },
+
+    /** HMAC-SHA256 secret used to sign/verify QR tokens for this warehouse */
+    qrCodeSecret: {
+      type: String,
+      select: false, // never exposed in API responses
+    },
+
+    /** When the QR code was last generated/regenerated */
+    qrCodeGeneratedAt: {
+      type: Date,
+      default: null,
+    },
+
+    /** Auto-evict riders from queue when GPS moves outside checkinRadius */
+    gpsAutoEvict: {
+      type: Boolean,
+      default: true,
+    },
+
+    /** Minutes of rider inactivity before auto-eviction (default 30 min) */
+    inactivityTimeoutMinutes: {
+      type: Number,
+      default: 30,
+      min: 5,
+      max: 480,
+    },
   },
   { timestamps: true },
 );

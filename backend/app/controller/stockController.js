@@ -74,9 +74,12 @@ export const adjustStock = async (req, res) => {
 ================================ */
 export const getStockHistory = async (req, res) => {
     try {
-        const sellerId = req.user.id;
+        const userId = req.user.id;
+        const role = req.user.role;
 
-        const history = await StockHistory.find({ seller: sellerId })
+        const query = role === "warehouse" ? { warehouseId: userId } : { seller: userId };
+
+        const history = await StockHistory.find(query)
             .sort({ createdAt: -1 })
             .populate("product", "name sku mainImage");
 

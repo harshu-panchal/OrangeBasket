@@ -78,7 +78,7 @@ export function buildSellerOrdersQuery({
   startDate,
   endDate,
 }) {
-  const base = role === "admin" ? {} : { seller: userId };
+  const base = role === "admin" ? {} : role === "warehouse" ? { warehouseId: userId } : { seller: userId };
   const withStatus = {
     ...base,
     ...normalizeSellerStatusFilter(statusParam),

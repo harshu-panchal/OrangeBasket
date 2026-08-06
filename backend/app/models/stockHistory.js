@@ -10,7 +10,12 @@ const stockHistorySchema = new mongoose.Schema(
         seller: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Seller",
-            required: true,
+            required: false,
+        },
+        warehouseId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Warehouse",
+            required: false,
         },
         type: {
             type: String,
@@ -34,6 +39,7 @@ const stockHistorySchema = new mongoose.Schema(
 );
 
 stockHistorySchema.index({ product: 1, seller: 1, createdAt: -1 });
+stockHistorySchema.index({ product: 1, warehouseId: 1, createdAt: -1 });
 stockHistorySchema.index({ order: 1 });
 stockHistorySchema.index({ type: 1 });
 

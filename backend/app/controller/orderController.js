@@ -442,14 +442,29 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
+    if (order.workflowVersion >= 2 && role === "warehouse") {
+      if (status === "confirmed") {
+        try {
+          const { warehouseAcceptAtomic } = await import("../services/warehouseQueueAssignmentService.js");
+          const updated = await warehouseAcceptAtomic(userId, canonicalOrderId);
+          return handleResponse(res, 200, "Order accepted by warehouse", updated);
+        } catch (e) {
+          return handleResponse(res, e.statusCode || 500, e.message);
+        }
+      }
+      // Warehouse reject is not fully defined yet, can add if needed.
+    }
+
     // --- Data Isolation Check ---
     const isOwnerSeller =
       role === "seller" && order.seller?.toString() === userId;
+    const isOwnerWarehouse = 
+      role === "warehouse" && order.warehouseId?.toString() === userId;
     const isAssignedDeliveryBoy =
       role === "delivery" && order.deliveryBoy?.toString() === userId;
     const isAdmin = role === "admin";
 
-    if (!isOwnerSeller && !isAssignedDeliveryBoy && !isAdmin) {
+    if (!isOwnerSeller && !isOwnerWarehouse && !isAssignedDeliveryBoy && !isAdmin) {
       return handleResponse(
         res,
         403,

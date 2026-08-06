@@ -12,6 +12,8 @@ import {
 import { isRedisEnabled } from "../config/redis.js";
 import logger from "../services/logger.js";
 import { incrementCounter, recordHistogram } from "../services/metrics.js";
+import { registerWarehouseGpsWatchdogProcessor } from "../jobs/warehouseGpsWatchdogJob.js";
+import { registerQueueOfferTimeoutProcessor } from "../jobs/queueOfferTimeoutJob.js";
 
 export function registerOrderQueueProcessors() {
   if (!isRedisEnabled()) {
@@ -236,5 +238,13 @@ export function registerOrderQueueProcessors() {
       JOB_NAMES.DELIVERY_TIMEOUT,
       JOB_NAMES.RETURN_PICKUP_TIMEOUT,
     ]
+  });
+
+  // Register warehouse-specific queue processors
+  registerWarehouseGpsWatchdogProcessor();
+  registerQueueOfferTimeoutProcessor();
+
+  logger.info('Warehouse queue processors registered', {
+    queues: [JOB_NAMES.QUEUE_OFFER_TIMEOUT, JOB_NAMES.WAREHOUSE_GPS_WATCHDOG]
   });
 }

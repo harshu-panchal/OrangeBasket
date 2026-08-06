@@ -73,4 +73,9 @@ export const deliveryApi = {
   triggerSOS: (data) => axiosInstance.post("/delivery/sos/trigger", data),
   updateEmergencyContacts: (data) =>
     axiosInstance.put("/delivery/emergency-contacts", data),
+
+  // Warehouse Queue Check-in
+  warehouseCheckin: (data) => axiosInstance.post("/delivery/warehouse/checkin", data),
+  warehouseCheckout: () => axiosInstance.post("/delivery/warehouse/checkout"),
+  getCheckinStatus: () => axiosInstance.get("/delivery/warehouse/checkin-status"),
 };

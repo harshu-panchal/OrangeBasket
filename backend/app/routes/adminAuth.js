@@ -54,6 +54,11 @@ import {
     acknowledgeSOSAlert,
     resolveSOSAlert,
 } from "../controller/sosController.js";
+import {
+    getAllWarehouseQueuesHandler,
+    getQueueSnapshotHandler,
+    getQueueStatsHandler,
+} from "../controller/warehouseCheckinController.js";
 
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
 import {
@@ -267,4 +272,12 @@ router.get(
     }
 );
 
+// Warehouse Queue Monitoring (Admin)
+router.get("/warehouse-queue/all", verifyToken, allowRoles("admin"), getAllWarehouseQueuesHandler);
+router.get("/warehouse-queue/:warehouseId", verifyToken, allowRoles("admin"), getQueueSnapshotHandler);
+router.get("/warehouse-queue/:warehouseId/stats", verifyToken, allowRoles("admin"), getQueueStatsHandler);
+
 export default router;
+
+
+// Disabled/placeholder routes removed

@@ -1,6 +1,8 @@
 import Warehouse from "../models/warehouse.js";
 import Transaction from "../models/transaction.js";
+import WarehouseCheckin from "../models/warehouseCheckin.js";
 import { handleResponse, calculateDistance } from "../utils/helper.js";
+import { generateWarehouseQR, getCurrentWarehouseQR } from "../services/warehouseQrService.js";
 import mongoose from "mongoose";
 
 
@@ -145,6 +147,70 @@ export const updateWarehouseProfile = async (req, res) => {
     if (error.code === 11000) {
       return handleResponse(res, 400, "Phone number already in use");
     }
+    return handleResponse(res, 500, error.message);
+  }
+};
+
+/* ===============================
+   GENERATE WAREHOUSE QR CODE
+================================ */
+export const generateQRCode = async (req, res) => {
+  try {
+    const warehouseId = req.user.id;
+    const result = await generateWarehouseQR(warehouseId);
+    return handleResponse(res, 200, "QR code generated successfully", result);
+  } catch (error) {
+    return handleResponse(res, error.statusCode || 500, error.message);
+  }
+};
+
+/* ===============================
+   GET CURRENT WAREHOUSE QR CODE
+================================ */
+export const getCurrentQR = async (req, res) => {
+  try {
+    const warehouseId = req.user.id;
+    const result = await getCurrentWarehouseQR(warehouseId);
+    if (!result) {
+      return handleResponse(res, 200, "No QR code generated yet", null);
+    }
+    return handleResponse(res, 200, "Current QR code fetched", result);
+  } catch (error) {
+    return handleResponse(res, error.statusCode || 500, error.message);
+  }
+};
+
+/* ===============================
+   UPDATE CHECK-IN SETTINGS
+================================ */
+export const updateCheckinSettings = async (req, res) => {
+  try {
+    const warehouseId = req.user.id;
+    const { lat, lng, checkinRadius } = req.body;
+
+    const warehouse = await Warehouse.findById(warehouseId);
+    if (!warehouse) return handleResponse(res, 404, "Warehouse not found");
+
+    if (lat !== undefined && lng !== undefined) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      if (latNum < -90 || latNum > 90) return handleResponse(res, 400, "Invalid latitude");
+      if (lngNum < -180 || lngNum > 180) return handleResponse(res, 400, "Invalid longitude");
+      warehouse.location = { type: "Point", coordinates: [lngNum, latNum] };
+    }
+
+    if (checkinRadius !== undefined) {
+      const r = Number(checkinRadius);
+      if (r < 10 || r > 2000) return handleResponse(res, 400, "Checkin radius must be between 10m and 2000m");
+      warehouse.checkinRadius = r;
+    }
+
+    await warehouse.save();
+    return handleResponse(res, 200, "Checkin settings updated", {
+      location: warehouse.location,
+      checkinRadius: warehouse.checkinRadius,
+    });
+  } catch (error) {
     return handleResponse(res, 500, error.message);
   }
 };

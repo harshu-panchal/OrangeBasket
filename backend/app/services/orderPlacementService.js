@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Cart from "../models/cart.js";
 import CheckoutGroup from "../models/checkoutGroup.js";
 import Order from "../models/order.js";
+import Product from "../models/product.js";
 import User from "../models/customer.js";
 import Transaction from "../models/transaction.js";
 import Coupon from "../models/coupon.js";
@@ -89,6 +90,24 @@ function toPlain(doc) {
   if (!doc) return doc;
   if (typeof doc.toObject === "function") return doc.toObject();
   return doc;
+}
+
+/**
+ * Resolves the warehouseId for an order from the items' product records.
+ * Uses the first item's product.warehouseId. Returns null if not found.
+ */
+async function resolveWarehouseIdFromItems(items = []) {
+  if (!items || items.length === 0) return null;
+  const firstItem = items[0];
+  // items may have productId as ObjectId or string
+  const productId = firstItem.productId || firstItem.product;
+  if (!productId) return null;
+  try {
+    const product = await Product.findById(productId).select("warehouseId").lean();
+    return product?.warehouseId || null;
+  } catch {
+    return null;
+  }
 }
 
 function buildResultPayload({ checkoutGroup, orders }) {
@@ -495,7 +514,8 @@ export async function placeOrderAtomic({
       const order = new Order({
         orderId,
         customer: customerId,
-        seller: entry.sellerId,
+        seller: entry.actualSellerId || null,
+        warehouseId: entry.actualWarehouseId || await resolveWarehouseIdFromItems(entry.items),
         items: mapOrderItemsForPersistence(entry.items),
         address: normalizedAddress,
         paymentMode,
@@ -549,7 +569,8 @@ export async function placeOrderAtomic({
     checkoutGroup.orderIds = orders.map((order) => order._id);
     checkoutGroup.publicOrderIds = orders.map((order) => order.orderId);
     checkoutGroup.sellerBreakdown = orders.map((order, index) => ({
-      seller: order.seller,
+      seller: order.seller || order.warehouseId, // Keep this as 'seller' for backwards compatibility in checkoutGroup
+      isWarehouse: !!order.warehouseId,
       order: order._id,
       publicOrderId: order.orderId,
       itemCount: order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
@@ -616,8 +637,8 @@ export async function placeOrderAtomic({
     }
 
     const transactionRows = orders.map((order) => ({
-      user: order.seller,
-      userModel: "Seller",
+      user: order.seller || order.warehouseId,
+      userModel: order.seller ? "Seller" : "Warehouse",
       order: order._id,
       type: "Order Payment",
       amount: Number(order.paymentBreakdown?.grandTotal || order.pricing?.total || 0),
@@ -737,11 +758,12 @@ export async function placeOrderAtomic({
         customerId,
         userId: customerId,
       });
-      if (order.seller) {
+      if (order.seller || order.warehouseId) {
         emitNotificationEvent(NOTIFICATION_EVENTS.NEW_ORDER, {
           orderId: order.orderId,
           checkoutGroupId,
-          sellerId: order.seller,
+          sellerId: order.seller || undefined,
+          warehouseId: order.warehouseId || undefined,
           customerId,
         });
       }

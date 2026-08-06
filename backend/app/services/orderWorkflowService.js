@@ -32,6 +32,7 @@ import {
 import {
   emitOrderStatusUpdate,
   emitToSeller,
+  emitToWarehouse,
   emitDeliveryBroadcastForSeller,
   emitReturnBroadcastForCustomer,
   emitToCustomer,
@@ -44,6 +45,8 @@ import { requireCanonicalOrderId } from "../utils/orderLookup.js";
 import { emitNotificationEvent } from "../modules/notifications/notification.emitter.js";
 import logger from "./logger.js";
 import { NOTIFICATION_EVENTS } from "../modules/notifications/notification.constants.js";
+// NOTE: warehouseQueueAssignmentService is dynamically imported inside sellerAcceptAtomic
+// to avoid circular dependency (warehouseQueueAssignmentService -> orderWorkflowService -> warehouseQueueAssignmentService)
 
 const DELIVERY_SEARCH_MAX_ATTEMPTS = () =>
   parseInt(process.env.DELIVERY_SEARCH_MAX_ATTEMPTS || "3", 10);
@@ -100,14 +103,24 @@ export function resolveWorkflowStatus(order) {
 export async function afterPlaceOrderV2(orderDoc) {
   const orderId = orderDoc.orderId;
   await scheduleSellerTimeoutJob(orderId);
-  emitToSeller(orderDoc.seller?.toString(), {
-    event: "order:new",
-    payload: {
-      orderId,
-      workflowStatus: WORKFLOW_STATUS.SELLER_PENDING,
-      sellerPendingExpiresAt: orderDoc.sellerPendingExpiresAt,
-    },
-  });
+
+  const payload = {
+    orderId,
+    workflowStatus: WORKFLOW_STATUS.SELLER_PENDING,
+    sellerPendingExpiresAt: orderDoc.sellerPendingExpiresAt,
+  };
+
+  if (orderDoc.warehouseId) {
+    emitToWarehouse(orderDoc.warehouseId?.toString(), {
+      event: "order:new",
+      payload,
+    });
+  } else {
+    emitToSeller(orderDoc.seller?.toString(), {
+      event: "order:new",
+      payload,
+    });
+  }
 }
 
 // Workflow timeout scheduling delegates to the jobSchedulerPort (P2.6).
@@ -204,10 +217,40 @@ export async function sellerAcceptAtomic(sellerId, orderId) {
     },
     updated.customer?._id || updated.customer,
   );
-  await emitDeliveryBroadcastForSeller(
-    updated.seller,
-    deliveryBroadcastPayloadFromOrder(updated),
-  );
+
+  // ── Warehouse queue assignment (FIFO) ────────────────────────────────
+  // If the order has a warehouseId, attempt queue-based FIFO assignment first.
+  // If the queue is empty or has no eligible riders, fall back to broadcast.
+  const warehouseId = updated.warehouseId;
+  let usedQueueAssignment = false;
+  if (warehouseId) {
+    try {
+      const { offerToNextInQueue } = await import("./warehouseQueueAssignmentService.js");
+      const queueResult = await offerToNextInQueue(updated.orderId, String(warehouseId), []);
+      if (queueResult.offered) {
+        usedQueueAssignment = true;
+        logger.info("[sellerAccept] Assigned via warehouse queue", {
+          orderId: updated.orderId,
+          riderId: queueResult.riderId,
+          warehouseId,
+        });
+      }
+    } catch (queueErr) {
+      logger.warn("[sellerAccept] Queue assignment failed, falling back to broadcast", {
+        orderId: updated.orderId,
+        error: queueErr.message,
+      });
+    }
+  }
+
+  // Fall back to existing radius-based broadcast if queue wasn't used
+  if (!usedQueueAssignment) {
+    await emitDeliveryBroadcastForSeller(
+      updated.seller,
+      deliveryBroadcastPayloadFromOrder(updated),
+    );
+  }
+  // ───────────────────────────────────────────────────────────────────
 
   emitNotificationEvent(NOTIFICATION_EVENTS.ORDER_CONFIRMED, {
     orderId: updated.orderId,
