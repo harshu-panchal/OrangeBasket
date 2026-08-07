@@ -40,12 +40,12 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
                 className="flex flex-col items-center gap-2 min-w-[88px] max-w-[96px] md:min-w-[104px] md:max-w-[110px] cursor-pointer group/item snap-start transition-all active:scale-95 text-center">
                 {/* White Card Box Container */}
                 <div
-                  className="w-[84px] h-[84px] md:w-[100px] md:h-[100px] bg-white border border-slate-100 rounded-2xl flex items-center justify-center p-2.5 shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm">
+                  className="w-[84px] h-[84px] md:w-[100px] md:h-[100px] bg-white border border-slate-100 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm">
                   <img
                     src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_120")}
                     alt={cat.name}
                     loading="lazy"
-                    className="w-full h-full object-contain group-hover/item:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
                   />
                 </div>
                 {/* Label text */}

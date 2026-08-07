@@ -172,7 +172,7 @@ const ContentManager = () => {
             title: title || '',
             status: status || 'active',
             bannerItems: config.banners?.items?.length
-                ? config.banners.items.map(b => ({ ...b, isUploading: false }))
+                ? config.banners.items.map(b => ({ ...b, imageUrl: b.imageUrl || b.videoUrl || '', isUploading: false }))
                 : [{ imageUrl: '', title: '', subtitle: '', linkType: 'none', linkValue: '', isUploading: false }],
             maxCategories: config.categories?.maxItems || 4,
             categoryIds: config.categories?.categoryIds || [],
@@ -235,14 +235,19 @@ const ContentManager = () => {
                 return;
             }
             config = {
-                items: items.map(b => ({
-                    imageUrl: b.imageUrl,
-                    title: b.title,
-                    subtitle: b.subtitle,
-                    linkType: b.linkType || 'none',
-                    linkValue: b.linkValue || '',
-                    status: b.status || 'active',
-                })),
+                items: items.map(b => {
+                    const isVideo = !!b.imageUrl?.match(/\.(mp4|webm|mov|avi)$/i);
+                    return {
+                        imageUrl: isVideo ? '' : b.imageUrl,
+                        videoUrl: isVideo ? b.imageUrl : '',
+                        isVideo: isVideo,
+                        title: b.title,
+                        subtitle: b.subtitle,
+                        linkType: b.linkType || 'none',
+                        linkValue: b.linkValue || '',
+                        status: b.status || 'active',
+                    };
+                }),
             };
         } else if (displayType === 'categories') {
             if (!formData.categoryIds?.length) {
@@ -608,11 +613,15 @@ const ContentManager = () => {
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
                                                         {item.imageUrl ? (
-                                                            <img
-                                                                src={item.imageUrl}
-                                                                alt={item.title || `Banner ${idx + 1}`}
-                                                                className="w-full h-full object-cover"
-                                                            />
+                                                            item.imageUrl.match(/\.(mp4|webm|mov|avi)$/i) ? (
+                                                                <video src={item.imageUrl} className="w-full h-full object-cover" muted />
+                                                            ) : (
+                                                                <img
+                                                                    src={item.imageUrl}
+                                                                    alt={item.title || `Banner ${idx + 1}`}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            )
                                                         ) : (
                                                             <HiOutlinePhoto className="h-6 w-6 text-slate-300" />
                                                         )}
@@ -623,7 +632,7 @@ const ContentManager = () => {
                                                                 bannerFileInputsRef.current[idx] = el;
                                                             }}
                                                             type="file"
-                                                            accept="image/*"
+                                                            accept="image/*,video/*"
                                                             className="hidden"
                                                             onChange={(e) =>
                                                                 handleBannerFileChange(idx, e.target.files?.[0])
@@ -636,14 +645,14 @@ const ContentManager = () => {
                                                             }
                                                             className="inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
                                                         >
-                                                            {item.imageUrl ? 'Change image' : 'Choose image file'}
+                                                            {item.imageUrl ? 'Change file' : 'Choose file'}
                                                         </button>
                                                         <p className="text-[10px] text-slate-400">
                                                             {item.isUploading
                                                                 ? 'Uploading...'
                                                                 : item.imageUrl
-                                                                ? 'Image uploaded'
-                                                                : 'PNG, JPG up to 5MB'}
+                                                                ? 'File uploaded'
+                                                                : 'PNG, JPG, MP4 up to 10MB'}
                                                         </p>
                                                     </div>
                                                 </div>

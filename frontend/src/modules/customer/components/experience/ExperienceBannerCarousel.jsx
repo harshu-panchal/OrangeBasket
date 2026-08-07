@@ -91,7 +91,7 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
             key={idx}
             className={cn(
               "relative shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center box-border",
-              fullWidth ? "aspect-[2/1] sm:aspect-[21/9] rounded-none px-0" : "aspect-[2/1] sm:aspect-[21/9] px-4 md:px-8 py-2"
+              fullWidth ? "aspect-[2/1] sm:aspect-[21/9] rounded-none px-0" : "px-4 md:px-8 py-4 sm:py-6"
             )}
             style={{ width: `${100 / totalItems}%` }}
           >
@@ -106,7 +106,10 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
                 src={banner.videoUrl}
                 muted
                 playsInline
-                className="w-full h-full object-cover object-center pointer-events-none"
+                className={cn(
+                  "w-full h-full object-cover object-center pointer-events-none",
+                  !fullWidth && "rounded-[24px] max-w-[960px] aspect-[2/1] sm:aspect-[21/9] shadow-[0_12px_30px_rgba(15,23,42,0.08)]"
+                )}
                 onEnded={() => {
                   setActiveIndex((prev) => (prev + 1) % totalItems);
                 }}
@@ -131,14 +134,14 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
                 decoding="async"
               />
             ) : (
-              <div className="h-full w-full max-w-[560px] overflow-hidden rounded-[24px] bg-slate-100 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+              <div className="w-full max-w-[960px] aspect-[2/1] sm:aspect-[21/9] overflow-hidden rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
                 <img
                   src={getBannerOptimizedSrc(banner.imageUrl)}
                   srcSet={
                     isCloudinaryUrl(banner.imageUrl)
                       ? buildCloudinarySrcSet(
                           banner.imageUrl,
-                          [{ w: 560 }, { w: 1120 }],
+                          [{ w: 560 }, { w: 960 }, { w: 1200 }],
                           "f_auto,q_auto,c_scale"
                         )
                       : undefined

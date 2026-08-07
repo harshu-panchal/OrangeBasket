@@ -235,9 +235,16 @@ const ProductCard = React.memo(
             <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-slate-900 transition-colors">
               {product.name}
             </h4>
-            <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
-              {product.weight || "1 unit"}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-[11px] font-semibold text-slate-400">
+                {product.weight || "1 unit"}
+              </p>
+              {Array.isArray(product?.variants) && product.variants.length > 1 && (
+                <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">
+                  +{product.variants.length - 1} {product.variants.length - 1 === 1 ? 'variant' : 'variants'}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Bottom Price Row & Plus/Quantity Selector */}

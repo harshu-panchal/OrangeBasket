@@ -387,7 +387,7 @@ export const uploadBannerImage = async (req, res) => {
     if (req.file) {
       const uploadedUrl = await uploadToCloudinary(req.file.buffer, "banners", {
         mimeType: req.file.mimetype,
-        resourceType: "image",
+        resourceType: "auto",
       });
       await invalidate("cache:experience:public:*");
       return handleResponse(res, 200, "Banner image uploaded", { url: uploadedUrl });
