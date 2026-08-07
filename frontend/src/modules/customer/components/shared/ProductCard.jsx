@@ -11,6 +11,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import ParticleBurst from "./ParticleBurst";
 
+/**
+ * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string }} props
+ */
 const ProductCard = React.memo(
   ({ product, badge, className, compact = false, neutralBg = false, layout = "grid" }) => {
     const { toggleWishlist: toggleWishlistGlobal, isInWishlist } =

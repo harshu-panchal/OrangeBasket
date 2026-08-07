@@ -9,6 +9,16 @@ import {
 } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
 
+/**
+ * @param {Object} props
+ * @param {React.ReactNode} [props.children]
+ * @param {React.ReactNode} [props.title]
+ * @param {React.ReactNode} [props.subtitle]
+ * @param {string} [props.className]
+ * @param {React.ReactNode} [props.headerAction]
+ * @param {React.ReactNode} [props.footer]
+ * @param {string} [props.contentClassName]
+ */
 const Card = ({ children, title, subtitle, className, headerAction, footer, contentClassName, ...props }) => {
     return (
         <ShadcnCard className={cn("glass-card border-none rounded-lg", className)} {...props}>

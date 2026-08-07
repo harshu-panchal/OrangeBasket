@@ -3,7 +3,7 @@ import { customerApi } from "../services/customerApi";
 import { useAuth } from "../../../core/context/AuthContext";
 import { getJSON, setJSON, remove as removeStorage, STORAGE_KEYS } from "@core/utils/storage";
 
-const CartContext = createContext();
+const CartContext = createContext(null);
 
 const loadGuestCart = () => {
   const parsed = getJSON(STORAGE_KEYS.CART, []);

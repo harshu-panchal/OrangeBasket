@@ -109,6 +109,7 @@ const AddressesPage = () => {
             toast.error('Please enter the address');
             return;
         }
+        /** @type {any} */
         const newAddr = {
             label: addForm.type.toLowerCase(),
             fullAddress: address,

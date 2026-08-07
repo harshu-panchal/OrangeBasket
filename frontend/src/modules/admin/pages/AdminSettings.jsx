@@ -45,7 +45,8 @@ const AdminSettings = () => {
     const logoInputRef = useRef(null);
     const faviconInputRef = useRef(null);
 
-    const [settings, setSettings] = useState({
+    /** @type {any} */
+    const defaultSettings = {
         appName: '',
         supportEmail: '',
         supportPhone: '',
@@ -88,7 +89,8 @@ const AdminSettings = () => {
             videoUrl: '',
             isVisible: false,
         },
-    });
+    };
+    const [settings, setSettings] = useState(defaultSettings);
 
     useEffect(() => {
         const fetchSettings = async () => {

@@ -216,7 +216,7 @@ const WarehouseDetail = ({ snapshot }) => {
           {queue.map((entry) => {
             const r = entry.rider || {};
             const since = entry.checkinTime
-              ? Math.round((Date.now() - new Date(entry.checkinTime)) / 60000)
+              ? Math.round((Date.now() - new Date(entry.checkinTime).getTime()) / 60000)
               : null;
             return (
               <div key={entry.checkinId} style={S.riderRow}>
@@ -251,6 +251,7 @@ const WarehouseDetail = ({ snapshot }) => {
 };
 
 /* ── Styles ─────────────────────────────────────────────────────────────── */
+/** @type {Object<string, React.CSSProperties>} */
 const S = {
   page: { padding: "24px", fontFamily: "system-ui,sans-serif", color: "#f1f5f9", minHeight: "100vh" },
   headerBar: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
@@ -279,6 +280,7 @@ const S = {
   spinner: { width: 32, height: 32, border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" },
 };
 
+/** @type {Object<string, React.CSSProperties>} */
 const BS = {
   badge: { borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, display: "inline-block" },
 };
