@@ -1147,7 +1147,7 @@ export const getProductById = async (req, res) => {
       async () =>
         Product.findById(id)
           .select(
-            "name slug description sku price salePrice stock lowStockAlert brand weight mainImage galleryImages headerId categoryId subcategoryId sellerId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
+            "name slug description sku price salePrice stock lowStockAlert brand weight mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId isMonthlyKit status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
           )
           .populate("headerId", "name")
           .populate("categoryId", "name")
@@ -1169,16 +1169,22 @@ export const getProductById = async (req, res) => {
     }
 
     if (enforceRadius) {
-      let sellerIdForProduct = product?.sellerId?._id ? String(product.sellerId._id) : (product?.sellerId ? String(product.sellerId) : null);
-      if (!sellerIdForProduct || sellerIdForProduct === "null") {
-        // If it was null because populate failed for a warehouse, query raw product directly to get the real sellerId/warehouseId
-        const rawProduct = await Product.findById(id).select("sellerId").lean();
-        if (rawProduct && rawProduct.sellerId) {
-          sellerIdForProduct = String(rawProduct.sellerId);
+      if (product.isMonthlyKit) {
+        // Bypass location check for monthly kits
+      } else {
+        let sellerIdForProduct = product?.sellerId?._id ? String(product.sellerId._id) : (product?.sellerId ? String(product.sellerId) : null);
+        if (!sellerIdForProduct || sellerIdForProduct === "null") {
+          // If it was null because populate failed for a warehouse, query raw product directly to get the real sellerId/warehouseId
+          const rawProduct = await Product.findById(id).select("sellerId warehouseId").lean();
+          if (rawProduct && rawProduct.sellerId) {
+            sellerIdForProduct = String(rawProduct.sellerId);
+          } else if (rawProduct && rawProduct.warehouseId) {
+            sellerIdForProduct = String(rawProduct.warehouseId);
+          }
         }
-      }
-      if (!nearbySellerSet || !nearbySellerSet.has(sellerIdForProduct)) {
-        return handleResponse(res, 404, "Product not available in your area");
+        if (!nearbySellerSet || !nearbySellerSet.has(sellerIdForProduct)) {
+          return handleResponse(res, 404, "Product not available in your area");
+        }
       }
     }
 
