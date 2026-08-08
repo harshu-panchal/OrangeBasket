@@ -20,6 +20,7 @@ import {
   FileText,
   Upload,
   CheckCircle,
+  AlertCircle,
   Navigation,
   Loader2,
   Eye,
@@ -30,6 +31,15 @@ import Lottie from "lottie-react";
 import sellerAnimation from "../../../assets/INSTANT_6.json";
 import { sellerApi } from "../services/sellerApi";
 import MapPicker from "../../../shared/components/MapPicker";
+
+// --- Live Standard Input Validation Helpers ---
+const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || "").trim());
+const isValidPhone = (val) => /^[6-9]\d{9}$/.test((val || "").trim()) || /^\d{10}$/.test((val || "").trim());
+const isValidLoginIdentifier = (val) => isValidEmail(val) || isValidPhone(val);
+const isValidPassword = (val) => (val || "").trim().length >= 6;
+const isValidName = (val) => (val || "").trim().length >= 2;
+const isValidShopName = (val) => (val || "").trim().length >= 3;
+const isValidPincode = (val) => /^\d{6}$/.test((val || "").trim());
 
 const createInitialVerificationState = () => ({
   status: "idle",
@@ -52,31 +62,6 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [signupStep, setSignupStep] = useState(1);
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const { login } = useAuth();
-  const { settings } = useSettings();
-  const navigate = useNavigate();
-  const appName = settings?.appName || "App";
-  const logoUrl = settings?.logoUrl || "";
-  const [verifications, setVerifications] = useState({
-    email: createInitialVerificationState(),
-    phone: createInitialVerificationState(),
-  });
-  const [forgotPasswordStep, setForgotPasswordStep] = useState(0);
-  const [resetData, setResetData] = useState({
-    channel: "email",
-    rawValue: "",
-    otp: "",
-    newPassword: "",
-    confirmPassword: "",
-    token: "",
-    isSending: false,
-    isVerifying: false,
-    isResetting: false,
-  });
-
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -93,6 +78,51 @@ const Auth = () => {
     lng: null,
     radius: 5,
     address: "",
+  });
+
+  const [touched, setTouched] = useState({
+    email: false,
+    phone: false,
+    password: false,
+    name: false,
+    shopName: false,
+    pincode: false,
+  });
+
+  const markTouched = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+  };
+
+  const getFieldBorderClass = (fieldName, isValid) => {
+    if (!touched[fieldName] || !formData[fieldName]) {
+      return "border-transparent focus:bg-white focus:border-slate-200";
+    }
+    return isValid
+      ? "border-emerald-500 bg-emerald-50/20 focus:border-emerald-600 focus:bg-white"
+      : "border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:bg-white";
+  };
+  const { login } = useAuth();
+  const { settings } = useSettings();
+  const navigate = useNavigate();
+  const appName = settings?.appName || "App";
+  const logoUrl = settings?.logoUrl || "";
+  const [signupStep, setSignupStep] = useState(1);
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [verifications, setVerifications] = useState({
+    email: createInitialVerificationState(),
+    phone: createInitialVerificationState(),
+  });
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(0);
+  const [resetData, setResetData] = useState({
+    channel: "email",
+    rawValue: "",
+    otp: "",
+    newPassword: "",
+    confirmPassword: "",
+    token: "",
+    isSending: false,
+    isVerifying: false,
+    isResetting: false,
   });
 
   const handleLocationSelect = (location) => {
@@ -144,6 +174,7 @@ const Auth = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    markTouched(name);
     if (name === "name") {
       // Owner name: only alphabets and spaces
       const cleaned = value.replace(/[^a-zA-Z\s]/g, "");
@@ -178,8 +209,9 @@ const Auth = () => {
   };
 
   const handleBlur = async (e) => {
-    if (isLogin) return;
     const { name, value } = e.target;
+    markTouched(name);
+    if (isLogin) return;
     
     if ((name === "email" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) || 
         (name === "phone" && /^\d{10}$/.test(value))) {
@@ -364,16 +396,29 @@ const Auth = () => {
     e.preventDefault();
 
     try {
+      if (isLogin) {
+        markTouched("email");
+        markTouched("password");
+        if (!isValidLoginIdentifier(formData.email)) {
+          toast.error("Please enter a valid email address or 10-digit mobile number.");
+          return;
+        }
+        if (!isValidPassword(formData.password)) {
+          toast.error("Password must be at least 6 characters.");
+          return;
+        }
+      }
+
       // Basic client-side validation for signup
       if (!isLogin) {
         const email = formData.email || "";
         const phone = formData.phone || "";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!isValidEmail(email)) {
           toast.error("Please enter a valid business email address.");
           setIsLoading(false);
           return;
         }
-        if (!/^[0-9]{10}$/.test(phone)) {
+        if (!isValidPhone(phone)) {
           toast.error("Please enter a valid 10-digit contact number.");
           return;
         }
@@ -624,26 +669,51 @@ const Auth = () => {
                 <div className="space-y-4">
                   {forgotPasswordStep === 1 && (
                     <form onSubmit={handleSendResetOtp} className="space-y-4">
-                      <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                          <User size={18} />
+                      <div>
+                        <div className="relative group">
+                          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                            <User size={18} />
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Email or Phone Number"
+                            className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${
+                              resetData.rawValue
+                                ? isValidLoginIdentifier(resetData.rawValue)
+                                  ? "border-emerald-500 bg-emerald-50/20 focus:border-emerald-600 focus:bg-white"
+                                  : "border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:bg-white"
+                                : "border-transparent focus:bg-white focus:border-slate-200"
+                            }`}
+                            value={resetData.rawValue}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const isPhone = /^\d/.test(val);
+                              setResetData({ ...resetData, rawValue: val, channel: isPhone ? 'phone' : 'email' });
+                            }}
+                          />
                         </div>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Email or Phone Number"
-                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                          value={resetData.rawValue}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const isPhone = /^\d/.test(val);
-                            setResetData({ ...resetData, rawValue: val, channel: isPhone ? 'phone' : 'email' });
-                          }}
-                        />
+                        {resetData.rawValue && (
+                          <div className="mt-1.5 px-1 text-xs font-semibold transition-all">
+                            {isValidEmail(resetData.rawValue) ? (
+                              <span className="text-emerald-600 flex items-center gap-1.5">
+                                <CheckCircle size={14} className="shrink-0" /> Standard Email format detected
+                              </span>
+                            ) : isValidPhone(resetData.rawValue) ? (
+                              <span className="text-emerald-600 flex items-center gap-1.5">
+                                <CheckCircle size={14} className="shrink-0" /> Standard 10-digit Mobile number detected
+                              </span>
+                            ) : (
+                              <span className="text-rose-500 flex items-center gap-1.5">
+                                <AlertCircle size={14} className="shrink-0" /> Enter a valid email or 10-digit phone number
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <button
                         type="submit"
-                        disabled={resetData.isSending || !resetData.rawValue}
+                        disabled={resetData.isSending || !isValidLoginIdentifier(resetData.rawValue)}
                         className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white p-4 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {resetData.isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send OTP"}
@@ -741,84 +811,148 @@ const Auth = () => {
                   <>
                     {!isLogin && (
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="relative group">
-                          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                            <User size={18} />
-                          </div>
-                          <input
-                            type="text"
-                            name="name"
-                            required
-                            maxLength={50}
-                            pattern="[a-zA-Z\s]*"
-                            placeholder="Owner Name"
-                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                            value={formData.name}
-                            onChange={(e) => {
-                                e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                        <div>
+                          <div className="relative group">
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                              <User size={18} />
+                            </div>
+                            <input
+                              type="text"
+                              name="name"
+                              required
+                              maxLength={50}
+                              pattern="[a-zA-Z\s]*"
+                              placeholder="Owner Name"
+                              className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("name", isValidName(formData.name))}`}
+                              value={formData.name}
+                              onChange={(e) => {
+                                e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, "");
                                 handleChange(e);
-                            }}
-                          />
-                        </div>
-                        <div className="relative group">
-                          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                            <Store size={18} />
+                              }}
+                              onBlur={handleBlur}
+                            />
                           </div>
-                          <input
-                            type="text"
-                            name="shopName"
-                            required
-                            placeholder="Shop / Business Name"
-                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                            value={formData.shopName}
-                            onChange={handleChange}
-                          />
+                          {touched.name && formData.name && (
+                            <div className="mt-1 px-1 text-xs font-semibold">
+                              {isValidName(formData.name) ? (
+                                <span className="text-emerald-600 flex items-center gap-1">
+                                  <CheckCircle size={13} className="shrink-0" /> Valid Owner Name
+                                </span>
+                              ) : (
+                                <span className="text-rose-500 flex items-center gap-1">
+                                  <AlertCircle size={13} className="shrink-0" /> Min 2 letters required
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="relative group">
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                              <Store size={18} />
+                            </div>
+                            <input
+                              type="text"
+                              name="shopName"
+                              required
+                              placeholder="Shop / Business Name"
+                              className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("shopName", isValidShopName(formData.shopName))}`}
+                              value={formData.shopName}
+                              onChange={handleChange}
+                              onBlur={handleBlur}
+                            />
+                          </div>
+                          {touched.shopName && formData.shopName && (
+                            <div className="mt-1 px-1 text-xs font-semibold">
+                              {isValidShopName(formData.shopName) ? (
+                                <span className="text-emerald-600 flex items-center gap-1">
+                                  <CheckCircle size={13} className="shrink-0" /> Valid Business Name
+                                </span>
+                              ) : (
+                                <span className="text-rose-500 flex items-center gap-1">
+                                  <AlertCircle size={13} className="shrink-0" /> Min 3 characters required
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
 
-                    <div className="relative group">
-                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                        <Mail size={18} />
+                    <div>
+                      <div className="relative group">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                          <Mail size={18} />
+                        </div>
+                        <input
+                          type={isLogin ? "text" : "email"}
+                          name="email"
+                          required
+                          inputMode={isLogin ? "text" : "email"}
+                          autoComplete="email"
+                          placeholder={isLogin ? "Email or Phone Number" : "Business Email"}
+                          className={`w-full pl-12 ${!isLogin ? "pr-28" : "pr-6"} py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("email", isLogin ? isValidLoginIdentifier(formData.email) : isValidEmail(formData.email))}`}
+                          value={formData.email}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                        />
+                        {!isLogin && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendVerificationOtp("email")}
+                            disabled={
+                              verifications.email.isSending ||
+                              verifications.email.status === "verified" ||
+                              verifications.email.exists ||
+                              !isValidEmail(formData.email)
+                            }
+                            className={`absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${verifications.email.status === "verified"
+                              ? "bg-brand-100 text-brand-700 cursor-default"
+                              : "bg-slate-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+                              }`}>
+                            {verifications.email.isSending ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : verifications.email.status === "verified" ? (
+                              "Verified"
+                            ) : verifications.email.isOtpVisible ? (
+                              "Resend"
+                            ) : (
+                              "Verify"
+                            )}
+                          </button>
+                        )}
                       </div>
-                      <input
-                        type={isLogin ? "text" : "email"}
-                        name="email"
-                        required
-                        inputMode={isLogin ? "text" : "email"}
-                        autoComplete="email"
-                        placeholder={isLogin ? "Email or Phone Number" : "Business Email"}
-                        className="w-full pl-12 pr-28 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                        value={formData.email}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                      />
-                      {!isLogin && (
-                        <button
-                          type="button"
-                          onClick={() => handleSendVerificationOtp("email")}
-                          disabled={
-                            verifications.email.isSending ||
-                            verifications.email.status === "verified" ||
-                            verifications.email.exists ||
-                            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email || "")
-                          }
-                          className={`absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${verifications.email.status === "verified"
-                            ? "bg-brand-100 text-brand-700 cursor-default"
-                            : "bg-slate-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
-                            }`}>
-                          {verifications.email.isSending ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : verifications.email.status === "verified" ? (
-                            "Verified"
-                          ) : verifications.email.isOtpVisible ? (
-                            "Resend"
+                      {/* Live Validation Feedback for Email / Identifier */}
+                      {touched.email && formData.email && (
+                        <div className="mt-1.5 px-1 text-xs font-semibold transition-all">
+                          {isLogin ? (
+                            isValidEmail(formData.email) ? (
+                              <span className="text-emerald-600 flex items-center gap-1.5">
+                                <CheckCircle size={14} className="shrink-0" /> Standard Email format detected
+                              </span>
+                            ) : isValidPhone(formData.email) ? (
+                              <span className="text-emerald-600 flex items-center gap-1.5">
+                                <CheckCircle size={14} className="shrink-0" /> Standard 10-digit Mobile number detected
+                              </span>
+                            ) : (
+                              <span className="text-rose-500 flex items-center gap-1.5">
+                                <AlertCircle size={14} className="shrink-0" /> Enter a valid email (e.g. name@domain.com) or 10-digit mobile number
+                              </span>
+                            )
+                          ) : isValidEmail(formData.email) ? (
+                            <span className="text-emerald-600 flex items-center gap-1.5">
+                              <CheckCircle size={14} className="shrink-0" /> Standard Business Email format
+                            </span>
                           ) : (
-                            "Verify"
+                            <span className="text-rose-500 flex items-center gap-1.5">
+                              <AlertCircle size={14} className="shrink-0" /> Please enter a valid business email address
+                            </span>
                           )}
-                        </button>
+                        </div>
                       )}
                     </div>
+
                     {!isLogin && verifications.email.isOtpVisible && verifications.email.status !== "verified" && (
                       <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <input
@@ -853,43 +987,58 @@ const Auth = () => {
 
                     {!isLogin && (
                       <>
-                        <div className="relative group">
-                          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                            <Phone size={18} />
+                        <div>
+                          <div className="relative group">
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                              <Phone size={18} />
+                            </div>
+                            <input
+                              type="tel"
+                              name="phone"
+                              required
+                              placeholder="Contact Number"
+                              className={`w-full pl-12 pr-28 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("phone", isValidPhone(formData.phone))}`}
+                              value={formData.phone}
+                              onChange={handleChange}
+                              onBlur={handleBlur}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSendVerificationOtp("phone")}
+                              disabled={
+                                verifications.phone.isSending ||
+                                verifications.phone.status === "verified" ||
+                                verifications.phone.exists ||
+                                !isValidPhone(formData.phone)
+                              }
+                              className={`absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${verifications.phone.status === "verified"
+                                ? "bg-brand-100 text-brand-700 cursor-default"
+                                : "bg-slate-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+                                }`}>
+                              {verifications.phone.isSending ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : verifications.phone.status === "verified" ? (
+                                "Verified"
+                              ) : verifications.phone.isOtpVisible ? (
+                                "Resend"
+                              ) : (
+                                "Verify"
+                              )}
+                            </button>
                           </div>
-                          <input
-                            type="tel"
-                            name="phone"
-                            required
-                            placeholder="Contact Number"
-                            className="w-full pl-12 pr-28 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleSendVerificationOtp("phone")}
-                            disabled={
-                              verifications.phone.isSending ||
-                              verifications.phone.status === "verified" ||
-                              verifications.phone.exists ||
-                              !/^\d{10}$/.test(formData.phone || "")
-                            }
-                            className={`absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${verifications.phone.status === "verified"
-                              ? "bg-brand-100 text-brand-700 cursor-default"
-                              : "bg-slate-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
-                              }`}>
-                            {verifications.phone.isSending ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : verifications.phone.status === "verified" ? (
-                              "Verified"
-                            ) : verifications.phone.isOtpVisible ? (
-                              "Resend"
-                            ) : (
-                              "Verify"
-                            )}
-                          </button>
+                          {touched.phone && formData.phone && (
+                            <div className="mt-1.5 px-1 text-xs font-semibold transition-all">
+                              {isValidPhone(formData.phone) ? (
+                                <span className="text-emerald-600 flex items-center gap-1.5">
+                                  <CheckCircle size={14} className="shrink-0" /> Standard 10-digit Mobile number
+                                </span>
+                              ) : (
+                                <span className="text-rose-500 flex items-center gap-1.5">
+                                  <AlertCircle size={14} className="shrink-0" /> Enter a valid 10-digit mobile number ({formData.phone.length}/10)
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {verifications.phone.isOtpVisible && verifications.phone.status !== "verified" && (
                           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
@@ -925,29 +1074,45 @@ const Auth = () => {
                       </>
                     )}
 
-                    <div className="relative group">
-                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                        <Lock size={18} />
-                      </div>
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        required
-                        minLength={6}
-                        autoComplete="current-password"
-                        placeholder="Enter your password"
-                        className="w-full pl-12 pr-14 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                        value={formData.password}
-                        onChange={handleChange}
-                      />
+                    <div>
+                      <div className="relative group">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                          <Lock size={18} />
+                        </div>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          required
+                          minLength={6}
+                          autoComplete="current-password"
+                          placeholder="Enter your password"
+                          className={`w-full pl-12 pr-14 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("password", isValidPassword(formData.password))}`}
+                          value={formData.password}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                        />
 
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors px-2"
-                        tabIndex="-1">
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors px-2"
+                          tabIndex={-1}>
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                      {touched.password && formData.password && (
+                        <div className="mt-1.5 px-1 text-xs font-semibold transition-all">
+                          {isValidPassword(formData.password) ? (
+                            <span className="text-emerald-600 flex items-center gap-1.5">
+                              <CheckCircle size={14} className="shrink-0" /> Password format valid ({formData.password.length} characters)
+                            </span>
+                          ) : (
+                            <span className="text-rose-500 flex items-center gap-1.5">
+                              <AlertCircle size={14} className="shrink-0" /> Password must be at least 6 characters ({formData.password.length}/6)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {isLogin && (
                       <div className="flex justify-end mt-1">
@@ -1023,19 +1188,35 @@ const Auth = () => {
                           onChange={handleChange}
                         />
                       </div>
-                      <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
-                          <MapPin size={18} />
+                      <div>
+                        <div className="relative group">
+                          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">
+                            <MapPin size={18} />
+                          </div>
+                          <input
+                            type="text"
+                            name="pincode"
+                            required
+                            placeholder="Pincode"
+                            className={`w-full pl-12 pr-6 py-4 bg-slate-50 border-2 rounded-lg text-sm font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300 ${getFieldBorderClass("pincode", isValidPincode(formData.pincode))}`}
+                            value={formData.pincode}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                          />
                         </div>
-                        <input
-                          type="text"
-                          name="pincode"
-                          required
-                          placeholder="Pincode"
-                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-200 transition-all placeholder:text-slate-300"
-                          value={formData.pincode}
-                          onChange={handleChange}
-                        />
+                        {touched.pincode && formData.pincode && (
+                          <div className="mt-1 px-1 text-xs font-semibold">
+                            {isValidPincode(formData.pincode) ? (
+                              <span className="text-emerald-600 flex items-center gap-1">
+                                <CheckCircle size={13} className="shrink-0" /> Valid 6-digit Pincode
+                              </span>
+                            ) : (
+                              <span className="text-rose-500 flex items-center gap-1">
+                                <AlertCircle size={13} className="shrink-0" /> Pincode must be 6 digits ({formData.pincode.length}/6)
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="relative group">
                         <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-violet-600 transition-colors">

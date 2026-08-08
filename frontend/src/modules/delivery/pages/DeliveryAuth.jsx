@@ -4,6 +4,7 @@ import {
   Phone,
   ArrowRight,
   CheckCircle,
+  AlertCircle,
   ShieldCheck,
   ChevronLeft,
   User,
@@ -26,6 +27,19 @@ import { useSettings } from "@core/context/SettingsContext";
 import { toast } from "sonner";
 import Tesseract from "tesseract.js";
 
+// Live Standard Input Validation Helpers
+const isValidName = (val) => /^[a-zA-Z\s]{2,50}$/.test((val || "").trim());
+const isValidPhone = (val) => /^[6-9]\d{9}$/.test((val || "").trim()) || /^\d{10}$/.test((val || "").trim());
+const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || "").trim());
+const isValidAddress = (val) => (val || "").trim().length >= 10;
+const isValidVehicleNumber = (val) => /^[A-Z]{2}\s?[0-9]{2}\s?[A-Z]{1,2}\s?[0-9]{4}$/.test((val || "").trim().toUpperCase()) || (val || "").trim().length >= 8;
+const isValidDL = (val) => /^[A-Z]{2}[- ]?[0-9]{13}$/.test((val || "").trim().toUpperCase()) || /^[A-Z0-9]{13,16}$/.test((val || "").replace(/[^A-Z0-9]/gi, ""));
+const isValidAadhar = (val) => /^\d{12}$/.test((val || "").trim());
+const isValidPan = (val) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((val || "").trim().toUpperCase());
+const isValidAccountHolder = (val) => /^[a-zA-Z\s]{3,50}$/.test((val || "").trim());
+const isValidAccountNumber = (val) => /^\d{9,18}$/.test((val || "").trim());
+const isValidIfsc = (val) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test((val || "").trim().toUpperCase());
+
 const VEHICLE_TYPES = [
   { value: "bike", label: "Bike" },
   { value: "scooter", label: "Scooter" },
@@ -38,6 +52,34 @@ const DeliveryAuth = () => {
   const appName = settings?.appName || "App";
   const logoUrl = settings?.logoUrl || "";
   const { login } = useAuth();
+
+  const [touched, setTouched] = useState({
+    signupName: false,
+    signupPhone: false,
+    signupEmail: false,
+    signupAddress: false,
+    signupVehicleNumber: false,
+    signupDLNumber: false,
+    signupAadharNumber: false,
+    signupPanNumber: false,
+    signupAccountHolder: false,
+    signupAccountNumber: false,
+    signupIfsc: false,
+    loginPhone: false,
+  });
+
+  const markTouched = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+  };
+
+  const getDeliveryFieldBorderClass = (fieldName, value, isValid) => {
+    if (!touched[fieldName] || !value) {
+      return "border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400";
+    }
+    return isValid
+      ? "border-emerald-500 bg-emerald-50/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+      : "border-rose-400 bg-rose-50/20 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500";
+  };
 
   // mode: "login" | "signup"
   const [mode, setMode] = useState("login");
@@ -427,11 +469,28 @@ const DeliveryAuth = () => {
                               <input
                                 type="text"
                                 value={signupName}
-                                onChange={(e) => setSignupName(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                                onChange={(e) => {
+                                  setSignupName(e.target.value.replace(/[^a-zA-Z\s]/g, ""));
+                                  markTouched("signupName");
+                                }}
+                                onBlur={() => markTouched("signupName")}
+                                className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupName", signupName, isValidName(signupName))}`}
                                 placeholder="Enter your full name"
                               />
                             </div>
+                            {touched.signupName && signupName && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidName(signupName) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Valid Full Name
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Name must be at least 2 letters (alphabets only)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1.5">
@@ -442,12 +501,29 @@ const DeliveryAuth = () => {
                               <input
                                 type="tel"
                                 value={signupPhone}
-                                onChange={(e) => setSignupPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                                onChange={(e) => {
+                                  setSignupPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                                  markTouched("signupPhone");
+                                }}
+                                onBlur={() => markTouched("signupPhone")}
                                 maxLength={10}
-                                className="w-full pl-24 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                                className={`w-full pl-24 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupPhone", signupPhone, isValidPhone(signupPhone))}`}
                                 placeholder="00000 00000"
                               />
                             </div>
+                            {touched.signupPhone && signupPhone && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidPhone(signupPhone) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard 10-digit Mobile Number
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter a valid 10-digit mobile number ({signupPhone.length}/10)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1.5">
@@ -457,11 +533,28 @@ const DeliveryAuth = () => {
                               <input
                                 type="email"
                                 value={signupEmail}
-                                onChange={(e) => setSignupEmail(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                                onChange={(e) => {
+                                  setSignupEmail(e.target.value.replace(/\s+/g, "").toLowerCase());
+                                  markTouched("signupEmail");
+                                }}
+                                onBlur={() => markTouched("signupEmail")}
+                                className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupEmail", signupEmail, isValidEmail(signupEmail))}`}
                                 placeholder="example@gmail.com"
                               />
                             </div>
+                            {touched.signupEmail && signupEmail && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidEmail(signupEmail) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard Email format
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter a valid email (e.g. name@domain.com)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1.5">
@@ -470,21 +563,54 @@ const DeliveryAuth = () => {
                               <MapPin className="absolute left-4 top-4 text-gray-300 w-4 h-4" />
                               <textarea
                                 value={signupAddress}
-                                onChange={(e) => setSignupAddress(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all resize-none h-24"
+                                onChange={(e) => {
+                                  setSignupAddress(e.target.value);
+                                  markTouched("signupAddress");
+                                }}
+                                onBlur={() => markTouched("signupAddress")}
+                                className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all resize-none h-24 ${getDeliveryFieldBorderClass("signupAddress", signupAddress, isValidAddress(signupAddress))}`}
                                 placeholder="Complete building address..."
                               />
                             </div>
+                            {touched.signupAddress && signupAddress && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidAddress(signupAddress) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Complete Address provided
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Address must be at least 10 characters ({signupAddress.trim().length}/10)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <button
                             onClick={() => {
+                              markTouched("signupName");
+                              markTouched("signupPhone");
+                              markTouched("signupEmail");
+                              markTouched("signupAddress");
                               if (!signupName || !signupPhone || !signupEmail || !signupAddress || !profileImageFile) {
                                 toast.error("Please fill all personal information fields and upload photo");
                                 return;
                               }
-                              if (signupPhone.length !== 10) {
+                              if (!isValidName(signupName)) {
+                                toast.error("Please enter a valid full name (letters only, min 2 chars)");
+                                return;
+                              }
+                              if (!isValidPhone(signupPhone)) {
                                 toast.error("Please enter a valid 10-digit phone number");
+                                return;
+                              }
+                              if (!isValidEmail(signupEmail)) {
+                                toast.error("Please enter a valid email address");
+                                return;
+                              }
+                              if (!isValidAddress(signupAddress)) {
+                                toast.error("Please enter a complete address (min 10 characters)");
                                 return;
                               }
                               setSignupStep(2);
@@ -545,11 +671,28 @@ const DeliveryAuth = () => {
                               <input
                                 type="text"
                                 value={signupVehicleNumber}
-                                onChange={(e) => setSignupVehicleNumber(e.target.value.toUpperCase())}
-                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                                onChange={(e) => {
+                                  setSignupVehicleNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9\s]/g, ""));
+                                  markTouched("signupVehicleNumber");
+                                }}
+                                onBlur={() => markTouched("signupVehicleNumber")}
+                                className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupVehicleNumber", signupVehicleNumber, isValidVehicleNumber(signupVehicleNumber))}`}
                                 placeholder="KA 05 MN 8921"
                               />
                             </div>
+                            {touched.signupVehicleNumber && signupVehicleNumber && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidVehicleNumber(signupVehicleNumber) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard Vehicle Plate format
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter valid vehicle plate number (e.g. KA05MN8921)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1.5">
@@ -559,11 +702,28 @@ const DeliveryAuth = () => {
                               <input
                                 type="text"
                                 value={signupDLNumber}
-                                onChange={(e) => setSignupDLNumber(e.target.value.toUpperCase())}
-                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                                onChange={(e) => {
+                                  setSignupDLNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+                                  markTouched("signupDLNumber");
+                                }}
+                                onBlur={() => markTouched("signupDLNumber")}
+                                className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupDLNumber", signupDLNumber, isValidDL(signupDLNumber))}`}
                                 placeholder="DL-1420110012345"
                               />
                             </div>
+                            {touched.signupDLNumber && signupDLNumber && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidDL(signupDLNumber) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard Driving License format
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter valid DL number (e.g. RJ1420110012345)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex gap-4 pt-2">
@@ -575,12 +735,22 @@ const DeliveryAuth = () => {
                             </button>
                             <button
                               onClick={() => {
+                                markTouched("signupVehicleNumber");
+                                markTouched("signupDLNumber");
                                 if (!signupVehicleNumber) {
                                   toast.error("Please enter your vehicle plate number");
                                   return;
                                 }
+                                if (!isValidVehicleNumber(signupVehicleNumber)) {
+                                  toast.error("Please enter a valid vehicle plate number");
+                                  return;
+                                }
                                 if (!signupDLNumber) {
                                   toast.error("Please enter your driving license number");
+                                  return;
+                                }
+                                if (!isValidDL(signupDLNumber)) {
+                                  toast.error("Please enter a valid driving license number");
                                   return;
                                 }
                                 setSignupStep(3);
@@ -605,50 +775,139 @@ const DeliveryAuth = () => {
                             <input
                               type="text"
                               value={signupAadharNumber}
-                              onChange={(e) => setSignupAadharNumber(e.target.value.replace(/\D/g, "").slice(0, 12))}
-                              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all font-mono"
+                              onChange={(e) => {
+                                setSignupAadharNumber(e.target.value.replace(/\D/g, "").slice(0, 12));
+                                markTouched("signupAadharNumber");
+                              }}
+                              onBlur={() => markTouched("signupAadharNumber")}
+                              className={`w-full px-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all font-mono ${getDeliveryFieldBorderClass("signupAadharNumber", signupAadharNumber, isValidAadhar(signupAadharNumber))}`}
                               placeholder="0000 0000 0000"
                             />
+                            {touched.signupAadharNumber && signupAadharNumber && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidAadhar(signupAadharNumber) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard 12-digit Aadhar Number
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Aadhar must be 12 digits ({signupAadharNumber.length}/12)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
+
                           <div className="space-y-1.5">
                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">PAN Card Number</label>
                             <input
                               type="text"
                               value={signupPanNumber}
-                              onChange={(e) => setSignupPanNumber(e.target.value.toUpperCase().slice(0, 10))}
-                              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all font-mono"
+                              onChange={(e) => {
+                                setSignupPanNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10));
+                                markTouched("signupPanNumber");
+                              }}
+                              onBlur={() => markTouched("signupPanNumber")}
+                              className={`w-full px-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all font-mono ${getDeliveryFieldBorderClass("signupPanNumber", signupPanNumber, isValidPan(signupPanNumber))}`}
                               placeholder="ABCDE1234F"
                             />
+                            {touched.signupPanNumber && signupPanNumber && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidPan(signupPanNumber) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard PAN Card format
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter valid PAN (5 letters + 4 numbers + 1 letter, e.g. ABCDE1234F) ({signupPanNumber.length}/10)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
+
                           <div className="space-y-1.5">
                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Account Holder Name</label>
                             <input
                               type="text"
                               value={signupAccountHolder}
-                              onChange={(e) => setSignupAccountHolder(e.target.value.toUpperCase())}
-                              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                              onChange={(e) => {
+                                setSignupAccountHolder(e.target.value.toUpperCase().replace(/[^A-Z\s]/g, ""));
+                                markTouched("signupAccountHolder");
+                              }}
+                              onBlur={() => markTouched("signupAccountHolder")}
+                              className={`w-full px-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupAccountHolder", signupAccountHolder, isValidAccountHolder(signupAccountHolder))}`}
                               placeholder="AS PER BANK RECORDS"
                             />
+                            {touched.signupAccountHolder && signupAccountHolder && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidAccountHolder(signupAccountHolder) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Valid Account Holder Name
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Name as per bank records (letters only, min 3 chars)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
+
                           <div className="space-y-1.5">
                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Account Number</label>
                             <input
                               type="text"
                               value={signupAccountNumber}
-                              onChange={(e) => setSignupAccountNumber(e.target.value.replace(/\D/g, ""))}
-                              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                              onChange={(e) => {
+                                setSignupAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 18));
+                                markTouched("signupAccountNumber");
+                              }}
+                              onBlur={() => markTouched("signupAccountNumber")}
+                              className={`w-full px-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupAccountNumber", signupAccountNumber, isValidAccountNumber(signupAccountNumber))}`}
                               placeholder="000000000000"
                             />
+                            {touched.signupAccountNumber && signupAccountNumber && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidAccountNumber(signupAccountNumber) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Valid Bank Account Number format
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Account number must be between 9 and 18 digits
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
+
                           <div className="space-y-1.5">
                             <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">IFSC Code</label>
                             <input
                               type="text"
                               value={signupIfsc}
-                              onChange={(e) => setSignupIfsc(e.target.value.toUpperCase())}
-                              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all"
+                              onChange={(e) => {
+                                setSignupIfsc(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11));
+                                markTouched("signupIfsc");
+                              }}
+                              onBlur={() => markTouched("signupIfsc")}
+                              className={`w-full px-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupIfsc", signupIfsc, isValidIfsc(signupIfsc))}`}
                               placeholder="HDFC0001234"
                             />
+                            {touched.signupIfsc && signupIfsc && (
+                              <div className="mt-1 px-1 text-xs font-semibold">
+                                {isValidIfsc(signupIfsc) ? (
+                                  <span className="text-emerald-600 flex items-center gap-1">
+                                    <CheckCircle size={13} className="shrink-0" /> Standard 11-character IFSC Code
+                                  </span>
+                                ) : (
+                                  <span className="text-rose-500 flex items-center gap-1">
+                                    <AlertCircle size={13} className="shrink-0" /> Enter valid IFSC (e.g. HDFC0001234 - 5th digit must be 0) ({signupIfsc.length}/11)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex gap-4 pt-2">
@@ -660,16 +919,33 @@ const DeliveryAuth = () => {
                             </button>
                             <button
                               onClick={() => {
+                                markTouched("signupAadharNumber");
+                                markTouched("signupPanNumber");
+                                markTouched("signupAccountHolder");
+                                markTouched("signupAccountNumber");
+                                markTouched("signupIfsc");
                                 if (!signupAadharNumber || !signupPanNumber || !signupAccountHolder || !signupAccountNumber || !signupIfsc) {
                                   toast.error("Please fill all bank and identification fields");
                                   return;
                                 }
-                                if (signupAadharNumber.length !== 12) {
+                                if (!isValidAadhar(signupAadharNumber)) {
                                   toast.error("Aadhar number must be 12 digits");
                                   return;
                                 }
-                                if (signupPanNumber.length !== 10) {
-                                  toast.error("PAN number must be 10 characters");
+                                if (!isValidPan(signupPanNumber)) {
+                                  toast.error("Please enter a valid 10-character PAN card number (e.g. ABCDE1234F)");
+                                  return;
+                                }
+                                if (!isValidAccountHolder(signupAccountHolder)) {
+                                  toast.error("Please enter a valid account holder name (min 3 letters)");
+                                  return;
+                                }
+                                if (!isValidAccountNumber(signupAccountNumber)) {
+                                  toast.error("Account number must be between 9 and 18 digits");
+                                  return;
+                                }
+                                if (!isValidIfsc(signupIfsc)) {
+                                  toast.error("Please enter a valid 11-character IFSC code (e.g. HDFC0001234)");
                                   return;
                                 }
                                 setSignupStep(4);
@@ -905,12 +1181,27 @@ const DeliveryAuth = () => {
                             onChange={(e) => {
                               const val = e.target.value.replace(/\D/g, "").slice(0, 10);
                               setLoginPhone(val);
+                              markTouched("loginPhone");
                             }}
+                            onBlur={() => markTouched("loginPhone")}
                             maxLength={10}
-                            className="w-full pl-24 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all placeholder:text-gray-300"
+                            className={`w-full pl-24 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all placeholder:text-gray-300 ${getDeliveryFieldBorderClass("loginPhone", loginPhone, isValidPhone(loginPhone))}`}
                             placeholder="00000 00000"
                           />
                         </div>
+                        {touched.loginPhone && loginPhone && (
+                          <div className="mt-1 px-1 text-xs font-semibold">
+                            {isValidPhone(loginPhone) ? (
+                              <span className="text-emerald-600 flex items-center gap-1">
+                                <CheckCircle size={13} className="shrink-0" /> Standard 10-digit Mobile Number
+                              </span>
+                            ) : (
+                              <span className="text-rose-500 flex items-center gap-1">
+                                <AlertCircle size={13} className="shrink-0" /> Enter a valid 10-digit phone number ({loginPhone.length}/10)
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <button
