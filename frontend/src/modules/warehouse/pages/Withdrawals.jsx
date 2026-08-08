@@ -205,7 +205,53 @@ const Withdrawals = () => {
                             />
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
+                    {/* Mobile View */}
+                    <div className="md:hidden p-4 space-y-4">
+                        {filteredHistory.length === 0 ? (
+                            <div className="text-center text-slate-600 text-sm font-medium py-8">
+                                {withdrawalHistory.length === 0 ? "No withdrawal requests yet." : "No matches for your search."}
+                            </div>
+                        ) : paginatedHistory.map((item, idx) => (
+                            <div key={item.id || item.ref || item.reference || `wd-mobile-${idx}`} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative">
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-black text-slate-900 truncate">{item.id}</p>
+                                        <p className="text-[10px] font-bold text-slate-600 mt-0.5 uppercase tracking-tighter">
+                                            {item.date} â€¢ {item.time}
+                                        </p>
+                                    </div>
+                                    <Badge
+                                        variant={item.status === 'Settled' ? 'success' : (item.status === 'Pending' || item.status === 'Processing') ? 'warning' : 'danger'}
+                                        className="text-[9px] font-black px-2 py-0.5 uppercase tracking-widest rounded-lg shrink-0"
+                                    >
+                                        {item.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex justify-between items-end border-t border-slate-50 pt-3">
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Method</p>
+                                        <p className="text-xs font-bold text-slate-900">{item.customer}</p>
+                                    </div>
+                                    <div className="text-right flex flex-col items-end gap-1">
+                                        <p className="text-base font-black text-slate-900">
+                                            â‚¹{Math.abs(item.amount).toLocaleString()}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDownloadReceipt(item)}
+                                            className="text-[10px] font-black text-brand-500 hover:text-brand-600 uppercase tracking-widest flex items-center gap-1"
+                                        >
+                                            <Download className="h-3 w-3" /> Receipt
+                                        </button>
+                                    </div>
+                                </div>
+                                {item.reason && <p className="text-[9px] text-rose-500 font-bold uppercase italic mt-1">{item.reason}</p>}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left min-w-[640px]">
                             <thead>
                                 <tr className="bg-slate-50/50">

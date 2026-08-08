@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@shared/components/ui/Card';
 import Button from '@shared/components/ui/Button';
@@ -267,7 +267,52 @@ const StockManagement = () => {
                             </div>
 
                             {/* Stock Table */}
-                            <div className="overflow-x-auto">
+                            {/* Mobile View */}
+                            <div className="md:hidden p-4 space-y-4">
+                                {filteredInventory.length === 0 ? (
+                                    <div className="text-center text-slate-500 text-sm py-8">No products found.</div>
+                                ) : (
+                                    filteredInventory.slice((page - 1) * pageSize, page * pageSize).map((item) => (
+                                        <div key={item.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                                            <div className="flex gap-4">
+                                                <div className="h-16 w-16 rounded-lg overflow-hidden bg-slate-100 shrink-0 flex items-center justify-center">
+                                                    {item.mainImage ? (
+                                                        <img src={item.mainImage} alt={item.name} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <HiOutlineCube className="h-6 w-6 text-slate-400" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-bold text-slate-900 truncate">{item.name}</h4>
+                                                    <p className="text-xs text-slate-500 mt-0.5">Code: <span className="font-medium text-slate-900">{item.sku || 'N/A'}</span></p>
+                                                    <p className="text-sm font-black text-slate-900 mt-1">₹{item.price}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center border-t border-slate-50 pt-3 mt-1">
+                                                <div className="flex flex-col">
+                                                    <span className={cn("text-sm font-black", item.stock <= item.threshold ? "text-rose-600" : "text-slate-900")}>
+                                                        {item.stock} units
+                                                    </span>
+                                                    {item.stock <= item.threshold && (
+                                                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                                                            Low Stock
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => openAdjustModal(item)}
+                                                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
+                                                >
+                                                    Adjust
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Desktop View */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50/50 border-b border-slate-100">

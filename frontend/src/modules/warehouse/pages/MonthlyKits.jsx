@@ -61,7 +61,41 @@ const MonthlyKits = () => {
                 </div>
             ) : (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="overflow-x-auto">
+                    {/* Mobile View */}
+                    <div className="md:hidden p-4 space-y-4">
+                        {kits.length === 0 ? (
+                            <div className="text-center text-slate-500 py-8">
+                                <Package className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                                <p className="font-medium">No kits created yet.</p>
+                            </div>
+                        ) : kits.map(kit => (
+                            <div key={kit._id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                                <div className="flex gap-4">
+                                    <div className="h-16 w-16 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
+                                        {kit.mainImage ? (
+                                            <img src={kit.mainImage} alt={kit.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <Package className="h-8 w-8 m-auto text-slate-400 mt-4" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-slate-900 truncate">{kit.name}</p>
+                                        <p className="font-black text-slate-900 mt-0.5">₹{kit.price}</p>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center border-t border-slate-50 pt-3 mt-1">
+                                    <p className="font-medium text-slate-600 text-sm">{kit.stock} units</p>
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border ${getStatusStyle(kit.approvalStatus)}`}>
+                                        {getStatusIcon(kit.approvalStatus)}
+                                        <span className="capitalize">{kit.approvalStatus}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-black">

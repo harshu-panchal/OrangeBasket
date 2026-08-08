@@ -103,7 +103,7 @@ const QueueMonitor = ({ warehouseId: propId }) => {
   return (
     <div style={S.page}>
       {/* Header */}
-      <div style={S.header}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
         <div>
           <h1 style={S.title}>Queue Monitor</h1>
           <p style={S.sub}>{warehouseName} · {lastRefresh ? `Updated ${lastRefresh.toLocaleTimeString()}` : ""}</p>
@@ -112,7 +112,7 @@ const QueueMonitor = ({ warehouseId: propId }) => {
       </div>
 
       {/* Stats row */}
-      <div style={S.statsRow}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard icon="👥" label="Total in Queue" value={stats.total ?? 0} color="#60a5fa" />
         <StatCard icon="⏳" label="Waiting" value={stats.waiting ?? 0} color="#94a3b8" />
         <StatCard icon="📬" label="Offer Sent" value={stats.offered ?? 0} color="#f59e0b" />

@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import Card from "@shared/components/ui/Card";
 import Badge from "@shared/components/ui/Badge";
 import {
@@ -633,7 +633,58 @@ const ProductManagement = () => {
       {/* Product Table */}
 
       <Card className="border-none shadow-xl ring-1 ring-slate-100 overflow-hidden rounded-xl">
-        <div className="overflow-x-auto">
+        {/* Mobile View */}
+        <div className="md:hidden p-4 space-y-4">
+          {filteredProducts.length === 0 ? (
+            <div className="text-center text-slate-500 text-sm py-8">No products found.</div>
+          ) : (
+            filteredProducts.map((p) => (
+              <div key={p._id || p.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex gap-4">
+                  <div className="h-16 w-16 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                    <img
+                      src={p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400"}
+                      alt={p.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-slate-900 truncate">{p.name}</h4>
+                    <p className="text-xs text-slate-500 mt-1">Code: <span className="font-medium text-slate-900">{displaySku(p)}</span></p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <ApprovalBadge approvalStatus={p.approvalStatus} />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button onClick={() => openEditModal(p)} className="p-2 bg-slate-50 rounded-lg text-slate-500 hover:text-brand-600 transition-colors">
+                      <HiOutlinePencilSquare className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleDeleteClick(p)} className="p-2 bg-slate-50 rounded-lg text-slate-500 hover:text-rose-600 transition-colors">
+                      <HiOutlineTrash className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-50 pt-2">
+                   <div><span className="text-slate-500">Header:</span> <span className="font-medium text-slate-900">{p.headerId?.name || "N/A"}</span></div>
+                   <div><span className="text-slate-500">Category:</span> <span className="font-medium text-slate-900">{p.categoryId?.name || "N/A"}</span></div>
+                   <div><span className="text-slate-500">Sub:</span> <span className="font-medium text-slate-900">{p.subcategoryId?.name || "N/A"}</span></div>
+                   <div>
+                     <span className="text-slate-500">Variants:</span>{" "}
+                     {p.variants?.length > 0 ? (
+                        <span onClick={() => { setViewingVariants(p); setIsVariantsViewModalOpen(true); }} className="font-medium text-brand-600 underline cursor-pointer">{p.variants.length}</span>
+                     ) : (
+                        <span className="text-slate-400 italic">None</span>
+                     )}
+                   </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">

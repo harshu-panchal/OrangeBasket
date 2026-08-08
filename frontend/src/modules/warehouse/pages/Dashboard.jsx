@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "@shared/components/ui/Card";
 import PageHeader from "@shared/components/ui/PageHeader";
@@ -428,7 +428,47 @@ const Dashboard = () => {
           </button>
         }
       >
-        <div className="overflow-x-auto">
+        {/* Mobile View */}
+        <div className="md:hidden p-4 space-y-4">
+          {safeOrders.length === 0 ? (
+            <div className="text-center text-slate-500 text-sm py-4">No recent orders</div>
+          ) : (
+            safeOrders.slice(0, 5).map((order) => (
+              <div key={order.orderId} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <span className="text-xs font-black text-slate-900">#{order.orderId}</span>
+                    <p className="text-[10px] text-slate-500">{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
+                  </div>
+                  <Badge variant={getStatusColor(order.status)} className="capitalize text-[10px] px-2 py-0">
+                    {order.status}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-600">
+                    {order.customer?.name?.split(" ").map(n => n[0]).join("") || "C"}
+                  </div>
+                  <span className="text-xs font-bold text-slate-700">{order.customer?.name || "Customer"}</span>
+                </div>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-50">
+                  <span className="text-sm font-black text-slate-900">₹{order.pricing?.total || 0}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(normalizeOrderForModal(order));
+                      setIsOrderModalOpen(true);
+                    }}
+                    className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-primary transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100">

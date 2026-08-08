@@ -263,7 +263,97 @@ const Transactions = () => {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto">
+          {/* Mobile View */}
+          <div className="md:hidden p-4 space-y-4">
+            <AnimatePresence>
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center text-slate-600 text-sm font-medium py-8">
+                  {ledger.length === 0 ? "No transactions yet." : "No matches for your search or filter."}
+                </div>
+              ) : paginatedTransactions.map((txn, idx) => (
+                <motion.div
+                  key={txn.id || txn.ref || txn.reference || `txn-mobile-${idx}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => {
+                    setSelectedTxn(txn);
+                    setIsDetailModalOpen(true);
+                  }}
+                  className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative cursor-pointer hover:border-brand-100 transition-colors"
+                >
+                  <div className="flex gap-4">
+                    <div
+                      className={cn(
+                        "h-12 w-12 rounded-lg flex items-center justify-center font-black shrink-0",
+                        txn.amount > 0 ? "bg-brand-50 text-brand-600" : "bg-rose-50 text-rose-600"
+                      )}
+                    >
+                      {txn.amount > 0 ? (
+                        <HiOutlineArrowDownLeft className="h-6 w-6" />
+                      ) : (
+                        <HiOutlineArrowUpRight className="h-6 w-6" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-900 truncate">
+                        {txn.id ?? txn.ref ?? "â€”"}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
+                        {txn.type ?? "â€”"}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-500 mt-1">
+                         {txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "â€”")} â€¢ {txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "â€”")}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-end border-t border-slate-50 pt-3">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs font-bold text-slate-900">
+                        {txn.customer ?? "â€”"}
+                      </p>
+                      <Badge
+                        variant={
+                          txn.status === "Settled"
+                            ? "success"
+                            : txn.status === "Pending" || txn.status === "Processing"
+                              ? "warning"
+                              : "default"
+                        }
+                        className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md w-fit"
+                      >
+                        {txn.status}
+                      </Badge>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <p
+                        className={cn(
+                          "text-base font-black tracking-tight",
+                          Number(txn.amount ?? 0) > 0 ? "text-brand-600" : "text-rose-600"
+                        )}
+                      >
+                        {Number(txn.amount ?? 0) > 0 ? "+" : ""}â‚¹
+                        {Math.abs(Number(txn.amount ?? 0)).toLocaleString()}
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadReceipt(txn);
+                        }}
+                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                      >
+                        <HiOutlineArrowDownTray className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left min-w-[720px]">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
