@@ -108,7 +108,7 @@ export const getCustomerProfile = async (req, res) => {
 ================================ */
 export const updateCustomerProfile = async (req, res) => {
     try {
-        const { name, email, addresses } = req.body;
+        const { name, email, phone, bio, addresses } = req.body;
 
         const customer = await Customer.findById(req.user.id);
         if (!customer) {
@@ -116,8 +116,17 @@ export const updateCustomerProfile = async (req, res) => {
         }
 
         if (name) customer.name = name;
-        if (email) customer.email = email;
+        if (email !== undefined) customer.email = email;
+        if (bio !== undefined) customer.bio = bio;
         if (addresses) customer.addresses = addresses;
+
+        if (phone && phone !== customer.phone) {
+            const existingPhone = await Customer.findOne({ phone, _id: { $ne: req.user.id } });
+            if (existingPhone) {
+                return handleResponse(res, 400, "Phone number is already in use");
+            }
+            customer.phone = phone;
+        }
 
         await customer.save();
 

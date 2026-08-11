@@ -26,9 +26,18 @@ const CategoriesPage = () => {
                             name: cat.name,
                             image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
                             productCount: cat.productCount || 0,
-                            subcategories: cat.children || []
+                            subcategories: cat.children || [],
+                            sortOrder: cat.sortOrder || 0
                         });
                     });
+                });
+
+                // Sort globally by sortOrder, then by name
+                flatCats.sort((a, b) => {
+                    const orderA = a.sortOrder || 0;
+                    const orderB = b.sortOrder || 0;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.name.localeCompare(b.name);
                 });
                 
                 if (flatCats.length > 0) {
@@ -49,7 +58,17 @@ const CategoriesPage = () => {
                     name: cat.name,
                     image: cat.image || "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=70,metadata=none,w=270/layout-engine/2022-11/Slice-1_9.png",
                     productCount: cat.productCount || 0,
+                    sortOrder: cat.sortOrder || 0
                 }));
+
+                // Sort globally by sortOrder, then by name
+                formattedCats.sort((a, b) => {
+                    const orderA = a.sortOrder || 0;
+                    const orderB = b.sortOrder || 0;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.name.localeCompare(b.name);
+                });
+
                 setCategories(formattedCats);
             }
         } catch (error) {
@@ -160,32 +179,7 @@ const CategoriesPage = () => {
                                         </div>
                                         <ChevronRight size={18} className="text-slate-400" strokeWidth={2.5} />
                                     </Link>
-                                    
-                                    {category.subcategories && category.subcategories.length > 0 && (
-                                        <div className="pl-[6rem] pr-2 pt-2 pb-3">
-                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-3 gap-y-4">
-                                                {category.subcategories.map(sub => (
-                                                    <Link 
-                                                        key={sub._id} 
-                                                        to={`/category/${category.id}`} 
-                                                        state={{ activeSubcategoryId: sub._id }} 
-                                                        className="flex flex-col items-center gap-1 group"
-                                                    >
-                                                        <div className="w-14 h-14 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shadow-sm border border-slate-200/50 group-hover:border-primary/50 group-hover:shadow-md transition-all">
-                                                            <img 
-                                                                src={applyCloudinaryTransform(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png")} 
-                                                                alt={sub.name} 
-                                                                className="w-full h-full object-cover" 
-                                                            />
-                                                        </div>
-                                                        <span className="text-[10px] sm:text-[11px] text-center font-bold leading-tight text-slate-600 group-hover:text-primary line-clamp-2">
-                                                            {sub.name}
-                                                        </span>
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+
                                 </div>
                             ))}
                         </div>

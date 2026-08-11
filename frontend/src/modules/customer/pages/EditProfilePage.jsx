@@ -8,7 +8,7 @@ import { customerApi } from '../services/customerApi';
 
 const EditProfilePage = () => {
     const navigate = useNavigate();
-    const { user, login } = useAuth();
+    const { user, updateUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -40,7 +40,7 @@ const EditProfilePage = () => {
             const updatedUser = response.data.result;
 
             // Update local auth state
-            login({ ...user, ...updatedUser });
+            updateUser(updatedUser);
 
             toast.success('Profile updated successfully!');
             navigate('/profile');

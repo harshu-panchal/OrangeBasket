@@ -42,7 +42,7 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
                 <div
                   className="w-[84px] h-[84px] md:w-[100px] md:h-[100px] bg-white border border-slate-100 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm">
                   <img
-                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_120")}
+                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_300,dpr_auto")}
                     alt={cat.name}
                     loading="lazy"
                     className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"

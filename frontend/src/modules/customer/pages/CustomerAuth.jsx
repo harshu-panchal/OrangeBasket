@@ -105,7 +105,7 @@ const CustomerAuth = () => {
                 {/* Logo */}
                 <div className="flex flex-col items-center justify-center mb-6">
                     <img 
-                        src="/bg%20remove%20logo%20.png" 
+                        src={settings?.logoUrl || "/bg%20remove%20logo%20.png"} 
                         alt="Logo" 
                         className="h-28 w-auto object-contain" 
                     />

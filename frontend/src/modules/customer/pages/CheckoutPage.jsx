@@ -148,20 +148,20 @@ const CheckoutPage = () => {
   const previewDebounceRef = useRef(null);
   const [currentAddress, setCurrentAddress] = useState({
     type: "Home",
-    name: "Harshvardhan Panchal",
-    address: "81 Pipliyahana Road, Near 214",
+    name: "",
+    address: "",
     landmark: "",
-    city: "Indore - 452018",
-    phone: "6268423925",
+    city: "",
+    phone: "",
   });
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [editAddressForm, setEditAddressForm] = useState({
     type: "Home",
-    name: "Harshvardhan Panchal",
-    address: "81 Pipliyahana Road, Near 214",
+    name: "",
+    address: "",
     landmark: "",
-    city: "Indore - 452018",
-    phone: "6268423925",
+    city: "",
+    phone: "",
   });
   const [showRecipientForm, setShowRecipientForm] = useState(false);
   const [recipientData, setRecipientData] = useState({
@@ -185,6 +185,34 @@ const CheckoutPage = () => {
         .catch(() => {});
     }
   }, [cart.length === 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addressInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (user && !addressInitializedRef.current) {
+      const savedAddr = (locationSavedAddresses && locationSavedAddresses.length > 0)
+        ? locationSavedAddresses[0]
+        : (user.addresses && user.addresses.length > 0)
+          ? user.addresses[0]
+          : null;
+
+      if (savedAddr || user.name || user.phone) {
+        const defaultAddr = {
+          type: savedAddr?.label ? (savedAddr.label.charAt(0).toUpperCase() + savedAddr.label.slice(1)) : "Home",
+          name: user.name || "Customer",
+          address: savedAddr?.fullAddress || "",
+          landmark: savedAddr?.landmark || "",
+          city: `${savedAddr?.city || ""} ${savedAddr?.pincode || ""}`.trim() || "",
+          phone: user.phone || "",
+          location: savedAddr?.location || currentLocation || undefined,
+        };
+
+        setCurrentAddress(defaultAddr);
+        setEditAddressForm(defaultAddr);
+        addressInitializedRef.current = true;
+      }
+    }
+  }, [user, locationSavedAddresses, currentLocation]);
 
   const paymentMethods = [
     ...(settings?.onlineEnabled === false
@@ -223,12 +251,12 @@ const CheckoutPage = () => {
   const RECIPIENT_STORAGE_KEY = STORAGE_KEYS.RECIPIENT_ADDRESS;
 
   // Derived display values for primary delivery card
-  const displayName = savedRecipient?.name || currentAddress.name;
+  const displayName = savedRecipient?.name || currentAddress.name || user?.name || "Customer";
   const displayPhone =
-    savedRecipient?.phone || currentAddress.phone || "6268423925";
+    savedRecipient?.phone || currentAddress.phone || user?.phone || "";
   const displayAddress = savedRecipient
     ? `${savedRecipient.completeAddress}${savedRecipient.landmark ? `, ${savedRecipient.landmark}` : ""}${savedRecipient.pincode ? ` - ${savedRecipient.pincode}` : ""}`
-    : `${currentAddress.address}${currentAddress.landmark ? `, ${currentAddress.landmark}` : ""}, ${currentAddress.city}`;
+    : `${currentAddress.address}${currentAddress.landmark ? `, ${currentAddress.landmark}` : ""}${currentAddress.city ? `, ${currentAddress.city}` : ""}`;
 
   useEffect(() => {
     if (!paymentMethods.length) return;

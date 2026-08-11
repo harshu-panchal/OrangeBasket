@@ -29,6 +29,8 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import LanguageIcon from "@mui/icons-material/Language";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useTranslation } from "@core/context/LanguageContext";
 
 /** Full-width bottom stroke + tab curve; l/r are 0–100% of column where the inner bump sits. */
@@ -182,6 +184,41 @@ const MainLocationHeader = ({
   const appName = settings?.appName || "App";
   const logoUrl = settings?.logoUrl;
   const navigate = useNavigate();
+
+  // Horizontal scroll for categories navigation
+  const navRef = useRef(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  const checkScroll = () => {
+    if (navRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = navRef.current;
+      setShowLeftArrow(scrollLeft > 5);
+      setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    const el = navRef.current;
+    if (el) {
+      el.addEventListener("scroll", checkScroll);
+      checkScroll();
+      window.addEventListener("resize", checkScroll);
+      const timer = setTimeout(checkScroll, 300);
+      return () => {
+        el.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [categories]);
+
+  const handleScroll = (direction) => {
+    if (navRef.current) {
+      const scrollAmount = direction === "left" ? -180 : 180;
+      navRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
 
   // Search Logic
   const handleSearchClick = () => {
@@ -611,22 +648,45 @@ const MainLocationHeader = ({
           </div>
 
           {/* Categories Navigation Row (Shared for Desktop & Mobile) */}
-          <motion.div
-            style={{ height: navHeight, opacity: navOpacity, marginTop: navMargin }}
-            className="relative z-10 -mx-2 flex items-end gap-1 overflow-x-auto overflow-y-visible px-2 pb-0 no-scrollbar md:gap-4 md:px-4"
-          >
-            {categories.map((cat) => (
-              <CategoryNavColumn
-                key={cat.id || cat._id}
-                cat={cat}
-                isActive={activeCategory?.id === (cat.id || cat._id)}
-                categoryAccent={categoryAccent}
-                onCategorySelect={onCategorySelect}
-                headerFontColor={headerFontColor}
-                headerIconColor={headerIconColor}
-              />
-            ))}
-          </motion.div>
+          <div className="relative w-full overflow-visible">
+            {showLeftArrow && (
+              <button
+                onClick={() => handleScroll("left")}
+                className="absolute left-0 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -ml-1.5"
+                style={{ top: "calc(50% - 14px)" }}
+              >
+                <ChevronLeftIcon sx={{ fontSize: 18 }} />
+              </button>
+            )}
+
+            <motion.div
+              ref={navRef}
+              style={{ height: navHeight, opacity: navOpacity, marginTop: navMargin }}
+              className="relative z-10 -mx-2 flex items-end gap-1 overflow-x-auto overflow-y-visible px-2 pb-0 no-scrollbar md:gap-4 md:px-4"
+            >
+              {categories.map((cat) => (
+                <CategoryNavColumn
+                  key={cat.id || cat._id}
+                  cat={cat}
+                  isActive={activeCategory?.id === (cat.id || cat._id)}
+                  categoryAccent={categoryAccent}
+                  onCategorySelect={onCategorySelect}
+                  headerFontColor={headerFontColor}
+                  headerIconColor={headerIconColor}
+                />
+              ))}
+            </motion.div>
+
+            {showRightArrow && (
+              <button
+                onClick={() => handleScroll("right")}
+                className="absolute right-0 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -mr-1.5"
+                style={{ top: "calc(50% - 14px)" }}
+              >
+                <ChevronRightIcon sx={{ fontSize: 18 }} />
+              </button>
+            )}
+          </div>
 
           {/* Background Decorative patterns */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none" />

@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema(
             sparse: true, // phone login users ke liye
         },
 
+        bio: {
+            type: String,
+            trim: true,
+        },
+
         phone: {
             type: String,
             required: true,
