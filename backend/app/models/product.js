@@ -50,6 +50,18 @@ const productSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        shelfLife: {
+            type: String,
+            trim: true,
+        },
+        countryOfOrigin: {
+            type: String,
+            trim: true,
+        },
+        fssaiLicense: {
+            type: String,
+            trim: true,
+        },
         tags: [{
             type: String,
             trim: true,
@@ -58,6 +70,21 @@ const productSchema = new mongoose.Schema(
             icon: { type: String, trim: true },
             label: { type: String, trim: true },
         }],
+        shelfLife: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+        countryOfOrigin: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+        fssaiLicense: {
+            type: String,
+            trim: true,
+            default: "",
+        },
         mainImage: {
             type: String, // Cloudinary URL
         },

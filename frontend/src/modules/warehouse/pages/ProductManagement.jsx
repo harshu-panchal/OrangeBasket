@@ -202,6 +202,9 @@ const ProductManagement = () => {
     tags: "",
     weight: "",
     brand: "",
+    shelfLife: "",
+    countryOfOrigin: "",
+    fssaiLicense: "",
     mainImage: null,
     galleryImages: [],
     variants: [
@@ -329,6 +332,9 @@ const ProductManagement = () => {
       data.append("brand", formData.brand);
       data.append("weight", formData.weight);
       data.append("tags", formData.tags);
+      data.append("shelfLife", formData.shelfLife);
+      data.append("countryOfOrigin", formData.countryOfOrigin);
+      data.append("fssaiLicense", formData.fssaiLicense);
       data.append("variants", JSON.stringify(formData.variants));
 
       if (formData.mainImageFile) {
@@ -423,6 +429,9 @@ const ProductManagement = () => {
         tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags || "",
         weight: item.weight || "",
         brand: item.brand || "",
+        shelfLife: item.shelfLife || "",
+        countryOfOrigin: item.countryOfOrigin || "",
+        fssaiLicense: item.fssaiLicense || "",
         mainImage: item.mainImage || null,
         galleryImages: item.galleryImages || [],
         variants: (item.variants && item.variants.length > 0) ? item.variants.map(v => ({ ...v, id: v._id || Date.now() })) : [
@@ -1124,6 +1133,41 @@ const ProductManagement = () => {
                             }
                             className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-mono font-bold outline-none ring-primary/5 focus:ring-2"
                             placeholder="AUTO-GENERATED"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                        <div className="space-y-1.5 flex flex-col">
+                          <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
+                            Shelf Life
+                          </label>
+                          <input
+                            value={formData.shelfLife}
+                            onChange={(e) => setFormData({ ...formData, shelfLife: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
+                            placeholder="e.g. 3 Days, 6 Months"
+                          />
+                        </div>
+                        <div className="space-y-1.5 flex flex-col">
+                          <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
+                            Country of Origin
+                          </label>
+                          <input
+                            value={formData.countryOfOrigin}
+                            onChange={(e) => setFormData({ ...formData, countryOfOrigin: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
+                            placeholder="e.g. India"
+                          />
+                        </div>
+                        <div className="space-y-1.5 flex flex-col">
+                          <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
+                            FSSAI License
+                          </label>
+                          <input
+                            value={formData.fssaiLicense}
+                            onChange={(e) => setFormData({ ...formData, fssaiLicense: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
+                            placeholder="e.g. 100123..."
                           />
                         </div>
                       </div>

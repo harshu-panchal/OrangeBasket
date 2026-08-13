@@ -702,9 +702,10 @@ const ProductDetailSheet = () => {
                                             >
                                                 <div className="grid grid-cols-2 gap-3 mt-1">
                                                     {[
-                                                        { label: 'Shelf Life', value: '3 Days', emoji: '📅' },
-                                                        { label: 'Country of Origin', value: 'India', emoji: '🇮🇳' },
-                                                        { label: 'FSSAI License', value: '1001234567890', emoji: '🛡️' },
+                                                        ...(selectedProduct?.brand ? [{ label: 'Brand', value: selectedProduct.brand, emoji: '🏷️' }] : []),
+                                                        ...(selectedProduct?.shelfLife ? [{ label: 'Shelf Life', value: selectedProduct.shelfLife, emoji: '📅' }] : []),
+                                                        ...(selectedProduct?.countryOfOrigin ? [{ label: 'Country of Origin', value: selectedProduct.countryOfOrigin, emoji: '🇮🇳' }] : []),
+                                                        ...(selectedProduct?.fssaiLicense ? [{ label: 'FSSAI License', value: selectedProduct.fssaiLicense, emoji: '🛡️' }] : []),
                                                         { label: 'Customer Care', value: supportEmail, emoji: '📧' }
                                                     ].map((d) => (
                                                         <div key={d.label} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 group hover:bg-white hover:shadow-sm transition-all">
@@ -1059,9 +1060,10 @@ const ProductDetailSheet = () => {
                                             >
                                                 <div className="grid grid-cols-2 gap-3 mt-1">
                                                     {[
-                                                        { label: 'Shelf Life', value: '3 Days' },
-                                                        { label: 'Country of Origin', value: 'India' },
-                                                        { label: 'FSSAI License', value: '1001234567890' },
+                                                        ...(selectedProduct?.brand ? [{ label: 'Brand', value: selectedProduct.brand }] : []),
+                                                        ...(selectedProduct?.shelfLife ? [{ label: 'Shelf Life', value: selectedProduct.shelfLife }] : []),
+                                                        ...(selectedProduct?.countryOfOrigin ? [{ label: 'Country of Origin', value: selectedProduct.countryOfOrigin }] : []),
+                                                        ...(selectedProduct?.fssaiLicense ? [{ label: 'FSSAI License', value: selectedProduct.fssaiLicense }] : []),
                                                         { label: 'Customer Care', value: supportEmail }
                                                     ].map((d) => (
                                                         <div key={d.label} className="bg-slate-50 p-3 rounded-xl border border-slate-100">

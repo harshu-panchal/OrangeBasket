@@ -25,6 +25,7 @@ import { deliveryApi } from "../services/deliveryApi";
 import { useAuth } from "@core/context/AuthContext";
 import { useSettings } from "@core/context/SettingsContext";
 import { toast } from "sonner";
+import DynamicLegalPage from "@/shared/components/DynamicLegalPage";
 
 
 // Live Standard Input Validation Helpers
@@ -144,6 +145,11 @@ const DeliveryAuth = () => {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
+
+  // Terms agreement states
+  const [hasClickedTerms, setHasClickedTerms] = useState(false);
+  const [signupAgreed, setSignupAgreed] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(null); // 'terms' | 'privacy' | null
 
   // OCR States
 
@@ -268,7 +274,33 @@ const DeliveryAuth = () => {
     exit: { opacity: 0, x: -30, transition: { duration: 0.2 } },
   };
 
+  const renderTermsCheckbox = () => (
+    <div className="flex items-start gap-3 bg-gray-50 rounded-2xl p-4 border border-gray-100 mt-4 mb-2">
+      <input
+        id={`signupTerms-${signupStep}`}
+        type="checkbox"
+        checked={signupAgreed}
+        onChange={(e) => setSignupAgreed(e.target.checked)}
+        disabled={!hasClickedTerms}
+        className="mt-0.5 h-4 w-4 accent-[#f97316] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+      />
+      <div className={`text-xs leading-relaxed ${!hasClickedTerms ? 'text-gray-400' : 'text-gray-500'}`}>
+        <label htmlFor={`signupTerms-${signupStep}`} className={`cursor-pointer ${!hasClickedTerms ? 'cursor-not-allowed' : ''}`}>I agree to the </label>
+        <span 
+          onClick={() => { setHasClickedTerms(true); setShowLegalModal('terms'); }}
+          className="text-[#f97316] font-bold hover:underline cursor-pointer"
+        >Terms of Service</span> &amp;{" "}
+        <span 
+          onClick={() => { setHasClickedTerms(true); setShowLegalModal('privacy'); }}
+          className="text-[#f97316] font-bold hover:underline cursor-pointer"
+        >Privacy Policy</span>.
+        {!hasClickedTerms && <span className="block text-[10px] text-rose-500 mt-1 font-semibold">* Please click on the links to read them before agreeing.</span>}
+      </div>
+    </div>
+  );
+
   return (
+    <>
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-8 font-['Outfit',_sans-serif]">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -496,8 +528,14 @@ const DeliveryAuth = () => {
                           )}
                         </div>
 
+                        {renderTermsCheckbox()}
+
                         <button
                           onClick={() => {
+                            if (!signupAgreed) {
+                              toast.error("Please read and agree to the Terms and Privacy Policy to proceed");
+                              return;
+                            }
                             markTouched("signupName");
                             markTouched("signupPhone");
                             markTouched("signupEmail");
@@ -635,6 +673,7 @@ const DeliveryAuth = () => {
                           )}
                         </div>
 
+                        {renderTermsCheckbox()}
                         <div className="flex gap-4 pt-2">
                           <button
                             onClick={() => setSignupStep(1)}
@@ -644,6 +683,10 @@ const DeliveryAuth = () => {
                           </button>
                           <button
                             onClick={() => {
+                              if (!signupAgreed) {
+                                toast.error("Please read and agree to the Terms and Privacy Policy to proceed");
+                                return;
+                              }
                               markTouched("signupVehicleNumber");
                               markTouched("signupDLNumber");
                               if (!signupVehicleNumber) {
@@ -955,12 +998,7 @@ const DeliveryAuth = () => {
                       </motion.div>
                     )}
 
-                    <p className="text-center text-xs text-gray-400 font-semibold pt-1">
-                      By joining, you agree to our{" "}
-                      <span className="text-brand-500 font-bold cursor-pointer hover:underline">Terms</span>{" "}
-                      &amp;{" "}
-                      <span className="text-brand-500 font-bold cursor-pointer hover:underline">Privacy Policy</span>
-                    </p>
+
                   </div>
                 )}
 
@@ -1121,28 +1159,28 @@ const DeliveryAuth = () => {
         </div>
 
         {/* Footer */}
-        <div className="pt-8 flex flex-col items-center gap-1.5">
-          <p className="text-[11px] text-gray-400 text-center font-medium">
-            By continuing, you agree to our
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/delivery/terms')}
-              className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
-            >
-              Terms & Conditions
-            </button>
-            <span className="text-[10px] text-gray-300">•</span>
-            <button
-              onClick={() => navigate('/delivery/privacy')}
-              className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
-            >
-              Privacy Policy
-            </button>
-          </div>
-        </div>
+
       </motion.div>
     </div>
+
+    {/* Legal Page Modal Overlay */}
+    <AnimatePresence>
+      {showLegalModal && (
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed inset-0 z-50 bg-white overflow-y-auto"
+        >
+          <DynamicLegalPage 
+            type={showLegalModal} 
+            audience="delivery" 
+            onBack={() => setShowLegalModal(null)}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 };
 

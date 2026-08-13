@@ -30,7 +30,7 @@ const DEFAULTS = {
     },
 };
 
-const DynamicLegalPage = ({ type = 'terms', audience = 'customer' }) => {
+const DynamicLegalPage = ({ type = 'terms', audience = 'customer', onBack }) => {
     const navigate = useNavigate();
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
@@ -72,7 +72,7 @@ const DynamicLegalPage = ({ type = 'terms', audience = 'customer' }) => {
             <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
                 <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-3">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => onBack ? onBack() : navigate(-1)}
                         className="w-10 h-10 flex items-center justify-center hover:bg-slate-100 rounded-full transition-colors -ml-2 shrink-0 text-slate-600 hover:text-slate-900"
                     >
                         <ChevronLeft size={24} />
