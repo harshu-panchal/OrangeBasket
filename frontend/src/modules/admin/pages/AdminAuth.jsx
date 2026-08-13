@@ -159,20 +159,6 @@ const AdminAuth = () => {
                         </button>
                     </div>
 
-                    <div className="mt-6 text-center space-y-2">
-                        <p className="text-sm text-gray-600">
-                            {isLogin ? "Don't have an account? " : "Already have an account? "}
-                            <span 
-                                className="cursor-pointer font-medium text-[#f97316] hover:text-orange-600" 
-                                onClick={() => {
-                                    setIsLogin(!isLogin);
-                                    setFormData({ email: '', password: '', name: '' });
-                                }}
-                            >
-                                {isLogin ? 'Sign up' : 'Login'}
-                            </span>
-                        </p>
-                    </div>
                 </form>
             </div>
         </div>

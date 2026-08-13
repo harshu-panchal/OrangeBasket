@@ -27,6 +27,21 @@ const CouponManagement = () => {
     const today = new Date().toISOString().split('T')[0];
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await adminApi.getCategories();
+                if (res.data?.success) {
+                    setCategories(res.data.result || res.data.results || []);
+                }
+            } catch (err) {
+                console.error("Failed to fetch categories", err);
+            }
+        };
+        fetchCategories();
+    }, []);
     const [editingCoupon, setEditingCoupon] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -43,9 +58,12 @@ const CouponManagement = () => {
         minOrderValue: '',
         maxDiscount: '',
         usageLimit: '',
-        perUserLimit: '1',
+        perUserLimit: 1,
         validFrom: '',
         validTill: '',
+        applicableCategories: [],
+        monthlyVolumeThreshold: '',
+        minItems: '',
         description: '',
     });
 
@@ -108,10 +126,13 @@ const CouponManagement = () => {
                 discountValue: coupon.discountValue ?? '',
                 minOrderValue: coupon.minOrderValue ?? '',
                 maxDiscount: coupon.maxDiscount ?? '',
-                usageLimit: coupon.usageLimit ?? '',
-                perUserLimit: coupon.perUserLimit ?? '1',
+                usageLimit: coupon.usageLimit || '',
+                perUserLimit: coupon.perUserLimit || 1,
                 validFrom: coupon.validFrom ? coupon.validFrom.substring(0, 10) : '',
                 validTill: coupon.validTill ? coupon.validTill.substring(0, 10) : '',
+                applicableCategories: coupon.applicableCategories || [],
+                monthlyVolumeThreshold: coupon.monthlyVolumeThreshold || '',
+                minItems: coupon.minItems || '',
                 description: coupon.description || '',
             });
         } else {
@@ -119,15 +140,18 @@ const CouponManagement = () => {
             setFormData({
                 code: '',
                 title: '',
-                couponType: 'generic',
                 discountType: 'percentage',
+                couponType: 'generic',
                 discountValue: '',
                 minOrderValue: '',
                 maxDiscount: '',
                 usageLimit: '',
-                perUserLimit: '1',
+                perUserLimit: 1,
                 validFrom: '',
                 validTill: '',
+                applicableCategories: [],
+                monthlyVolumeThreshold: '',
+                minItems: '',
                 description: '',
             });
         }
@@ -146,7 +170,20 @@ const CouponManagement = () => {
                 perUserLimit: formData.perUserLimit ? Number(formData.perUserLimit) : 1,
                 validFrom: formData.validFrom,
                 validTill: formData.validTill,
+                applicableCategories: formData.applicableCategories,
+                monthlyVolumeThreshold: formData.monthlyVolumeThreshold ? Number(formData.monthlyVolumeThreshold) : undefined,
+                minItems: formData.minItems ? Number(formData.minItems) : undefined,
             };
+
+            if (formData.couponType !== 'category_based') {
+                payload.applicableCategories = [];
+            }
+            if (formData.couponType !== 'monthly_volume') {
+                payload.monthlyVolumeThreshold = undefined;
+            }
+            if (formData.couponType !== 'bulk_order') {
+                payload.minItems = undefined;
+            }
 
             if (editingCoupon?._id) {
                 await adminApi.updateCoupon(editingCoupon._id, payload);
@@ -451,6 +488,64 @@ const CouponManagement = () => {
                             Choose the logic: bulk order, MOV, free delivery, specific categories, or monthly volume buyers.
                         </p>
                     </div>
+
+                    {formData.couponType === 'category_based' && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Applicable Categories</label>
+                            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-slate-50 rounded-2xl">
+                                {categories.map(cat => (
+                                    <label key={cat._id} className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer hover:bg-slate-100 p-1 rounded transition-colors">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.applicableCategories.includes(cat._id)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    applicableCategories: checked 
+                                                        ? [...prev.applicableCategories, cat._id]
+                                                        : prev.applicableCategories.filter(id => id !== cat._id)
+                                                }));
+                                            }}
+                                            className="rounded text-primary border-slate-300 focus:ring-primary h-4 w-4"
+                                        />
+                                        {cat.name}
+                                    </label>
+                                ))}
+                                {categories.length === 0 && <span className="text-xs text-slate-400 col-span-2">No categories available</span>}
+                            </div>
+                        </div>
+                    )}
+
+                    {formData.couponType === 'monthly_volume' && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Volume Threshold (₹)</label>
+                            <input
+                                required
+                                type="number"
+                                onWheel={(e) => e.currentTarget.blur()}
+                                value={formData.monthlyVolumeThreshold}
+                                onChange={(e) => setFormData({ ...formData, monthlyVolumeThreshold: e.target.value })}
+                                placeholder="E.g. 5000"
+                                className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
+                            />
+                        </div>
+                    )}
+
+                    {formData.couponType === 'bulk_order' && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Minimum Items Required</label>
+                            <input
+                                required
+                                type="number"
+                                onWheel={(e) => e.currentTarget.blur()}
+                                value={formData.minItems}
+                                onChange={(e) => setFormData({ ...formData, minItems: e.target.value })}
+                                placeholder="E.g. 10"
+                                className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">

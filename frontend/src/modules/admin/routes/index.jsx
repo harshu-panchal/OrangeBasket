@@ -90,11 +90,7 @@ const OffersManagement = React.lazy(
 const OfferSectionsManagement = React.lazy(
   () => import("../pages/OfferSectionsManagement"),
 );
-const ShopByStoreManagement = React.lazy(
-  () => import("../pages/ShopByStoreManagement"),
-);
 const AdminSettings = React.lazy(() => import("../pages/AdminSettings"));
-const EnvSettings = React.lazy(() => import("../pages/EnvSettings"));
 const AdminProfile = React.lazy(() => import("../pages/AdminProfile"));
 
 const MonthlyBasketCategories = React.lazy(() => import("../pages/MonthlyBasketCategories"));
@@ -137,7 +133,6 @@ const navItems = [
       { label: "Send Notifications", path: "/admin/notifications" },
       { label: "Coupons & Promos", path: "/admin/coupons" },
       { label: "Offer Sections", path: "/admin/offer-sections" },
-      { label: "Shop by Store", path: "/admin/shop-by-store" },
     ],
   },
   {
@@ -241,7 +236,6 @@ const navItems = [
     color: "slate",
   },
   { label: "My Profile", path: "/admin/profile", icon: User, color: "indigo" },
-  { label: "System Settings", path: "/admin/env", icon: Terminal, color: "dark" },
 ];
 
 const BillingCharges = React.lazy(() => import("../pages/BillingCharges"));
@@ -296,7 +290,6 @@ const AdminRoutes = () => {
         <Route path="/notifications" element={<NotificationComposer />} />
         <Route path="/offers" element={<OffersManagement />} />
         <Route path="/offer-sections" element={<OfferSectionsManagement />} />
-        <Route path="/shop-by-store" element={<ShopByStoreManagement />} />
         <Route path="/coupons" element={<CouponManagement />} />
         <Route path="/sellers/pending" element={<PendingSellers />} />
         <Route path="/seller-locations" element={<SellerLocations />} />
@@ -322,7 +315,6 @@ const AdminRoutes = () => {
         <Route path="/returns" element={<Returns />} />
         <Route path="/billing" element={<BillingCharges />} />
         <Route path="/settings" element={<AdminSettings />} />
-        <Route path="/env" element={<EnvSettings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>
