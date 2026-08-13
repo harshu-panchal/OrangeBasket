@@ -1122,6 +1122,7 @@ export const deleteProduct = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     const enforceRadius = isCustomerVisibilityRequest(req);
 
     let nearbySellerSet = null;
@@ -1144,8 +1145,9 @@ export const getProductById = async (req, res) => {
     const cacheKey = buildKey("catalog", "product", id);
     const product = await getOrSet(
       cacheKey,
-      async () =>
-        Product.findById(id)
+      async () => {
+        const query = isObjectId ? { _id: id } : { slug: id };
+        return Product.findOne(query)
           .select(
             "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId isMonthlyKit status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
           )
@@ -1153,7 +1155,8 @@ export const getProductById = async (req, res) => {
           .populate("categoryId", "name")
           .populate("subcategoryId", "name")
           .populate("sellerId", "shopName")
-          .lean(),
+          .lean();
+      },
       getTTL("product"),
     );
 
@@ -1175,7 +1178,7 @@ export const getProductById = async (req, res) => {
         let sellerIdForProduct = product?.sellerId?._id ? String(product.sellerId._id) : (product?.sellerId ? String(product.sellerId) : null);
         if (!sellerIdForProduct || sellerIdForProduct === "null") {
           // If it was null because populate failed for a warehouse, query raw product directly to get the real sellerId/warehouseId
-          const rawProduct = await Product.findById(id).select("sellerId warehouseId").lean();
+          const rawProduct = await Product.findOne(isObjectId ? { _id: id } : { slug: id }).select("sellerId warehouseId").lean();
           if (rawProduct && rawProduct.sellerId) {
             sellerIdForProduct = String(rawProduct.sellerId);
           } else if (rawProduct && rawProduct.warehouseId) {
@@ -1194,7 +1197,7 @@ export const getProductById = async (req, res) => {
         const userId = req.user.id;
         const purchase = await Order.findOne({
             customer: userId,
-            "items.product": id,
+            "items.product": product._id,
             $or: [
                 { orderStatus: { $regex: /^delivered$/i } },
                 { status: { $regex: /^delivered$/i } }

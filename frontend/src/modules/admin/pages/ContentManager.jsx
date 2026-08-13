@@ -678,14 +678,14 @@ const ContentManager = () => {
                                                         <option value="header">Header</option>
                                                         <option value="category">Category</option>
                                                         <option value="subcategory">Subcategory</option>
-                                                        <option value="product">Product</option>
+                                                        <option value="product">Product / App Route</option>
                                                         <option value="url">External URL</option>
                                                     </select>
                                                     <input
                                                         value={item.linkValue || ''}
                                                         onChange={(e) => updateBannerItem(idx, { linkValue: e.target.value })}
                                                         className="w-full p-2.5 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
-                                                        placeholder={item.linkType === 'url' ? "https://..." : "Slug / ID"}
+                                                        placeholder={item.linkType === 'url' ? "https://..." : item.linkType === 'product' ? "Slug, ?product=id, or /route" : "Slug / ID"}
                                                     />
                                                 </div>
                                             </div>
