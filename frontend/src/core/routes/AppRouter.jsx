@@ -55,6 +55,7 @@ const SellerModule = lazy(() => import('../../modules/seller/routes/index'));
 const AdminModule = lazy(() => import('../../modules/admin/routes/index'));
 const DeliveryModule = lazy(() => import('../../modules/delivery/routes/index'));
 const WarehouseModule = lazy(() => import('../../modules/warehouse/routes/index'));
+const DynamicLegalPage = lazy(() => import('../../shared/components/DynamicLegalPage'));
 
 import CustomerLayout from '../../modules/customer/components/layout/CustomerLayout';
 
@@ -123,6 +124,31 @@ const AppRouter = () => {
                 {
                     path: 'delivery/auth',
                     element: <DeliveryAuth />,
+                },
+                // Public legal pages for each module
+                {
+                    path: 'seller/terms',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="seller" /></Suspense>,
+                },
+                {
+                    path: 'seller/privacy',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="seller" /></Suspense>,
+                },
+                {
+                    path: 'warehouse/terms',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="warehouse" /></Suspense>,
+                },
+                {
+                    path: 'warehouse/privacy',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="warehouse" /></Suspense>,
+                },
+                {
+                    path: 'delivery/terms',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="delivery" /></Suspense>,
+                },
+                {
+                    path: 'delivery/privacy',
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="delivery" /></Suspense>,
                 },
                 {
                     path: 'seller/*',

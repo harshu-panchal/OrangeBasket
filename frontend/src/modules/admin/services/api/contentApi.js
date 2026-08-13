@@ -59,6 +59,10 @@ export const adminContentApi = {
     createCoupon: (data) => axiosInstance.post('/admin/coupons', data),
     updateCoupon: (id, data) => axiosInstance.put(`/admin/coupons/${id}`, data),
     deleteCoupon: (id) => axiosInstance.delete(`/admin/coupons/${id}`),
+
+    // Legal Pages (Terms & Conditions, Privacy Policy)
+    getLegalPage: (params) => axiosInstance.get('/legal', { params }),
+    upsertLegalPage: (data) => axiosInstance.put('/legal', data),
 };
 
 export default adminContentApi;

@@ -23,6 +23,7 @@ import {
   User,
   AlertTriangle,
   UserCheck,
+  ScrollText,
 } from "lucide-react";
 
 const Dashboard = React.lazy(() => import("../pages/Dashboard"));
@@ -102,6 +103,7 @@ const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 const EmployeeManagement = React.lazy(() => import("../pages/EmployeeManagement"));
 const EmployeeDetail = React.lazy(() => import("../pages/EmployeeDetail"));
 const WarehouseQueueDashboard = React.lazy(() => import("../pages/WarehouseQueueDashboard"));
+const LegalPageEditor = React.lazy(() => import("../pages/LegalPageEditor"));
 
 const navItems = [
   {
@@ -236,6 +238,7 @@ const navItems = [
     color: "slate",
   },
   { label: "My Profile", path: "/admin/profile", icon: User, color: "indigo" },
+  { label: "Legal Pages", path: "/admin/legal-pages", icon: ScrollText, color: "slate" },
 ];
 
 const BillingCharges = React.lazy(() => import("../pages/BillingCharges"));
@@ -315,6 +318,7 @@ const AdminRoutes = () => {
         <Route path="/returns" element={<Returns />} />
         <Route path="/billing" element={<BillingCharges />} />
         <Route path="/settings" element={<AdminSettings />} />
+        <Route path="/legal-pages" element={<LegalPageEditor />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>

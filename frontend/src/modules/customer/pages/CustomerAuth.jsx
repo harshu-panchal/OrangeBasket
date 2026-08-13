@@ -336,7 +336,7 @@ const CustomerAuth = () => {
                         </button>
                         <span className="text-[10px] text-gray-300">•</span>
                         <button 
-                            onClick={() => navigate('/privacy-policy')}
+                            onClick={() => navigate('/privacy')}
                             className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
                         >
                             {t('privacy')}

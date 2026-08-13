@@ -26,6 +26,7 @@ import kitRoute from "./kitRoutes.js";
 import authOtpRoute from "../modules/otp/otp.routes.js";
 import employeeRoute from "./employeeRoutes.js";
 import translationRoute from "./translationRoutes.js";
+import legalPageRoute from "./legalPageRoutes.js";
 
 import express from "express";
 
@@ -76,6 +77,7 @@ const setupRoutes = (app) => {
     router.use("/kits", kitRoute);
     router.use("/employees", employeeRoute);
     router.use("/translate", translationRoute);
+    router.use("/legal", legalPageRoute);
 
     app.use("/api", router);
 }
