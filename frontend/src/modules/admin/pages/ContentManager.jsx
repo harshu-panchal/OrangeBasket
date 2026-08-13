@@ -675,9 +675,7 @@ const ContentManager = () => {
                                                         className="w-full p-2.5 bg-slate-50 rounded-xl text-xs font-black outline-none"
                                                     >
                                                         <option value="none">No link</option>
-                                                        <option value="header">Header</option>
-                                                        <option value="category">Category</option>
-                                                        <option value="subcategory">Subcategory</option>
+                                                        <option value="subcategory">Subcategory / App Route</option>
                                                         <option value="product">Product / App Route</option>
                                                         <option value="url">External URL</option>
                                                     </select>
@@ -685,7 +683,7 @@ const ContentManager = () => {
                                                         value={item.linkValue || ''}
                                                         onChange={(e) => updateBannerItem(idx, { linkValue: e.target.value })}
                                                         className="w-full p-2.5 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
-                                                        placeholder={item.linkType === 'url' ? "https://..." : item.linkType === 'product' ? "Slug, ?product=id, or /route" : "Slug / ID"}
+                                                        placeholder={item.linkType === 'url' ? "https://..." : (item.linkType === 'product' || item.linkType === 'subcategory') ? "Slug, ?id, or /route" : "Slug / ID"}
                                                     />
                                                 </div>
                                             </div>

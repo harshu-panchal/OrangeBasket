@@ -83,12 +83,30 @@ const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap 
     } else if (banner.linkType === 'category' && banner.linkValue) {
       navigate(`/category/${banner.linkValue}`);
     } else if (banner.linkType === 'subcategory' && banner.linkValue) {
-      navigate(`/category/sub/${banner.linkValue}`);
-    } else if (banner.linkType === 'product' && banner.linkValue) {
-      if (banner.linkValue.startsWith('/') || banner.linkValue.startsWith('?')) {
-        navigate(banner.linkValue);
+      let route = banner.linkValue.trim();
+      if (route.startsWith('http://') || route.startsWith('https://')) {
+        try {
+          const urlObj = new URL(route);
+          route = urlObj.pathname + urlObj.search;
+        } catch(e) {}
+      }
+      if (route.startsWith('/') || route.startsWith('?')) {
+        navigate(route);
       } else {
-        navigate(`?product=${banner.linkValue}`);
+        navigate(`/category/sub/${route}`);
+      }
+    } else if (banner.linkType === 'product' && banner.linkValue) {
+      let route = banner.linkValue.trim();
+      if (route.startsWith('http://') || route.startsWith('https://')) {
+        try {
+          const urlObj = new URL(route);
+          route = urlObj.pathname + urlObj.search;
+        } catch(e) {}
+      }
+      if (route.startsWith('/') || route.startsWith('?')) {
+        navigate(route);
+      } else {
+        navigate(`?product=${route}`);
       }
     } else if (banner.linkType === 'header' && banner.linkValue) {
       navigate(`/?header=${banner.linkValue}`);

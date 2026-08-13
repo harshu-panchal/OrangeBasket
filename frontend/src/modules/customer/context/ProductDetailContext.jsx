@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { customerApi } from '../services/customerApi';
+import { useLocation as useAppLocation } from './LocationContext';
 
 const ProductDetailContext = createContext();
 
@@ -18,12 +19,20 @@ export const ProductDetailProvider = ({ children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
+    const { currentLocation } = useAppLocation();
+
     useEffect(() => {
         const productParam = searchParams.get('product');
         if (productParam) {
             const currentIdOrSlug = selectedProduct?.slug || selectedProduct?._id || selectedProduct?.id;
             if (currentIdOrSlug !== productParam) {
-                customerApi.getProductById(productParam)
+                const params = {};
+                if (currentLocation?.latitude && currentLocation?.longitude) {
+                    params.lat = currentLocation.latitude;
+                    params.lng = currentLocation.longitude;
+                }
+                
+                customerApi.getProductById(productParam, params)
                     .then(res => {
                         if (res.data.success) {
                             setSelectedProduct(res.data.result || res.data.results || res.data);
@@ -39,7 +48,7 @@ export const ProductDetailProvider = ({ children }) => {
             setIsOpen(false);
             setTimeout(() => setSelectedProduct(null), 300);
         }
-    }, [searchParams.get('product')]);
+    }, [searchParams.get('product'), currentLocation?.latitude, currentLocation?.longitude]);
 
     const openProduct = (product) => {
         setSelectedProduct(product);
