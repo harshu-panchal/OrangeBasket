@@ -544,40 +544,7 @@ const OfferSectionsManagement = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Side image (choose one)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {SIDE_IMAGE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      sideImageKey: opt.key,
-                    }))
-                  }
-                  className={cn(
-                    "rounded-xl overflow-hidden border-2 transition-all aspect-square bg-slate-100",
-                    formData.sideImageKey === opt.key
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-slate-200 hover:border-slate-300"
-                  )}
-                >
-                  <img
-                    src={opt.imageUrl}
-                    alt={opt.label}
-                    className="w-full h-full object-cover"
-                  />
-                  <span className="block text-[10px] font-bold text-slate-600 p-1 truncate">
-                    {opt.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

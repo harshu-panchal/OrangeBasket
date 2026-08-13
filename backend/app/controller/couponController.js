@@ -42,6 +42,18 @@ export const listCoupons = async (req, res) => {
 export const createCoupon = async (req, res) => {
     try {
         const data = { ...req.body };
+        
+        if (data.validFrom) {
+            const from = new Date(data.validFrom);
+            from.setUTCHours(0, 0, 0, 0);
+            data.validFrom = from;
+        }
+        if (data.validTill) {
+            const till = new Date(data.validTill);
+            till.setUTCHours(23, 59, 59, 999);
+            data.validTill = till;
+        }
+
         const coupon = await Coupon.create(data);
         return handleResponse(res, 201, "Coupon created successfully", coupon);
     } catch (error) {
@@ -56,6 +68,18 @@ export const updateCoupon = async (req, res) => {
     try {
         const { id } = req.params;
         const data = { ...req.body };
+        
+        if (data.validFrom) {
+            const from = new Date(data.validFrom);
+            from.setUTCHours(0, 0, 0, 0);
+            data.validFrom = from;
+        }
+        if (data.validTill) {
+            const till = new Date(data.validTill);
+            till.setUTCHours(23, 59, 59, 999);
+            data.validTill = till;
+        }
+
         const coupon = await Coupon.findByIdAndUpdate(id, data, {
             new: true,
             runValidators: true,

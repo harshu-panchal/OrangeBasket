@@ -84,7 +84,7 @@ const CouponManagement = () => {
         const expiringSoon = coupons.filter(c => {
             if (!c.validTill) return false;
             const till = new Date(c.validTill);
-            const diffDays = (till - now) / (1000 * 60 * 60 * 24);
+            const diffDays = (till.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
             return diffDays >= 0 && diffDays <= 7;
         });
         return {
@@ -271,7 +271,7 @@ const CouponManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {isLoading && (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-8 text-slate-400 text-sm">
+                                    <td colSpan={6} className="text-center py-8 text-slate-400 text-sm">
                                         Loading coupons...
                                     </td>
                                 </tr>
@@ -388,7 +388,7 @@ const CouponManagement = () => {
                                         Cancel
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(deleteTarget.id)}
+                                        onClick={() => handleDelete(deleteTarget._id)}
                                         className="px-4 py-2.5 bg-rose-600 text-white rounded-xl font-medium hover:bg-rose-700 transition-colors"
                                     >
                                         Delete
@@ -405,6 +405,7 @@ const CouponManagement = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title={editingCoupon ? "Modify Promotion" : "New Promotion Protocol"}
+                footer={null}
             >
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-2 gap-6">
@@ -457,7 +458,7 @@ const CouponManagement = () => {
                             <input
                                 required
                                 type="number"
-                                onWheel={(e) => e.target.blur()}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.discountValue}
                                 onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -468,7 +469,7 @@ const CouponManagement = () => {
                             <input
                                 required
                                 type="number"
-                                onWheel={(e) => e.target.blur()}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.minOrderValue}
                                 onChange={(e) => setFormData({ ...formData, minOrderValue: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -481,7 +482,7 @@ const CouponManagement = () => {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Max Discount (optional)</label>
                             <input
                                 type="number"
-                                onWheel={(e) => e.target.blur()}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.maxDiscount}
                                 onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -491,7 +492,7 @@ const CouponManagement = () => {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Uses (optional)</label>
                             <input
                                 type="number"
-                                onWheel={(e) => e.target.blur()}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.usageLimit}
                                 onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -505,7 +506,7 @@ const CouponManagement = () => {
                             <input
                                 type="number"
                                 min={1}
-                                onWheel={(e) => e.target.blur()}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.perUserLimit}
                                 onChange={(e) => setFormData({ ...formData, perUserLimit: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -519,7 +520,7 @@ const CouponManagement = () => {
                             <input
                                 required
                                 type="date"
-                                min={today}
+                                min={editingCoupon ? undefined : today}
                                 value={formData.validFrom}
                                 onChange={(e) => setFormData({ ...formData, validFrom: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
@@ -530,7 +531,7 @@ const CouponManagement = () => {
                             <input
                                 required
                                 type="date"
-                                min={formData.validFrom || today}
+                                min={formData.validFrom || (editingCoupon ? undefined : today)}
                                 value={formData.validTill}
                                 onChange={(e) => setFormData({ ...formData, validTill: e.target.value })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
