@@ -603,7 +603,7 @@ const CouponManagement = () => {
                                 min={1}
                                 onWheel={(e) => e.currentTarget.blur()}
                                 value={formData.perUserLimit}
-                                onChange={(e) => setFormData({ ...formData, perUserLimit: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, perUserLimit: Number(e.target.value) })}
                                 className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
                             />
                         </div>

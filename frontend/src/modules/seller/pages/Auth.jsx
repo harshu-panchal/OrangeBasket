@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@core/context/AuthContext";
@@ -59,25 +59,34 @@ const REQUIRED_DOCUMENT_CONFIG = [
 ];
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(() => {
+    const saved = sessionStorage.getItem("seller_isLogin");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    name: "",
-    shopName: "",
-    phone: "",
-    locality: "",
-    pincode: "",
-    city: "",
-    state: "",
-    category: "",
-    description: "",
-    lat: null,
-    lng: null,
-    radius: 5,
-    address: "",
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem("seller_formData");
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return {
+      email: "",
+      password: "",
+      name: "",
+      shopName: "",
+      phone: "",
+      locality: "",
+      pincode: "",
+      city: "",
+      state: "",
+      category: "",
+      description: "",
+      lat: null,
+      lng: null,
+      radius: 5,
+      address: "",
+    };
   });
 
   const [touched, setTouched] = useState({
@@ -106,12 +115,37 @@ const Auth = () => {
   const navigate = useNavigate();
   const appName = settings?.appName || "App";
   const logoUrl = settings?.logoUrl || "";
-  const [signupStep, setSignupStep] = useState(1);
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [verifications, setVerifications] = useState({
-    email: createInitialVerificationState(),
-    phone: createInitialVerificationState(),
+  const [signupStep, setSignupStep] = useState(() => {
+    const saved = sessionStorage.getItem("seller_signupStep");
+    return saved !== null ? JSON.parse(saved) : 1;
   });
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [verifications, setVerifications] = useState(() => {
+    const saved = sessionStorage.getItem("seller_verifications");
+    if (saved) {
+      try { return JSON.parse(saved); } catch(e) {}
+    }
+    return {
+      email: createInitialVerificationState(),
+      phone: createInitialVerificationState(),
+    };
+  });
+  
+  useEffect(() => {
+    sessionStorage.setItem("seller_isLogin", JSON.stringify(isLogin));
+  }, [isLogin]);
+
+  useEffect(() => {
+    sessionStorage.setItem("seller_signupStep", JSON.stringify(signupStep));
+  }, [signupStep]);
+
+  useEffect(() => {
+    sessionStorage.setItem("seller_formData", JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    sessionStorage.setItem("seller_verifications", JSON.stringify(verifications));
+  }, [verifications]);
   const [forgotPasswordStep, setForgotPasswordStep] = useState(0);
   const [resetData, setResetData] = useState({
     channel: "email",
@@ -559,95 +593,22 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fcfaff] p-6 font-['Outfit'] overflow-hidden relative">
-      {/* Elegant Ambient Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-5%] w-[60%] h-[60%] bg-slate-100/50 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-slate-50/50 rounded-full blur-[100px]" />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-[1000px] min-h-[600px] max-h-[90vh] bg-white rounded-lg shadow-[0_50px_120px_rgba(0,0,0,0.04)] border border-white flex flex-col md:flex-row overflow-hidden">
-        {/* Visual Side Panel */}
-        <div className="hidden md:flex w-[45%] bg-linear-to-br from-slate-900 via-slate-950 to-black relative flex-col items-center justify-center p-10 overflow-hidden">
-          {/* Abstract Decorative Circles */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-slate-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="relative z-10 w-full flex flex-col items-center">
-            {/* Lottie Animation for Seller */}
-            <div className="w-full max-w-[350px] drop-shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-              <Lottie
-                animationData={sellerAnimation}
-                loop={true}
-                className="w-full h-auto"
-              />
-            </div>
-
-            <div className="mt-8 text-center space-y-4">
-              <h2 className="text-2xl font-black text-white tracking-tight leading-tight uppercase underline decoration-white/20 underline-offset-8">
-                Seller <span className="text-slate-600">Expansion.</span>
-              </h2>
-            </div>
-          </motion.div>
-
-          {/* Partner Badges */}
-          <div className="absolute bottom-12 left-0 right-0 px-12 flex justify-between items-center opacity-60">
-            <div className="flex items-center gap-2 text-white/80">
-              <Rocket size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                Growth First
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-white/80">
-              <Globe size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                Pan India
-              </span>
-            </div>
-          </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-8 font-['Outfit']">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center justify-center">
+          {logoUrl ? (
+            <img src={logoUrl} alt={`${appName} logo`} className="h-32 w-auto object-contain" />
+          ) : (
+            <Store size={64} className="text-slate-700" />
+          )}
         </div>
-
-        {/* Form Content Side */}
-        <div
-          className="w-full md:w-[55%] min-h-0 p-8 pt-12 md:p-12 md:pt-16 flex flex-col justify-center bg-white overflow-y-auto overscroll-contain touch-pan-y custom-scrollbar relative"
-          onWheelCapture={handlePanelWheel}
-          style={{ WebkitOverflowScrolling: "touch" }}>
-          <div className="hidden md:flex absolute top-8 right-8 z-20">
-            <div className="w-20 h-20 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt={`${appName} logo`}
-                  className="w-14 h-14 object-contain"
-                />
-              ) : (
-                <Store size={30} className="text-slate-700" />
-              )}
-            </div>
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={isLogin ? "login" : `signup-step-${signupStep}`}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-              className="space-y-8 py-4 md:py-6">
-              <div className="space-y-4">
-                <span className="inline-block px-4 py-1 bg-slate-100 text-slate-800 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
-                  {isLogin
-                    ? "Welcome Back"
-                    : `New Partnership - Step ${signupStep} of 3`}
-                </span>
+        
+        <div className="text-left space-y-2">
+          <span className="inline-block px-4 py-1 bg-slate-100 text-slate-800 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
+            {isLogin
+              ? "Welcome Back"
+              : `New Partnership - Step ${signupStep} of 3`}
+          </span>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
                   Seller{" "}
                   <span className="text-slate-900">
@@ -1363,15 +1324,9 @@ const Auth = () => {
                   </button>
                 </p>
               </div>
-            </motion.div>
-          </AnimatePresence>
         </div>
-      </motion.div>
 
-      {/* Bottom Tagline */}
-      <div className="absolute bottom-6 flex items-center gap-4 text-slate-300 text-[10px] font-black uppercase tracking-[6px]">
-        Empowering Business Digitalization
-      </div>
+
 
       {isMapOpen && (
         <MapPicker

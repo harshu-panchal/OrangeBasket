@@ -81,27 +81,55 @@ const DeliveryAuth = () => {
       : "border-rose-400 bg-rose-50/20 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500";
   };
 
+  const getSaved = (key, defaultVal) => {
+    const saved = sessionStorage.getItem("delivery_" + key);
+    return saved !== null ? JSON.parse(saved) : defaultVal;
+  };
+
   // mode: "login" | "signup"
-  const [mode, setMode] = useState("login");
-  const [step, setStep] = useState("form"); // "form" | "otp"
+  const [mode, setMode] = useState(() => getSaved("mode", "login"));
+  const [step, setStep] = useState(() => getSaved("step", "form")); // "form" | "otp"
 
   // Login state
-  const [loginPhone, setLoginPhone] = useState("");
+  const [loginPhone, setLoginPhone] = useState(() => getSaved("loginPhone", ""));
 
   // Signup state
-  const [signupStep, setSignupStep] = useState(1);
-  const [signupName, setSignupName] = useState("");
-  const [signupPhone, setSignupPhone] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupAddress, setSignupAddress] = useState("");
-  const [signupVehicle, setSignupVehicle] = useState("bike");
-  const [signupVehicleNumber, setSignupVehicleNumber] = useState("");
-  const [signupDLNumber, setSignupDLNumber] = useState("");
-  const [signupPanNumber, setSignupPanNumber] = useState("");
-  const [signupAadharNumber, setSignupAadharNumber] = useState("");
-  const [signupAccountNumber, setSignupAccountNumber] = useState("");
-  const [signupIfsc, setSignupIfsc] = useState("");
-  const [signupAccountHolder, setSignupAccountHolder] = useState("");
+  const [signupStep, setSignupStep] = useState(() => getSaved("signupStep", 1));
+  const [signupName, setSignupName] = useState(() => getSaved("signupName", ""));
+  const [signupPhone, setSignupPhone] = useState(() => getSaved("signupPhone", ""));
+  const [signupEmail, setSignupEmail] = useState(() => getSaved("signupEmail", ""));
+  const [signupAddress, setSignupAddress] = useState(() => getSaved("signupAddress", ""));
+  const [signupVehicle, setSignupVehicle] = useState(() => getSaved("signupVehicle", "bike"));
+  const [signupVehicleNumber, setSignupVehicleNumber] = useState(() => getSaved("signupVehicleNumber", ""));
+  const [signupDLNumber, setSignupDLNumber] = useState(() => getSaved("signupDLNumber", ""));
+  const [signupPanNumber, setSignupPanNumber] = useState(() => getSaved("signupPanNumber", ""));
+  const [signupAadharNumber, setSignupAadharNumber] = useState(() => getSaved("signupAadharNumber", ""));
+  const [signupAccountNumber, setSignupAccountNumber] = useState(() => getSaved("signupAccountNumber", ""));
+  const [signupIfsc, setSignupIfsc] = useState(() => getSaved("signupIfsc", ""));
+  const [signupAccountHolder, setSignupAccountHolder] = useState(() => getSaved("signupAccountHolder", ""));
+
+  useEffect(() => {
+    sessionStorage.setItem("delivery_mode", JSON.stringify(mode));
+    sessionStorage.setItem("delivery_step", JSON.stringify(step));
+    sessionStorage.setItem("delivery_loginPhone", JSON.stringify(loginPhone));
+    sessionStorage.setItem("delivery_signupStep", JSON.stringify(signupStep));
+    sessionStorage.setItem("delivery_signupName", JSON.stringify(signupName));
+    sessionStorage.setItem("delivery_signupPhone", JSON.stringify(signupPhone));
+    sessionStorage.setItem("delivery_signupEmail", JSON.stringify(signupEmail));
+    sessionStorage.setItem("delivery_signupAddress", JSON.stringify(signupAddress));
+    sessionStorage.setItem("delivery_signupVehicle", JSON.stringify(signupVehicle));
+    sessionStorage.setItem("delivery_signupVehicleNumber", JSON.stringify(signupVehicleNumber));
+    sessionStorage.setItem("delivery_signupDLNumber", JSON.stringify(signupDLNumber));
+    sessionStorage.setItem("delivery_signupPanNumber", JSON.stringify(signupPanNumber));
+    sessionStorage.setItem("delivery_signupAadharNumber", JSON.stringify(signupAadharNumber));
+    sessionStorage.setItem("delivery_signupAccountNumber", JSON.stringify(signupAccountNumber));
+    sessionStorage.setItem("delivery_signupIfsc", JSON.stringify(signupIfsc));
+    sessionStorage.setItem("delivery_signupAccountHolder", JSON.stringify(signupAccountHolder));
+  }, [
+    mode, step, loginPhone, signupStep, signupName, signupPhone, signupEmail, signupAddress, 
+    signupVehicle, signupVehicleNumber, signupDLNumber, signupPanNumber, signupAadharNumber, 
+    signupAccountNumber, signupIfsc, signupAccountHolder
+  ]);
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState("");
