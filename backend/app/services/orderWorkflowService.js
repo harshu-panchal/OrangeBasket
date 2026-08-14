@@ -78,6 +78,7 @@ function deliveryBroadcastPayloadFromOrder(order, extra = {}) {
       pickup,
       drop,
       total: order.pricing?.total ?? 0,
+      earnings: order.delivery?.riderEarning ?? 0,
     },
     deliverySearchExpiresAt: order.deliverySearchExpiresAt,
     ...extra,
@@ -110,13 +111,13 @@ export async function afterPlaceOrderV2(orderDoc) {
     sellerPendingExpiresAt: orderDoc.sellerPendingExpiresAt,
   };
 
-  if (orderDoc.warehouseId) {
-    emitToWarehouse(orderDoc.warehouseId?.toString(), {
+  if (orderDoc.seller) {
+    emitToSeller(orderDoc.seller?.toString(), {
       event: "order:new",
       payload,
     });
-  } else {
-    emitToSeller(orderDoc.seller?.toString(), {
+  } else if (orderDoc.warehouseId) {
+    emitToWarehouse(orderDoc.warehouseId?.toString(), {
       event: "order:new",
       payload,
     });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Heart, Plus, Minus, Star, ShieldCheck, Clock, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Heart, Plus, Minus, Star, ShieldCheck, Clock, ArrowLeft, MessageSquare, Store, Building2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '@shared/components/ui/Toast';
@@ -267,10 +267,21 @@ const ProductDetailPage = () => {
 
                 <div className="lg:w-[55%] xl:w-[60%] space-y-6 md:space-y-8">
                     <div>
-                        <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-3 mb-4 flex-wrap">
                             <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-primary/20">
                                 {product.categoryId?.name || 'Essential'}
                             </span>
+                            
+                            {(product.sellerId?.shopName || product.warehouseId?.name) && (
+                                <span className="bg-slate-100 text-slate-600 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                    {product.sellerId?.shopName ? (
+                                        <><Store size={12} className="text-slate-500" /> {product.sellerId.shopName}</>
+                                    ) : (
+                                        <><Building2 size={12} className="text-slate-500" /> {product.warehouseId?.name}</>
+                                    )}
+                                </span>
+                            )}
+
                             <div className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-3 py-0.5 rounded-full text-xs">
                                 <Star size={12} fill="currentColor" /> 4.8 ({reviews.length > 0 ? reviews.length : '120+'})
                             </div>

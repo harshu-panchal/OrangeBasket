@@ -93,7 +93,7 @@ import {
 import { buildKey, getOrSet, getTTL, invalidate } from "../services/cacheService.js";
 import { uploadToCloudinary } from "../services/mediaService.js";
 import logger from "../services/logger.js";
-import { resolveCategoryName, resolveSellerName } from "../services/entityNameCache.js";
+import { resolveCategoryName, resolveSellerName, resolveWarehouseName } from "../services/entityNameCache.js";
 import {
   PRODUCT_APPROVAL_STATUS,
   getProductApprovalConfig,
@@ -483,7 +483,7 @@ export const getProducts = async (req, res) => {
       const [rawProducts, total] = await Promise.all([
         Product.find(finalQuery)
           .select(
-            "name slug description sku price salePrice stock brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
+            "name slug description sku price salePrice stock brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
           )
           // No .populate() — names resolved via cache-backed entityNameCache
           .sort(sortQuery)
@@ -496,24 +496,29 @@ export const getProducts = async (req, res) => {
       // Collect unique category IDs (headerId, categoryId, subcategoryId) and seller IDs
       const categoryIdSet = new Set();
       const sellerIdSet = new Set();
+      const warehouseIdSet = new Set();
       for (const p of rawProducts) {
         if (p.headerId) categoryIdSet.add(String(p.headerId));
         if (p.categoryId) categoryIdSet.add(String(p.categoryId));
         if (p.subcategoryId) categoryIdSet.add(String(p.subcategoryId));
         if (p.sellerId) sellerIdSet.add(String(p.sellerId));
+        if (p.warehouseId) warehouseIdSet.add(String(p.warehouseId));
       }
 
       // Resolve names in parallel via cache-backed service
-      const [categoryEntries, sellerEntries] = await Promise.all([
+      const [categoryEntries, sellerEntries, warehouseEntries] = await Promise.all([
         Promise.all(
           [...categoryIdSet].map(async (id) => [id, await resolveCategoryName(id)]),
         ),
         Promise.all(
           [...sellerIdSet].map(async (id) => [id, await resolveSellerName(id)]),
         ),
+        Promise.all(
+          [...warehouseIdSet].map(async (id) => [id, await resolveWarehouseName(id)]),
+        ),
       ]);
 
-      const nameMap = Object.fromEntries([...categoryEntries, ...sellerEntries]);
+      const nameMap = Object.fromEntries([...categoryEntries, ...sellerEntries, ...warehouseEntries]);
 
       // Enrich products to match the shape previously returned by .populate()
       const products = rawProducts.map((p) => ({
@@ -529,6 +534,9 @@ export const getProducts = async (req, res) => {
           : null,
         sellerId: p.sellerId
           ? { _id: p.sellerId, shopName: nameMap[String(p.sellerId)] ?? null }
+          : null,
+        warehouseId: p.warehouseId
+          ? { _id: p.warehouseId, name: nameMap[String(p.warehouseId)] ?? null }
           : null,
       }));
 
@@ -606,12 +614,13 @@ export const getSellerProducts = async (req, res) => {
     ] = await Promise.all([
       Product.find(query)
         .select(
-          "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
+          "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
         )
         .populate("headerId", "name")
         .populate("categoryId", "name")
         .populate("subcategoryId", "name")
         .populate("sellerId", "shopName")
+        .populate("warehouseId", "name")
         .sort(sortQuery)
         .skip(skip)
         .limit(limit)
@@ -1155,6 +1164,7 @@ export const getProductById = async (req, res) => {
           .populate("categoryId", "name")
           .populate("subcategoryId", "name")
           .populate("sellerId", "shopName")
+          .populate("warehouseId", "name")
           .lean();
       },
       getTTL("product"),
@@ -1308,6 +1318,7 @@ export const getModerationProducts = async (req, res) => {
           .populate("categoryId", "name")
           .populate("subcategoryId", "name")
           .populate("sellerId", "shopName name")
+          .populate("warehouseId", "name")
           .populate("approvalReviewedBy", "name email")
           .sort(sortQuery)
           .skip(skip)
@@ -1370,6 +1381,7 @@ export const approveProduct = async (req, res) => {
       .populate("categoryId", "name")
       .populate("subcategoryId", "name")
       .populate("sellerId", "shopName name")
+      .populate("warehouseId", "name")
       .populate("approvalReviewedBy", "name email");
 
     if (!updated) {
@@ -1410,6 +1422,7 @@ export const rejectProduct = async (req, res) => {
       .populate("categoryId", "name")
       .populate("subcategoryId", "name")
       .populate("sellerId", "shopName name")
+      .populate("warehouseId", "name")
       .populate("approvalReviewedBy", "name email");
 
     if (!updated) {

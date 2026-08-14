@@ -20,6 +20,8 @@ import {
   roundCurrency,
 } from "../../utils/money.js";
 import { getOrCreateFinanceSettings } from "./financeSettingsService.js";
+import { calculateCustomerDeliveryCharge } from "./deliveryChargeService.js";
+import { calculateRiderEarning } from "./riderEarningService.js";
 
 function toObjectIdString(value) {
   if (!value) return "";
@@ -218,93 +220,34 @@ export function calculateHandlingFee(cartItems, options = {}) {
 }
 
 export function calculateCustomerDeliveryFee(distanceKm, deliverySettings) {
-  const mode =
-    deliverySettings.deliveryPricingMode || DELIVERY_PRICING_MODE.DISTANCE_BASED;
   const actualDistance = Number(distanceKm || 0);
-  const normalizedDistance = Number.isFinite(actualDistance)
-    ? Math.max(actualDistance, 0)
-    : 0;
-
-  if (mode === DELIVERY_PRICING_MODE.FIXED_PRICE) {
-    const fixedFee = roundCurrency(
-      deliverySettings.fixedDeliveryFee ?? deliverySettings.customerBaseDeliveryFee ?? 0,
-    );
-    return {
-      deliveryFeeCharged: fixedFee,
-      distanceKmActual: normalizedDistance,
-      distanceKmRounded: roundCurrency(normalizedDistance),
-      roundedExtraKm: 0,
-      mode,
-      baseFee: fixedFee,
-      extraFee: 0,
-    };
-  }
-
-  const baseFee = roundCurrency(deliverySettings.customerBaseDeliveryFee ?? 0);
-  const baseDistance = Math.max(Number(deliverySettings.baseDistanceCapacityKm || 0), 0);
-  const surcharge = roundCurrency(deliverySettings.incrementalKmSurcharge ?? 0);
-
-  if (normalizedDistance <= baseDistance) {
-    return {
-      deliveryFeeCharged: baseFee,
-      distanceKmActual: normalizedDistance,
-      distanceKmRounded: roundCurrency(baseDistance),
-      roundedExtraKm: 0,
-      mode,
-      baseFee,
-      extraFee: 0,
-    };
-  }
-
-  const extraKm = normalizedDistance - baseDistance;
-  const roundedExtraKm = ceilKm(extraKm);
-  const extraFee = roundCurrency(roundedExtraKm * surcharge);
-  const total = addMoney(baseFee, extraFee);
-
+  const normalizedDistance = Number.isFinite(actualDistance) ? Math.max(actualDistance, 0) : 0;
+  
+  const charge = calculateCustomerDeliveryCharge({ distanceKm: normalizedDistance, settings: deliverySettings });
+  
   return {
-    deliveryFeeCharged: total,
+    deliveryFeeCharged: charge,
     distanceKmActual: normalizedDistance,
-    distanceKmRounded: roundCurrency(baseDistance + roundedExtraKm),
-    roundedExtraKm,
-    mode,
-    baseFee,
-    extraFee,
+    distanceKmRounded: roundCurrency(normalizedDistance),
+    roundedExtraKm: 0,
+    mode: deliverySettings.customerPricingType || "distance",
+    baseFee: charge,
+    extraFee: 0,
   };
 }
 
 export function calculateRiderPayout(distanceKm, deliverySettings) {
-  const mode =
-    deliverySettings.deliveryPricingMode || DELIVERY_PRICING_MODE.DISTANCE_BASED;
   const actualDistance = Number(distanceKm || 0);
-  const normalizedDistance = Number.isFinite(actualDistance)
-    ? Math.max(actualDistance, 0)
-    : 0;
+  const normalizedDistance = Number.isFinite(actualDistance) ? Math.max(actualDistance, 0) : 0;
 
-  const riderBase = roundCurrency(deliverySettings.riderBasePayout ?? deliverySettings.customerBaseDeliveryFee ?? 0);
-  const baseDistance = Math.max(Number(deliverySettings.baseDistanceCapacityKm || 0), 0);
-  const perExtraKm = roundCurrency(deliverySettings.deliveryPartnerRatePerKm ?? 0);
-
-  if (mode === DELIVERY_PRICING_MODE.FIXED_PRICE || normalizedDistance <= baseDistance) {
-    return {
-      riderPayoutBase: riderBase,
-      riderPayoutDistance: 0,
-      riderPayoutBonus: 0,
-      riderPayoutTotal: riderBase,
-      roundedExtraKm: 0,
-    };
-  }
-
-  const extraKm = normalizedDistance - baseDistance;
-  const roundedExtraKm = ceilKm(extraKm);
-  const riderDistance = roundCurrency(roundedExtraKm * perExtraKm);
-  const riderTotal = addMoney(riderBase, riderDistance);
+  const payout = calculateRiderEarning({ distanceKm: normalizedDistance, settings: deliverySettings });
 
   return {
-    riderPayoutBase: riderBase,
-    riderPayoutDistance: riderDistance,
+    riderPayoutBase: payout,
+    riderPayoutDistance: 0,
     riderPayoutBonus: 0,
-    riderPayoutTotal: riderTotal,
-    roundedExtraKm,
+    riderPayoutTotal: payout,
+    roundedExtraKm: 0,
   };
 }
 

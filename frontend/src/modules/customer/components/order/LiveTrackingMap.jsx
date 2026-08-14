@@ -165,11 +165,11 @@ const LiveTrackingMap = memo(({
       focusOnRider500m(map, riderLocation);
       return;
     }
-    
+
     try {
       const bounds = new window.google.maps.LatLngBounds();
       let hasPoints = false;
-      
+
       // Add route points if available
       if (decodedPath && decodedPath.length > 0) {
         decodedPath.forEach((point) => bounds.extend(point));
@@ -185,7 +185,7 @@ const LiveTrackingMap = memo(({
           hasPoints = true;
         }
       }
-      
+
       if (hasPoints) {
         map.fitBounds(bounds, 60);
       }
@@ -316,7 +316,7 @@ const LiveTrackingMap = memo(({
   }
 
   // ─── LIVE TRACKING STATE ───────────────────────────────────────────────
-  
+
   // If Google Maps is not loaded or no API key
   if (!apiKey) {
     return (

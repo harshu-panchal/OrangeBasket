@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Plus, Minus, Check } from "lucide-react";
+import { Heart, Plus, Minus, Check, Store, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
@@ -245,6 +245,16 @@ const ProductCard = React.memo(
                 </span>
               )}
             </div>
+            {/* Seller / Warehouse Name */}
+            {(product.sellerId?.shopName || product.warehouseId?.name) && (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-500 font-medium line-clamp-1">
+                {product.sellerId?.shopName ? (
+                  <><Store size={10} className="shrink-0" /> <span className="truncate">{product.sellerId.shopName}</span></>
+                ) : (
+                  <><Building2 size={10} className="shrink-0" /> <span className="truncate">{product.warehouseId?.name}</span></>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bottom Price Row & Plus/Quantity Selector */}

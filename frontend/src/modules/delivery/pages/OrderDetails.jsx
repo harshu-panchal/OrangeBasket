@@ -859,13 +859,13 @@ const OrderDetails = () => {
                       </p>
                     </div>
                   </div>
-                  {(isReturn ? order.address?.phone : order.seller?.phone) && (
+                  {(isReturn ? order.address?.phone : (order.seller?.phone || order.warehouseId?.phone)) && (
                     <Button
                       variant="outline"
                       size="icon"
                       className="h-9 w-9"
                       onClick={() =>
-                        (window.location.href = `tel:${isReturn ? order.address?.phone : order.seller?.phone}`)
+                        (window.location.href = `tel:${isReturn ? order.address?.phone : (order.seller?.phone || order.warehouseId?.phone)}`)
                       }
                     >
                       <Phone size={18} />
@@ -876,12 +876,12 @@ const OrderDetails = () => {
                   <h3 className="font-bold text-lg mb-1">
                     {isReturn
                       ? order.address?.name || "Customer"
-                      : order.seller?.shopName || "Seller Store"}
+                      : order.seller?.shopName || order.warehouseId?.name || "Store Location"}
                   </h3>
                   <p className="text-gray-500 text-sm mb-4 leading-relaxed">
                     {isReturn
                       ? order.address?.address || "Address not available"
-                      : order.seller?.address || "Address not available"}
+                      : order.seller?.address || order.warehouseId?.address || "Address not available"}
                   </p>
                   <Button onClick={handleNavigate} className="w-full" variant="outline">
                     <Navigation size={18} className="mr-2" />{" "}
@@ -1021,18 +1021,6 @@ const OrderDetails = () => {
             )}
           </AnimatePresence>
         </Card>
-
-        <motion.div
-          className="bg-yellow-50 rounded-2xl p-4 border border-yellow-200 flex items-start shadow-sm"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <AlertTriangle className="text-yellow-600 mr-3 mt-0.5 flex-shrink-0" size={18} />
-          <p className="text-sm text-yellow-800 leading-relaxed">
-            <strong>Note:</strong> Handle eggs with care. Call customer if location is hard to find.
-          </p>
-        </motion.div>
 
         {/* Return Step 2: Upload proof then request customer pickup OTP */}
         {isReturn && step === 2 && !showOtpInput && isAssignedRider && (

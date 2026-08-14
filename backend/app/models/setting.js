@@ -74,11 +74,7 @@ const settingSchema = new mongoose.Schema(
         },
 
         // Returns / logistics configuration
-        returnDeliveryCommission: {
-            // Flat amount per return pickup, paid by seller
-            type: Number,
-            default: 0,
-        },
+        // (returnDeliveryCommission was removed)
 
         /**
          * Finance / delivery pricing rules (single source of truth).
@@ -99,11 +95,6 @@ const settingSchema = new mongoose.Schema(
             default: 30,
             min: 0,
         },
-        riderBasePayout: {
-            type: Number,
-            default: 30,
-            min: 0,
-        },
         baseDeliveryCharge: {
             type: Number,
             default: 30,
@@ -119,21 +110,65 @@ const settingSchema = new mongoose.Schema(
             default: 10,
             min: 0,
         },
-        deliveryPartnerRatePerKm: {
-            type: Number,
-            default: 5,
-            min: 0,
-        },
-        fleetCommissionRatePerKm: {
-            type: Number,
-            default: 5,
-            min: 0,
-        },
         fixedDeliveryFee: {
             type: Number,
             default: 30,
             min: 0,
         },
+        
+        // --- NEW Delivery Distance & Earning Settings ---
+        customerPricingType: {
+            type: String,
+            enum: ["fixed", "distance"],
+            default: "distance",
+        },
+        customerFixedCharge: {
+            type: Number,
+            default: 24,
+            min: 0,
+        },
+        customerBaseDistance: {
+            type: Number,
+            default: 4,
+            min: 0,
+        },
+        customerBaseCharge: {
+            type: Number,
+            default: 24,
+            min: 0,
+        },
+        customerExtraPerKm: {
+            type: Number,
+            default: 6,
+            min: 0,
+        },
+        
+        riderEarningType: {
+            type: String,
+            enum: ["fixed", "distance"],
+            default: "distance",
+        },
+        riderFixedEarning: {
+            type: Number,
+            default: 20,
+            min: 0,
+        },
+        riderBaseDistance: {
+            type: Number,
+            default: 4,
+            min: 0,
+        },
+        riderBaseEarning: {
+            type: Number,
+            default: 25,
+            min: 0,
+        },
+        riderExtraPerKm: {
+            type: Number,
+            default: 5,
+            min: 0,
+        },
+        // ------------------------------------------------
         handlingFeeStrategy: {
             type: String,
             enum: ALL_HANDLING_FEE_STRATEGIES,
@@ -216,17 +251,6 @@ settingSchema.pre("save", function syncFinanceAliases(next) {
     }
     if (this.customerBaseDeliveryFee == null) {
         this.customerBaseDeliveryFee = this.baseDeliveryCharge ?? 30;
-    }
-
-    if (this.riderBasePayout == null) {
-        this.riderBasePayout = this.baseDeliveryCharge ?? this.customerBaseDeliveryFee ?? 30;
-    }
-
-    if (this.fleetCommissionRatePerKm == null && this.deliveryPartnerRatePerKm != null) {
-        this.fleetCommissionRatePerKm = this.deliveryPartnerRatePerKm;
-    }
-    if (this.deliveryPartnerRatePerKm == null && this.fleetCommissionRatePerKm != null) {
-        this.deliveryPartnerRatePerKm = this.fleetCommissionRatePerKm;
     }
 
     if (this.fixedDeliveryFee == null) {

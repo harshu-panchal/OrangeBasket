@@ -2,6 +2,7 @@ import Seller from "../models/seller.js";
 import Warehouse from "../models/warehouse.js";
 import Category from "../models/category.js";
 import { distanceMeters } from "../utils/geoUtils.js";
+import { getCachedRoute } from "./mapsRouteService.js";
 import {
   HANDLING_FEE_STRATEGY,
   isWalletRedemptionReducesPayableEnabled,
@@ -42,7 +43,13 @@ export function groupHydratedItemsBySeller(hydratedItems = []) {
 
 async function computeDistanceKmForSeller({ sellerId, addressLocation, session = null }) {
   const normalizedLocation = normalizeLocation(addressLocation);
-  if (!normalizedLocation) return 0;
+  if (!normalizedLocation) {
+    return {
+      distanceKm: 0,
+      route: { distanceMeters: 0, duration: 0, polyline: '' },
+      sellerLocation: { lat: 0, lng: 0 }
+    };
+  }
 
   let query = Seller.findById(sellerId).select("location serviceRadius shopName").lean();
   if (session) query.session(session);
@@ -63,13 +70,26 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
   if (!Array.isArray(coords) || coords.length < 2) return 0;
 
   const [sellerLng, sellerLat] = coords;
-  const distanceInMeters = distanceMeters(
-    normalizedLocation.lat,
-    normalizedLocation.lng,
-    Number(sellerLat),
-    Number(sellerLng),
-  );
-  const distanceKm = Number((distanceInMeters / 1000).toFixed(3));
+  
+  // NEW: Get actual road distance
+  let distanceKm = 0;
+  let finalRoute = null;
+  try {
+    const route = await getCachedRoute(
+      { lat: Number(sellerLat), lng: Number(sellerLng) },
+      normalizedLocation
+    );
+    if (route && route.distanceMeters != null) {
+      distanceKm = Number((route.distanceMeters / 1000).toFixed(3));
+      finalRoute = route;
+    } else {
+      throw new Error("Route calculation degraded/failed");
+    }
+  } catch (error) {
+    const err = new Error("Could not calculate actual route distance for delivery: " + error.message);
+    err.statusCode = 400;
+    throw err;
+  }
   
   const radius = Number(seller.serviceRadius || 5);
   if (distanceKm > radius) {
@@ -78,7 +98,11 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
     throw err;
   }
 
-  return distanceKm;
+  return {
+    distanceKm,
+    route: finalRoute,
+    sellerLocation: { lat: Number(sellerLat), lng: Number(sellerLng) }
+  };
 }
 
 function sumField(rows, field) {
@@ -443,7 +467,7 @@ export async function buildCheckoutPricingSnapshot({
 
   for (const sellerId of sellerIds) {
     const sellerItems = itemsBySeller.get(sellerId) || [];
-    const distanceKm = await computeDistanceKmForSeller({
+    const distanceData = await computeDistanceKmForSeller({
       sellerId,
       addressLocation: address?.location,
       session,
@@ -454,7 +478,7 @@ export async function buildCheckoutPricingSnapshot({
 
     const breakdown = await generateOrderPaymentBreakdown({
       preHydratedItems: sellerItems,
-      distanceKm,
+      distanceKm: distanceData.distanceKm,
       discountTotal: sellerDiscount,
       taxTotal: 0,
       session,
@@ -470,6 +494,14 @@ export async function buildCheckoutPricingSnapshot({
       actualWarehouseId,
       isWarehouse,
       items: sellerItems,
+      deliveryData: {
+        warehouseLocation: distanceData.sellerLocation,
+        customerLocation: normalizeLocation(address?.location),
+        routeDistanceKm: distanceData.distanceKm,
+        routeDistanceMeters: distanceData.route?.distanceMeters || 0,
+        routeDurationMinutes: distanceData.route?.duration ? Math.ceil(distanceData.route.duration / 60) : 0,
+        routePolyline: distanceData.route?.polyline || '',
+      },
       breakdown: {
         ...breakdown,
         sellerId,

@@ -747,11 +747,19 @@ const CheckoutPage = () => {
   }, [cartProductIdKey]);
 
   const handlePlaceOrder = async () => {
+    const orderAddress = buildAddressForOrder();
+    
+    // Validate address before placing order
+    if (!orderAddress?.address || orderAddress.address.trim() === "") {
+      showToast("Please provide a valid delivery address before placing your order.", "error");
+      return;
+    }
+    
     setIsPlacingOrder(true);
     try {
       const taxAmount = pricingPreview?.taxTotal || 0;
       const orderData = {
-        address: buildAddressForOrder(),
+        address: orderAddress,
         paymentMode: selectedPayment === "online" ? "ONLINE" : "COD",
         discountTotal: discountAmount,
         taxTotal: taxAmount,

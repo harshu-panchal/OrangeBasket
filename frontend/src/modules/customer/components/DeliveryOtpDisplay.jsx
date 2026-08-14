@@ -33,20 +33,35 @@ const matchesOrderIdentifier = (payloadOrderId, identifiers = []) => {
     .includes(normalizedPayloadId);
 };
 
-const DeliveryOtpDisplay = ({ orderId, checkoutGroupId = null }) => {
-  const [otpData, setOtpData] = useState(null);
+const DeliveryOtpDisplay = ({ orderId, checkoutGroupId = null, initialOtp = null }) => {
+  const [otpData, setOtpData] = useState(() => {
+    if (initialOtp) {
+      return {
+        otp: initialOtp.code || initialOtp.otp,
+        expiresAt: initialOtp.expiresAt,
+        deliveryPersonNearby: true
+      };
+    }
+    return null;
+  });
   const [isDelivered, setIsDelivered] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const timerRef = useRef(null);
 
-  // Calculate remaining time from expiration timestamp
   const calculateRemainingTime = (expiresAt) => {
+    if (!expiresAt) return 0;
     const now = new Date().getTime();
     const expiry = new Date(expiresAt).getTime();
     const diff = Math.floor((expiry - now) / 1000);
     return Math.max(0, diff);
   };
+
+  const [remainingSeconds, setRemainingSeconds] = useState(() => {
+    if (initialOtp && initialOtp.expiresAt) {
+      return calculateRemainingTime(initialOtp.expiresAt);
+    }
+    return 0;
+  });
 
   // Format seconds to MM:SS
   const formatTime = (seconds) => {

@@ -29,9 +29,10 @@ const LOC_MIN_MOVE_M = () =>
  * @param {string|ObjectId} deliveryId
  * @param {number} lat
  * @param {number} lng
+ * @param {string|null} [orderId=null]
  * @returns {Promise<boolean>} true when the caller should skip the update.
  */
-export async function shouldThrottle(deliveryId, lat, lng) {
+export async function shouldThrottle(deliveryId, lat, lng, orderId = null) {
   const redis = getRedisClient();
   if (!redis) return false;
   try {
@@ -42,11 +43,11 @@ export async function shouldThrottle(deliveryId, lat, lng) {
       const prev = JSON.parse(raw);
       const dt = now - prev.t;
       const d = distanceMeters(lat, lng, prev.lat, prev.lng);
-      if (dt < LOC_MIN_INTERVAL_MS() && d < LOC_MIN_MOVE_M()) {
+      if (dt < LOC_MIN_INTERVAL_MS() && d < LOC_MIN_MOVE_M() && prev.orderId === orderId) {
         return true;
       }
     }
-    await redis.set(key, JSON.stringify({ lat, lng, t: now }), "EX", 3600);
+    await redis.set(key, JSON.stringify({ lat, lng, t: now, orderId }), "EX", 3600);
   } catch {
     return false;
   }

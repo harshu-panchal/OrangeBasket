@@ -8,19 +8,19 @@ import handleResponse from "../utils/helper.js";
 import mongoose from "mongoose";
 import { WORKFLOW_STATUS } from "../constants/orderWorkflow.js";
 import {
-  writeDeliveryLocation,
-  appendTrailPoint,
-  clearOrderTracking,
-  clearRiderPresence,
+    writeDeliveryLocation,
+    appendTrailPoint,
+    clearOrderTracking,
+    clearRiderPresence,
 } from "../services/firebaseService.js";
 import { applyDeliveredSettlement } from "../services/orderSettlement.js";
 import { roundCurrency } from "../utils/money.js";
 import logger from "../services/logger.js";
 import { shouldThrottle as throttleLocationUpdate } from "../services/delivery/locationThrottleService.js";
 import {
-  getDeliveryStats as getDeliveryStatsFromService,
-  getDeliveryEarnings as getDeliveryEarningsFromService,
-  getDeliveryCodCashSummary as getDeliveryCodCashSummaryFromService,
+    getDeliveryStats as getDeliveryStatsFromService,
+    getDeliveryEarnings as getDeliveryEarningsFromService,
+    getDeliveryCodCashSummary as getDeliveryCodCashSummaryFromService,
 } from "../services/delivery/deliveryEarningsService.js";
 
 /* ===============================
@@ -348,7 +348,7 @@ export const updateDeliveryLocation = async (req, res) => {
             return handleResponse(res, 400, "Valid numeric lat and lng are required");
         }
 
-        const throttled = await throttleLocationUpdate(deliveryId, lat, lng);
+        const throttled = await throttleLocationUpdate(deliveryId, lat, lng, orderId);
         if (throttled) {
             return handleResponse(res, 200, "Location update throttled", {
                 throttled: true,
@@ -437,9 +437,9 @@ export const updateDeliveryLocation = async (req, res) => {
         // Fan out to Firebase and trail — fire-and-forget, never block the
         // response. Reaching this line guarantees activeOrderId (if set) is
         // the canonical id of an order this rider is actually assigned to.
-        writeDeliveryLocation(deliveryId, activeOrderId, snapshot).catch(() => {});
+        writeDeliveryLocation(deliveryId, activeOrderId, snapshot).catch(() => { });
         if (activeOrderId) {
-            appendTrailPoint(activeOrderId, { lat, lng, t: Date.now() }).catch(() => {});
+            appendTrailPoint(activeOrderId, { lat, lng, t: Date.now() }).catch(() => { });
         }
 
         return handleResponse(res, 200, "Location updated", {

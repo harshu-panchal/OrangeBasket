@@ -190,7 +190,7 @@ const DeliveryLayout = () => {
     shownOrderIdsRef.current = new Set(shownOrderIdsRef.current).add(newOrder.orderId);
     const total = newOrder.pricing?.total || 0;
     const isReturnPickup = newOrder.isReturnPickup || false;
-    const earnings = newOrder.riderEarnings || Math.round(total * 0.1);
+    const earnings = newOrder.delivery?.riderEarning || Math.round(total * 0.1);
     setActiveOrder({
       id: newOrder.orderId,
       mongoId: newOrder._id,

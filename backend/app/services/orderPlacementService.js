@@ -527,6 +527,18 @@ export async function placeOrderAtomic({
           method: paymentMode === "ONLINE" ? "online" : "cash",
           status: "pending",
         },
+        delivery: {
+          warehouseLocation: entry.deliveryData?.warehouseLocation,
+          customerLocation: entry.deliveryData?.customerLocation,
+          routeDistanceKm: entry.deliveryData?.routeDistanceKm,
+          routeDistanceMeters: entry.deliveryData?.routeDistanceMeters,
+          routeDurationMinutes: entry.deliveryData?.routeDurationMinutes,
+          routePolyline: entry.deliveryData?.routePolyline,
+          routeType: "road",
+          customerDeliveryCharge: entry.breakdown.deliveryFeeCharged,
+          riderEarning: entry.breakdown.riderPayoutTotal,
+          riderEarningType: entry.breakdown.snapshots?.deliverySettings?.riderEarningType || "distance"
+        },
         pricing: {
           ...entry.breakdown, // This might overwrite fields, be careful
           tip: entry.breakdown.tipTotal,

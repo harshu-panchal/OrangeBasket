@@ -209,6 +209,34 @@ const orderSchema = new mongoose.Schema(
       distanceKmRounded: { type: Number, default: 0 },
       source: { type: String, default: "haversine" },
     },
+    
+    // --- NEW Delivery Info (Source of truth for route distance & earnings) ---
+    delivery: {
+      warehouseLocation: {
+        lat: Number,
+        lng: Number
+      },
+      customerLocation: {
+        lat: Number,
+        lng: Number
+      },
+      routeDistanceKm: Number,
+      routeDistanceMeters: Number,
+      routeDurationMinutes: Number,
+      routePolyline: String,
+      routeType: {
+        type: String,
+        default: "road"
+      },
+      customerDeliveryCharge: Number,
+      riderEarning: Number,
+      riderEarningType: {
+        type: String,
+        enum: ["fixed", "distance"]
+      }
+    },
+    // -------------------------------------------------------------------------
+
     pricingSnapshot: {
       deliverySettings: {
         type: Object,

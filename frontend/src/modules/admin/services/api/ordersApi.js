@@ -24,6 +24,10 @@ export const adminOrdersApi = {
         axiosInstance.put(`/orders/returns/${orderId}/assign-delivery`, data),
     updateReturnQc: (orderId, data) =>
         axiosInstance.put(`/orders/returns/${orderId}/qc`, data),
+
+    /** Fetch the driving-route polyline for a live order (same endpoint used by customer & delivery apps). */
+    getOrderRoute: (orderId, params) =>
+        axiosInstance.get(`/orders/workflow/${orderId}/route`, { params }),
 };
 
 export default adminOrdersApi;

@@ -2,6 +2,7 @@ import Order from "../models/order.js";
 import Delivery from "../models/delivery.js";
 import Seller from "../models/seller.js";
 import CheckoutGroup from "../models/checkoutGroup.js";
+import OrderOtp from "../models/orderOtp.js";
 import { WORKFLOW_STATUS } from "../constants/orderWorkflow.js";
 import { distanceMeters } from "../utils/geoUtils.js";
 import {
@@ -452,6 +453,7 @@ export async function getOrderWithAccess(orderId, userId, role) {
     .populate("deliveryBoy", "name phone")
     .populate("returnDeliveryBoy", "name phone")
     .populate("seller", "shopName name address phone location")
+    .populate("warehouseId", "name address phone location")
     .lean();
 
   if (!order) {
@@ -572,6 +574,36 @@ export async function getOrderWithAccess(orderId, userId, role) {
       "Access denied. You are not authorized to view this order.",
       403,
     );
+  }
+
+  if (isOwnerCustomer) {
+    const now = new Date();
+    
+    if (order.workflowStatus === WORKFLOW_STATUS.PICKUP_READY || order.workflowStatus === WORKFLOW_STATUS.DELIVERY_STARTED) {
+      const deliveryOtp = await OrderOtp.findOne({ 
+        orderId, 
+        type: 'delivery', 
+        consumedAt: null, 
+        expiresAt: { $gt: now } 
+      }).sort({ lastGeneratedAt: -1 }).lean();
+      
+      if (deliveryOtp) {
+        order.deliveryOtp = { code: deliveryOtp.code, expiresAt: deliveryOtp.expiresAt };
+      }
+    }
+    
+    if (order.returnStatus === "return_pickup_assigned") {
+      const returnOtp = await OrderOtp.findOne({ 
+        orderId, 
+        type: 'return_pickup', 
+        consumedAt: null, 
+        expiresAt: { $gt: now } 
+      }).sort({ lastGeneratedAt: -1 }).lean();
+      
+      if (returnOtp) {
+        order.returnPickupOtp = { code: returnOtp.code, expiresAt: returnOtp.expiresAt };
+      }
+    }
   }
 
   return {

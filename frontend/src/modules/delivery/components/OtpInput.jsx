@@ -111,20 +111,37 @@ const OtpInput = ({ orderId, isReturn = false, isReturnDrop = false, onSuccess, 
 
     setIsGenerating(true);
     try {
-      const response = isReturn
-        ? await deliveryApi.requestReturnOtp(orderId, {})
-        : await deliveryApi.requestDeliveryOtp(orderId, {});
-      toast.success(response.data?.message || "OTP generated and sent to customer");
+      const response = isReturnDrop
+        ? await deliveryApi.requestReturnDropOtp(orderId, {})
+        : isReturn
+          ? await deliveryApi.requestReturnOtp(orderId, {})
+          : await deliveryApi.requestDeliveryOtp(orderId, {});
+      toast.success(response.data?.message || "OTP generated successfully");
       setError(null);
       setLastErrorCode(null);
       clearInputs();
     } catch (err) {
+      const respData = err.response?.data || {};
+      const structured =
+        (respData.result && respData.result.error) ||
+        (typeof respData.error === "object" ? respData.error : null) ||
+        {};
       const errorMessage =
-        err.response?.data?.error?.message ||
+        structured.message ||
+        respData.message ||
         err.message ||
         "Failed to generate OTP";
-      toast.error(errorMessage);
-      setError(errorMessage);
+      
+      const errorCode = structured.code;
+      if (errorCode === "PROXIMITY_OUT_OF_RANGE") {
+        const details = err.response?.data?.error?.details;
+        const distance = details?.currentDistance;
+        const range = details?.requiredRange || "0-120m";
+        toast.error(`You are too ${distance > 120 ? "far" : "close"}. You must be within ${range} of the location.`, { duration: 5000 });
+      } else {
+        toast.error(errorMessage);
+        setError(errorMessage);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -291,22 +308,7 @@ const OtpInput = ({ orderId, isReturn = false, isReturnDrop = false, onSuccess, 
         </div>
       )}
 
-      {["OTP_NOT_FOUND", "OTP_EXPIRED", "OTP_CONSUMED"].includes(lastErrorCode) && (
-        <button
-          onClick={handleGenerateOtp}
-          disabled={isLoading || isGenerating}
-          className="w-full h-10 rounded-xl font-semibold text-primary-foreground bg-black  hover:bg-brand-700 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Generating OTP...</span>
-            </>
-          ) : (
-            <span>Generate New OTP</span>
-          )}
-        </button>
-      )}
+
 
       {/* Submit Button */}
       {/* Enable submit button only when 4 digits entered */}
@@ -338,6 +340,22 @@ const OtpInput = ({ orderId, isReturn = false, isReturnDrop = false, onSuccess, 
         className="w-full h-10 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all duration-200 outline-none focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Clear
+      </button>
+
+      {/* Resend OTP Button */}
+      <button
+        onClick={handleGenerateOtp}
+        disabled={isLoading || isGenerating}
+        className="w-full h-10 rounded-xl font-medium text-primary bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all duration-200 outline-none focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Sending...</span>
+          </>
+        ) : (
+          <span>Resend OTP</span>
+        )}
       </button>
 
       {/* Cancel Button (Optional) */}

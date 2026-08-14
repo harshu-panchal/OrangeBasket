@@ -225,7 +225,7 @@ export async function createPendingRiderPayout(order, { session, actorId } = {})
   }
   if (order.financeFlags?.riderPayoutQueued) return null;
 
-  const amount = roundCurrency(order.paymentBreakdown?.riderPayoutTotal || 0);
+  const amount = roundCurrency(order.delivery?.riderEarning ?? order.paymentBreakdown?.riderPayoutTotal ?? 0);
   if (amount <= 0) {
     order.settlementStatus = {
       ...(order.settlementStatus || {}),

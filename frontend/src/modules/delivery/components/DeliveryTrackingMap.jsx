@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, OverlayViewF, OverlayView } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
 import customerPin from "@/assets/customer-pin.png";
 import { deliveryApi } from "../services/deliveryApi";
@@ -132,10 +132,16 @@ const DeliveryTrackingMapComponent = ({
     libraries,
   });
 
+  const isSimulatingRef = useRef(false);
+  const simulationIntervalRef = useRef(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
   useEffect(() => {
     if (!navigator.geolocation) return undefined;
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (isSimulatingRef.current) return; // Ignore real GPS during simulation
+        
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const accuracy = pos.coords.accuracy;
@@ -178,6 +184,9 @@ const DeliveryTrackingMapComponent = ({
         locationAbortRef.current = null;
       }
       locationInFlightRef.current = false;
+      if (simulationIntervalRef.current) {
+        cancelAnimationFrame(simulationIntervalRef.current);
+      }
     };
   }, [orderId]);
 
@@ -476,6 +485,85 @@ const DeliveryTrackingMapComponent = ({
     };
   }, [linePath, rider, dest, focusOnRider500m]);
 
+  const [heading, setHeading] = useState(0);
+
+  const startSimulation = useCallback(() => {
+    if (isSimulating) {
+      setIsSimulating(false);
+      isSimulatingRef.current = false;
+      cancelAnimationFrame(simulationIntervalRef.current);
+      return;
+    }
+
+    if (!linePath || linePath.length < 2) return;
+    setIsSimulating(true);
+    isSimulatingRef.current = true;
+
+    const path = linePath.map(p => ({ lat: p.lat(), lng: p.lng() }));
+    let currentSegment = 0;
+    let fraction = 0; 
+    const speed = 0.5; // Smooth but reasonably fast movement (approx ~30-40km/h depending on frame rate)
+    let lastPostTime = Date.now();
+
+    const animate = () => {
+      if (!isSimulatingRef.current) return;
+      if (currentSegment >= path.length - 1) {
+        setIsSimulating(false);
+        isSimulatingRef.current = false;
+        return;
+      }
+
+      const p1 = new window.google.maps.LatLng(path[currentSegment].lat, path[currentSegment].lng);
+      const p2 = new window.google.maps.LatLng(path[currentSegment + 1].lat, path[currentSegment + 1].lng);
+      const dist = window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+      
+      if (dist === 0) {
+        currentSegment++;
+        simulationIntervalRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      // Compute heading to rotate rider marker
+      const newHeading = window.google.maps.geometry.spherical.computeHeading(p1, p2);
+      setHeading(newHeading);
+
+      fraction += speed / dist;
+
+      if (fraction >= 1) {
+        fraction = 0;
+        currentSegment++;
+        simulationIntervalRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      const interpolated = window.google.maps.geometry.spherical.interpolate(p1, p2, fraction);
+      const nextPoint = { lat: interpolated.lat(), lng: interpolated.lng() };
+
+      setRider(nextPoint);
+      riderRef.current = nextPoint;
+
+      // Update the polyline visually so it decreases
+      if (routePolylineRef.current) {
+        const remainingPath = [interpolated, ...linePath.slice(currentSegment + 1)];
+        routePolylineRef.current.setPath(remainingPath);
+      }
+
+      // Post location to backend every 1.5 seconds during simulation
+      const now = Date.now();
+      if (now - lastPostTime > 1500) {
+        lastPostTime = now;
+        deliveryApi.postLocation(
+          { lat: nextPoint.lat, lng: nextPoint.lng, accuracy: 5, heading: newHeading, orderId: orderId || null },
+          {}
+        ).catch(() => {});
+      }
+
+      simulationIntervalRef.current = requestAnimationFrame(animate);
+    };
+
+    simulationIntervalRef.current = requestAnimationFrame(animate);
+  }, [isSimulating, linePath, orderId]);
+
   if (!apiKey) {
     return (
       <div className="relative w-full h-48 bg-slate-100 rounded-2xl flex items-center justify-center text-center px-4">
@@ -519,11 +607,31 @@ const DeliveryTrackingMapComponent = ({
         }}
       >
         {rider && (
-          <Marker
+          <OverlayViewF
             position={rider}
-            title="Your location"
-            icon={riderMarkerIcon}
-          />
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+            getPixelPositionOffset={(width, height) => ({
+              x: -(width / 2),
+              y: -height,
+            })}
+          >
+            <div
+              style={{
+                width: "44px",
+                height: "64px",
+                transform: `rotate(${heading}deg)`,
+                transformOrigin: "bottom center",
+                transition: "transform 0.1s linear",
+                willChange: "transform",
+              }}
+            >
+              <img
+                src={deliveryIcon}
+                alt="Rider"
+                style={{ width: "100%", height: "100%", display: "block" }}
+              />
+            </div>
+          </OverlayViewF>
         )}
         {dest && (
           <Marker
@@ -552,6 +660,24 @@ const DeliveryTrackingMapComponent = ({
       <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-md text-[10px] text-slate-600 font-bold border border-slate-200 shadow-sm">
         {routeLoading ? "Updating route…" : "Tracking View"}
       </div>
+      
+      {import.meta.env.DEV && linePath?.length > 0 && (
+        <button
+          onClick={startSimulation}
+          className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-bold shadow-lg z-50 flex items-center gap-2 transition-all duration-300 ${
+            isSimulating ? "bg-rose-500 text-white" : "bg-purple-600 text-white hover:bg-purple-700"
+          }`}
+        >
+          {isSimulating ? (
+            <>
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse" /> Stop Simulation
+            </>
+          ) : (
+            "Simulate Ride"
+          )}
+        </button>
+      )}
+
       {routeData?.degraded && (
         <div className="absolute top-2 left-2 bg-amber-50/95 text-amber-900 text-[10px] px-2 py-1 rounded border border-amber-200 max-w-[85%] leading-snug">
           Route unavailable. Add{" "}

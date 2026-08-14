@@ -344,38 +344,34 @@ const OrderDetailPage = () => {
     };
   }, [orderId, extraRoomId]);
 
-  // Subscribe to live tracking from Firebase (if available).
-  //
-  // Realtime DB writes from the rider/server are keyed on the canonical
-  // `order.orderId`. The URL param may be a checkoutGroupId / alias / Mongo
-  // _id, so subscribing on the raw URL produces zero updates for those
-  // surfaces. We re-pin the subscriptions whenever the resolved canonical
-  // id changes (i.e. once the order has loaded).
+  // ── Firebase RTDB: live rider location + cached route polyline ─────────────
   useEffect(() => {
-    const trackingId = canonicalOrderId;
-    if (!trackingId) return;
+    if (!orderId) return undefined;
+    if (status === "delivered" || status === "cancelled") return undefined;
 
-    console.log(`[OrderDetailPage] Setting up Firebase subscriptions for order ${trackingId}`);
-    const offLocation = subscribeToOrderLocation(trackingId, (loc) => {
-      console.log(`[OrderDetailPage] Location update:`, loc);
-      setLiveLocation(loc);
+    const unsubLoc = subscribeToOrderLocation(orderId, (loc) => {
+      if (
+        loc &&
+        Number.isFinite(loc.lat) &&
+        Number.isFinite(loc.lng)
+      ) {
+        setLiveLocation({ lat: loc.lat, lng: loc.lng });
+      }
     });
-    const offTrail = subscribeToOrderTrail(trackingId, (t) => {
-      console.log(`[OrderDetailPage] Trail update: ${t.length} points`);
-      setTrail(t);
-    });
-    const offRoute = subscribeToOrderRoute(trackingId, (route) => {
-      console.log(`[OrderDetailPage] Route update:`, route);
-      setRoutePolyline(route);
+
+    const unsubRoute = subscribeToOrderRoute(orderId, (routeData) => {
+      if (routeData?.polyline) {
+        setRoutePolyline(routeData);
+      }
     });
 
     return () => {
-      console.log(`[OrderDetailPage] Cleaning up Firebase subscriptions for order ${trackingId}`);
-      offLocation && offLocation();
-      offTrail && offTrail();
-      offRoute && offRoute();
+      unsubLoc();
+      unsubRoute();
     };
-  }, [canonicalOrderId]);
+    // Re-subscribe if the canonical id or status changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, canonicalOrderId]);
 
   useEffect(() => {
     const iv = setInterval(() => setClockTick(Date.now()), 30000);
@@ -451,6 +447,30 @@ const OrderDetailPage = () => {
   };
 
   const status = order ? getLegacyStatusFromOrder(order) : null;
+
+  /**
+   * mapStatus — what we tell LiveTrackingMap.
+   *
+   * getLegacyStatusFromOrder maps DELIVERY_ASSIGNED → "confirmed" which makes
+   * the map show the "Searching for delivery partner" animation even though a
+   * rider IS assigned.  Override that: if a deliveryBoy exists OR workflowStatus
+   * indicates a rider is on their way, promote to "out_for_delivery" for the
+   * map so it shows the actual Google Maps view with the rider marker.
+   */
+  const mapStatus = useMemo(() => {
+    if (!order) return status;
+    const ws = String(order.workflowStatus || "").toUpperCase();
+    const riderActive =
+      Boolean(order.deliveryBoy) ||
+      ws === "DELIVERY_ASSIGNED" ||
+      ws === "PICKUP_READY" ||
+      ws === "OUT_FOR_DELIVERY" ||
+      ws === "DELIVERED" ||
+      (Number(order.deliveryRiderStep) || 0) >= 1;
+    if (riderActive && status === "confirmed") return "out_for_delivery";
+    return status;
+  }, [order, status]);
+
   const isAwaitingOnlinePayment =
     Boolean(order) &&
     order.paymentMode === "ONLINE" &&
@@ -523,12 +543,14 @@ const OrderDetailPage = () => {
 
   useEffect(() => {
     if (!orderId || status === "delivered" || status === "cancelled") return;
-    if (!hasValidLatLng(liveLocation)) return;
 
-    const currentOrigin = {
-      lat: liveLocation.lat,
-      lng: liveLocation.lng,
-    };
+    // If rider location isn't available yet, fallback to seller location so we can at least show the polyline
+    const currentOrigin = hasValidLatLng(liveLocation)
+      ? { lat: liveLocation.lat, lng: liveLocation.lng }
+      : sellerLocation;
+
+    if (!currentOrigin || !hasValidLatLng(currentOrigin)) return;
+
     const originDrift =
       routeOriginRef.current && hasValidLatLng(routeOriginRef.current)
         ? distanceMeters(routeOriginRef.current, currentOrigin)
@@ -556,8 +578,8 @@ const OrderDetailPage = () => {
     customerApi
       .getOrderRoute(orderId, {
         phase: routePhase,
-        originLat: liveLocation.lat,
-        originLng: liveLocation.lng,
+        originLat: currentOrigin.lat,
+        originLng: currentOrigin.lng,
         _t: now,
       })
       .then((response) => {
@@ -809,33 +831,9 @@ const OrderDetailPage = () => {
           </motion.div>
         )}
 
-        {/* Enhanced Map with Cleaner Design - Hide when delivered or cancelled */}
-        {!isAwaitingOnlinePayment && status !== "delivered" && status !== "cancelled" && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl overflow-hidden shadow-lg border border-slate-200/50"
-          >
-            <LiveTrackingMap
-              status={order.workflowStatus || order.status}
-              eta={estimatedArrival.arrivingInText}
-              riderName={order.deliveryBoy?.name || "Delivery Partner"}
-              riderPhone={order.deliveryBoy?.phone || ""}
-              riderLocation={liveLocation}
-              sellerLocation={sellerLocation}
-              destinationLocation={
-                order.address?.location?.lat
-                  ? order.address.location
-                  : activeRoutePolyline?.destination || null
-              }
-              routePhase={routePhase}
-              routePolyline={activeRoutePolyline}
-              onOpenInMaps={handleOpenInMaps}
-            />
-          </motion.div>
-        )}
 
-        {/* Order Progress Tracker - New Component */}
+
+        {/* Order Progress Tracker */}
         {!isAwaitingOnlinePayment && (
           <OrderProgressTracker
             order={order}
@@ -845,10 +843,13 @@ const OrderDetailPage = () => {
           />
         )}
 
+        {/* Live Tracking Map removed per user request */}
+
         {/* Proximity-based Delivery OTP Display */}
         <DeliveryOtpDisplay
           orderId={order?.orderId || orderId}
           checkoutGroupId={order?.checkoutGroupId || orderId}
+          initialOtp={order?.deliveryOtp}
         />
 
         {/* Delivery Partner Card - Redesigned */}
@@ -904,9 +905,9 @@ const OrderDetailPage = () => {
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-xs font-bold text-orange-600 uppercase tracking-wider">Pickup Location</p>
               </div>
-              <h4 className="font-bold text-slate-900 text-base mb-1">Store Location</h4>
+              <h4 className="font-bold text-slate-900 text-base mb-1">{order.seller?.shopName || order.warehouseId?.name || "Store Location"}</h4>
               <p className="text-sm text-slate-500 leading-relaxed">
-                {order.address?.address || "Address not available"}
+                {order.seller?.address || order.warehouseId?.address || "Address not available"}
               </p>
             </div>
             <button
@@ -938,7 +939,7 @@ const OrderDetailPage = () => {
               </div>
               <h4 className="font-bold text-slate-900 text-base mb-1">{order.address.name}</h4>
               <p className="text-sm text-slate-500 leading-relaxed">
-                {order.address.address}, {order.address.city}
+                {[order.address.address, order.address.city].filter(Boolean).join(", ") || "Address not available"}
               </p>
               {order.address?.location &&
                 typeof order.address.location.lat === "number" &&

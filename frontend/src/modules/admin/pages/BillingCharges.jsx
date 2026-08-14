@@ -9,7 +9,8 @@ import {
     Settings,
     Zap,
     MapPin,
-    History
+    History,
+    Bike
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
@@ -18,21 +19,25 @@ import { adminApi } from '../services/adminApi';
 const BillingCharges = () => {
     const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
-    const [deliveryMode, setDeliveryMode] = useState('distance'); // 'fixed' or 'distance'
-    const [returnDeliveryCommission, setReturnDeliveryCommission] = useState(0);
 
     const [config, setConfig] = useState({
         platformFee: 0,
         freeDeliveryThreshold: 0,
-        baseCharge: 30,
-        riderBasePayout: 30,
-        baseDistance: 0.5,
-        extraPerKm: 10,
-        deliveryPartnerRatePerKm: 5,
-        fixedCharge: 30,
         handlingFeeStrategy: "highest_category_fee",
         codEnabled: true,
         onlineEnabled: true,
+        // Customer
+        customerPricingType: 'distance',
+        customerFixedCharge: 30,
+        customerBaseDistance: 4,
+        customerBaseCharge: 30,
+        customerExtraPerKm: 10,
+        // Rider
+        riderEarningType: 'distance',
+        riderFixedEarning: 20,
+        riderBaseDistance: 4,
+        riderBaseEarning: 25,
+        riderExtraPerKm: 5,
     });
 
     useEffect(() => {
@@ -43,24 +48,25 @@ const BillingCharges = () => {
                     adminApi.getDeliveryFinanceSettings(),
                 ]);
 
-                if (platformRes.data?.success && platformRes.data.result) {
-                    setReturnDeliveryCommission(platformRes.data.result.returnDeliveryCommission ?? 0);
-                }
-
                 if (deliveryRes.data?.success && deliveryRes.data.result) {
                     const s = deliveryRes.data.result;
-                    setDeliveryMode(s.deliveryPricingMode === 'fixed_price' ? 'fixed' : 'distance');
                     setConfig((prev) => ({
                         ...prev,
-                        baseCharge: s.customerBaseDeliveryFee ?? s.baseDeliveryCharge ?? prev.baseCharge,
-                        riderBasePayout: s.riderBasePayout ?? s.customerBaseDeliveryFee ?? prev.riderBasePayout,
-                        baseDistance: s.baseDistanceCapacityKm ?? prev.baseDistance,
-                        extraPerKm: s.incrementalKmSurcharge ?? prev.extraPerKm,
-                        deliveryPartnerRatePerKm: s.deliveryPartnerRatePerKm ?? s.fleetCommissionRatePerKm ?? prev.deliveryPartnerRatePerKm,
-                        fixedCharge: s.fixedDeliveryFee ?? s.customerBaseDeliveryFee ?? prev.fixedCharge,
                         handlingFeeStrategy: s.handlingFeeStrategy ?? prev.handlingFeeStrategy,
                         codEnabled: s.codEnabled ?? prev.codEnabled,
                         onlineEnabled: s.onlineEnabled ?? prev.onlineEnabled,
+                        // Customer
+                        customerPricingType: s.customerPricingType || 'distance',
+                        customerFixedCharge: s.customerFixedCharge ?? prev.customerFixedCharge,
+                        customerBaseDistance: s.customerBaseDistance ?? prev.customerBaseDistance,
+                        customerBaseCharge: s.customerBaseCharge ?? prev.customerBaseCharge,
+                        customerExtraPerKm: s.customerExtraPerKm ?? prev.customerExtraPerKm,
+                        // Rider
+                        riderEarningType: s.riderEarningType || 'distance',
+                        riderFixedEarning: s.riderFixedEarning ?? prev.riderFixedEarning,
+                        riderBaseDistance: s.riderBaseDistance ?? prev.riderBaseDistance,
+                        riderBaseEarning: s.riderBaseEarning ?? prev.riderBaseEarning,
+                        riderExtraPerKm: s.riderExtraPerKm ?? prev.riderExtraPerKm,
                     }));
                 }
             } catch (error) {
@@ -73,29 +79,25 @@ const BillingCharges = () => {
     const handleSave = async () => {
         try {
             setIsSaving(true);
-            await Promise.all([
-                adminApi.updatePlatformSettings({
-                    returnDeliveryCommission,
-                }),
-                adminApi.updateDeliveryFinanceSettings({
-                    deliveryPricingMode: deliveryMode === 'fixed' ? 'fixed_price' : 'distance_based',
-                    customerBaseDeliveryFee: config.baseCharge,
-                    riderBasePayout: config.riderBasePayout,
-                    baseDeliveryCharge: config.baseCharge,
-                    baseDistanceCapacityKm: config.baseDistance,
-                    incrementalKmSurcharge: config.extraPerKm,
-                    deliveryPartnerRatePerKm: config.deliveryPartnerRatePerKm,
-                    fleetCommissionRatePerKm: config.deliveryPartnerRatePerKm,
-                    fixedDeliveryFee: config.fixedCharge,
-                    handlingFeeStrategy: config.handlingFeeStrategy,
-                    codEnabled: config.codEnabled,
-                    onlineEnabled: config.onlineEnabled,
-                }),
-            ]);
+            await adminApi.updateDeliveryFinanceSettings({
+                handlingFeeStrategy: config.handlingFeeStrategy,
+                codEnabled: config.codEnabled,
+                onlineEnabled: config.onlineEnabled,
+                customerPricingType: config.customerPricingType,
+                customerFixedCharge: config.customerFixedCharge,
+                customerBaseDistance: config.customerBaseDistance,
+                customerBaseCharge: config.customerBaseCharge,
+                customerExtraPerKm: config.customerExtraPerKm,
+                riderEarningType: config.riderEarningType,
+                riderFixedEarning: config.riderFixedEarning,
+                riderBaseDistance: config.riderBaseDistance,
+                riderBaseEarning: config.riderBaseEarning,
+                riderExtraPerKm: config.riderExtraPerKm,
+            });
 
             showToast('Delivery finance settings updated', 'success');
         } catch (error) {
-            console.error('Failed to update platform settings', error);
+            console.error('Failed to update fees settings', error);
             showToast('Failed to update fees settings', 'error');
         } finally {
             setIsSaving(false);
@@ -142,182 +144,139 @@ const BillingCharges = () => {
                 </div>
             </div>
 
-
             <div className="max-w-4xl mx-auto text-left">
-                {/* Main Configuration Core */}
                 <div className="space-y-8">
-                    {/* General Financial Thresholds */}
-                    <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-[32px] overflow-hidden">
-                        <div className="p-6 border-b border-slate-50 bg-slate-50/30">
-                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
-                                <Settings className="h-4 w-4 text-slate-400" />
-                                Main Charges
-                            </h3>
-                        </div>
-                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    Platform/Handling Fee (₹)
-                                    <Info className="h-3 w-3 opacity-50" />
-                                </label>
-                                <div className="relative group">
-                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within:text-red-500 transition-colors">₹</span>
-                                    <input
-                                        type="number"
-                                        value={config.platformFee}
-                                        onChange={(e) => handleInputChange('platformFee', e.target.value)}
-                                        className="w-full pl-10 pr-5 py-4 bg-slate-50 border-none rounded-2xl text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-red-500/10 transition-all"
-                                    />
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-400 italic">Fee added to every order.</p>
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    Free Delivery Minimum (₹)
-                                    <Zap className="h-3 w-3 text-amber-500" />
-                                </label>
-                                <div className="relative group">
-                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within:text-red-500 transition-colors">₹</span>
-                                    <input
-                                        type="number"
-                                        value={config.freeDeliveryThreshold}
-                                        onChange={(e) => handleInputChange('freeDeliveryThreshold', e.target.value)}
-                                        className="w-full pl-10 pr-5 py-4 bg-slate-50 border-none rounded-2xl text-base font-black text-slate-900 outline-none focus:ring-2 focus:ring-red-500/10 transition-all"
-                                    />
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-400 italic">Orders above this amount will have free delivery.</p>
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Delivery Fee Settings */}
+                    
+                    {/* Customer Delivery Fee Settings */}
                     <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-[32px] overflow-hidden">
                         <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
                                 <Truck className="h-4 w-4 text-brand-500" />
-                                Delivery Fee Settings
+                                Customer Delivery Charge
                             </h3>
                             <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
                                 <button
-                                    onClick={() => setDeliveryMode('fixed')}
-                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", deliveryMode === 'fixed' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                                    onClick={() => setConfig(prev => ({...prev, customerPricingType: 'fixed'}))}
+                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", config.customerPricingType === 'fixed' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
                                 >Fixed Price</button>
                                 <button
-                                    onClick={() => setDeliveryMode('distance')}
-                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", deliveryMode === 'distance' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                                    onClick={() => setConfig(prev => ({...prev, customerPricingType: 'distance'}))}
+                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", config.customerPricingType === 'distance' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
                                 >Distance Based</button>
                             </div>
                         </div>
                         <div className="p-8">
-                            {deliveryMode === 'distance' ? (
-                                <>
-                                    <div className="bg-brand-50 border border-brand-100 rounded-2xl p-4 mb-8 flex gap-4">
-                                        <MapPin className="h-5 w-5 text-brand-500 shrink-0 mt-0.5" />
-                                        <div className="space-y-1">
-                                            <p className="text-[11px] font-black text-brand-900 uppercase tracking-tight">Location Accuracy</p>
-                                            <p className="text-[10px] font-bold text-brand-700 leading-relaxed italic">Requires Google Maps API. Without it, the system will use straight-line distance.</p>
-                                        </div>
+                            {config.customerPricingType === 'distance' ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Distance (km)</label>
+                                        <input
+                                            type="number" step="0.1"
+                                            value={config.customerBaseDistance}
+                                            onChange={(e) => handleInputChange('customerBaseDistance', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
                                     </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Delivery Charge (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={config.baseCharge}
-                                                onChange={(e) => handleInputChange('baseCharge', e.target.value)}
-                                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                            />
-                                            <p className="text-[10px] font-bold text-slate-400 italic">Customer-facing minimum fee for first X kms.</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rider Base Payout (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={config.riderBasePayout}
-                                                onChange={(e) => handleInputChange('riderBasePayout', e.target.value)}
-                                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                            />
-                                            <p className="text-[10px] font-bold text-slate-400 italic">Base payout for delivery partner within base radius.</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Distance Capacity (km)</label>
-                                            <div className="relative group">
-                                                <input
-                                                    type="number"
-                                                    step="0.1"
-                                                    value={config.baseDistance}
-                                                    onChange={(e) => handleInputChange('baseDistance', e.target.value)}
-                                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                                />
-                                                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 uppercase">km</span>
-                                            </div>
-                                            <p className="text-[10px] font-bold text-slate-400 italic">Radius covered by the base charge.</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Incremental Km Surcharge (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={config.extraPerKm}
-                                                onChange={(e) => handleInputChange('extraPerKm', e.target.value)}
-                                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                            />
-                                            <p className="text-[10px] font-bold text-slate-400 italic">Charged for every km beyond base radius.</p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery Partner Rate (₹/km)</label>
-                                            <input
-                                                type="number"
-                                                value={config.deliveryPartnerRatePerKm}
-                                                onChange={(e) => handleInputChange('deliveryPartnerRatePerKm', e.target.value)}
-                                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                            />
-                                            <p className="text-[10px] font-bold text-slate-400 italic">Net payout to delivery partner per km.</p>
-                                        </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Charge (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.customerBaseCharge}
+                                            onChange={(e) => handleInputChange('customerBaseCharge', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
                                     </div>
-                                </>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Extra Per Km (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.customerExtraPerKm}
+                                            onChange={(e) => handleInputChange('customerExtraPerKm', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <label className="text-base font-bold text-slate-900">Fixed Delivery Charge (₹)</label>
-                                        <div className="relative group max-w-md">
-                                            <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within:text-slate-900 transition-colors">₹</span>
-                                            <input
-                                                type="number"
-                                                value={config.fixedCharge}
-                                                onChange={(e) => handleInputChange('fixedCharge', e.target.value)}
-                                                className="w-full pl-10 pr-5 py-4 bg-white ring-1 ring-slate-200 border-none rounded-xl text-base font-medium text-slate-900 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all"
-                                            />
-                                        </div>
-                                        <p className="text-sm font-medium text-slate-400">Flat fee charged for all deliveries below threshold.</p>
+                                    <div className="space-y-3 max-w-md">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fixed Charge (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.customerFixedCharge}
+                                            onChange={(e) => handleInputChange('customerFixedCharge', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
                                     </div>
                                 </div>
                             )}
-
-                            <div className="mt-8 pt-6 border-t border-dashed border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        Return Delivery Commission (per pickup)
-                                    </label>
-                                    <div className="relative group max-w-md">
-                                        <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-slate-300 group-focus-within:text-slate-900 transition-colors">₹</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={returnDeliveryCommission}
-                                            onChange={(e) =>
-                                                setReturnDeliveryCommission(Number(e.target.value) || 0)
-                                            }
-                                            className="w-full pl-10 pr-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] font-bold text-slate-400">
-                                        Flat amount paid to delivery partner for each approved return pickup (deducted from seller earnings).
-                                    </p>
-                                </div>
-                            </div>
                         </div>
                     </Card>
+
+                    {/* Delivery Boy Earning Settings */}
+                    <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-[32px] overflow-hidden">
+                        <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                <Bike className="h-4 w-4 text-emerald-500" />
+                                Delivery Boy Earning
+                            </h3>
+                            <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+                                <button
+                                    onClick={() => setConfig(prev => ({...prev, riderEarningType: 'fixed'}))}
+                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", config.riderEarningType === 'fixed' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                                >Fixed Payout</button>
+                                <button
+                                    onClick={() => setConfig(prev => ({...prev, riderEarningType: 'distance'}))}
+                                    className={cn("px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all", config.riderEarningType === 'distance' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+                                >Distance Based</button>
+                            </div>
+                        </div>
+                        <div className="p-8">
+                            {config.riderEarningType === 'distance' ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Distance (km)</label>
+                                        <input
+                                            type="number" step="0.1"
+                                            value={config.riderBaseDistance}
+                                            onChange={(e) => handleInputChange('riderBaseDistance', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Base Earning (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.riderBaseEarning}
+                                            onChange={(e) => handleInputChange('riderBaseEarning', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Extra Per Km (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.riderExtraPerKm}
+                                            onChange={(e) => handleInputChange('riderExtraPerKm', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="space-y-3 max-w-md">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fixed Earning (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={config.riderFixedEarning}
+                                            onChange={(e) => handleInputChange('riderFixedEarning', e.target.value)}
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-900 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+
                 </div>
             </div>
         </div>

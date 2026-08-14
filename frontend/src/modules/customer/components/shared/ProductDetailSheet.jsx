@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, AnimatePresence, useAnimation, useDragControls } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, ChevronDown, Share2, Heart, Search, Clock, Minus, Plus, ShoppingBag, ShoppingCart, Star, MessageSquare, ArrowLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronDown, Share2, Heart, Search, Clock, Minus, Plus, ShoppingBag, ShoppingCart, Star, MessageSquare, ArrowLeft, ChevronRight, Store, Building2 } from 'lucide-react';
 import { useProductDetail } from '../../context/ProductDetailContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -550,6 +550,22 @@ const ProductDetailSheet = () => {
                                                 <span className="text-[13px] text-gray-400 font-bold uppercase tracking-wider">{selectedProduct.weight}</span>
                                             )}
                                         </motion.div>
+
+                                        {/* Seller / Warehouse Name */}
+                                        {(selectedProduct.sellerId?.shopName || selectedProduct.warehouseId?.name) && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.17 }}
+                                                className="flex items-center gap-1.5 mt-2 mb-3 text-[13px] font-semibold text-slate-500"
+                                            >
+                                                {selectedProduct.sellerId?.shopName ? (
+                                                    <><Store size={15} className="text-slate-400" /> <span>{selectedProduct.sellerId.shopName}</span></>
+                                                ) : (
+                                                    <><Building2 size={15} className="text-slate-400" /> <span>{selectedProduct.warehouseId?.name}</span></>
+                                                )}
+                                            </motion.div>
+                                        )}
 
                                         {/* Price + Add-to-Cart Card */}
                                         <motion.div
