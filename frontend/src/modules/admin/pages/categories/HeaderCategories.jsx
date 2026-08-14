@@ -20,29 +20,7 @@ import IconSelector from "@shared/components/IconSelector";
 import Pagination from "@shared/components/ui/Pagination";
 import { getIconSvg } from "@shared/constants/categoryIcons";
 
-// MUI icon library (shared with customer app & icon selector)
-import HomeIcon from "@mui/icons-material/Home";
-import DevicesIcon from "@mui/icons-material/Devices";
-import LocalGroceryStoreIcon from "@mui/icons-material/LocalGroceryStore";
-import KitchenIcon from "@mui/icons-material/Kitchen";
-import ChildCareIcon from "@mui/icons-material/ChildCare";
-import PetsIcon from "@mui/icons-material/Pets";
-import SportsSoccerIcon from "@mui/icons-material/SportsSoccer";
-import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import SpaIcon from "@mui/icons-material/Spa";
-import ToysIcon from "@mui/icons-material/Toys";
-import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
-import YardIcon from "@mui/icons-material/Yard";
-import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
-import MusicNoteIcon from "@mui/icons-material/MusicNote";
-import CheckroomIcon from "@mui/icons-material/Checkroom";
-import LocalCafeIcon from "@mui/icons-material/LocalCafe";
-import DiamondIcon from "@mui/icons-material/Diamond";
-import ColorLensIcon from "@mui/icons-material/ColorLens";
-import BuildIcon from "@mui/icons-material/Build";
-import LuggageIcon from "@mui/icons-material/Luggage";
+// Emojis for Header Categories
 
 const makeSlug = (value) =>
   String(value || "")
@@ -77,6 +55,7 @@ const HeaderCategories = () => {
     iconId: "",
     adminCommission: "",
     handlingFees: "",
+    sortOrder: 0,
     headerColor: "#FF1E1E",
     headerFontColor: "#111111",
     headerIconColor: "#111111",
@@ -86,29 +65,35 @@ const HeaderCategories = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Map our icon ids to MUI icon components so admin UI
-  // previews the same icons used in the customer app.
   const iconComponents = {
-    electronics: DevicesIcon,
-    fashion: CheckroomIcon,
-    home: HomeIcon,
-    food: LocalCafeIcon,
-    sports: SportsSoccerIcon,
-    books: MenuBookIcon,
-    beauty: SpaIcon,
-    toys: ToysIcon,
-    automotive: DirectionsCarIcon,
-    pets: PetsIcon,
-    health: LocalHospitalIcon,
-    garden: YardIcon,
-    office: BusinessCenterIcon,
-    music: MusicNoteIcon,
-    jewelry: DiamondIcon,
-    baby: ChildCareIcon,
-    tools: BuildIcon,
-    luggage: LuggageIcon,
-    art: ColorLensIcon,
-    grocery: LocalGroceryStoreIcon,
+    electronics: "📱",
+    fashion: "👕",
+    home: "🏠",
+    food: "🍔",
+    sports: "⚽",
+    books: "📚",
+    beauty: "💄",
+    toys: "🧸",
+    automotive: "🚗",
+    pets: "🐾",
+    health: "💊",
+    garden: "🌱",
+    office: "💼",
+    music: "🎵",
+    jewelry: "💎",
+    baby: "🍼",
+    tools: "🔧",
+    luggage: "🧳",
+    art: "🎨",
+    grocery: "🛒",
+    beverages: "🥤",
+    dairy: "🥛",
+    bakery: "🥐",
+    snacks: "🍿",
+    meat: "🥩",
+    cleaning: "🧹",
+    stationery: "✏️",
+    festival: "🎉",
   };
 
   useEffect(() => {
@@ -263,6 +248,7 @@ const HeaderCategories = () => {
       iconId: item.iconId || "",
       adminCommission: item.adminCommission ?? "",
       handlingFees: item.handlingFees ?? "",
+      sortOrder: item.sortOrder || 0,
       headerColor: item.headerColor || "#FF1E1E",
       headerFontColor: item.headerFontColor || "#FFFFFF",
       headerIconColor: item.headerIconColor || "#111111",
@@ -342,6 +328,9 @@ const HeaderCategories = () => {
                   Fees (₹)
                 </th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Sort Order
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -378,11 +367,8 @@ const HeaderCategories = () => {
                     <td className="py-3 px-4">
                       <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200">
                         {cat.iconId && iconComponents[cat.iconId] ? (
-                          <div className="w-6 h-6 text-brand-600 flex items-center justify-center">
-                            {(() => {
-                              const IconComp = iconComponents[cat.iconId];
-                              return <IconComp fontSize="medium" />;
-                            })()}
+                          <div className="text-2xl flex items-center justify-center">
+                            {iconComponents[cat.iconId]}
                           </div>
                         ) : cat.iconId && getIconSvg(cat.iconId) ? (
                           <div
@@ -411,6 +397,9 @@ const HeaderCategories = () => {
                     </td>
                     <td className="py-3 px-4 text-gray-500 font-medium">
                       ₹{cat.handlingFees ?? 0}
+                    </td>
+                    <td className="py-3 px-4 text-gray-500 font-medium">
+                      {cat.sortOrder || 0}
                     </td>
                     <td className="py-3 px-4">
                       <Badge
@@ -490,11 +479,8 @@ const HeaderCategories = () => {
                     <div className="flex flex-col items-center gap-2">
                       <div className="w-24 h-24 rounded-full bg-linear-to-br from-brand-50 to-purple-50 border-2 border-brand-200 flex items-center justify-center">
                         {formData.iconId && iconComponents[formData.iconId] ? (
-                          <div className="w-12 h-12 text-brand-600 flex items-center justify-center">
-                            {(() => {
-                              const IconComp = iconComponents[formData.iconId];
-                              return <IconComp fontSize="large" />;
-                            })()}
+                          <div className="text-4xl flex items-center justify-center">
+                            {iconComponents[formData.iconId]}
                           </div>
                         ) : formData.iconId && getIconSvg(formData.iconId) ? (
                           <div
@@ -702,6 +688,21 @@ const HeaderCategories = () => {
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Sort Order
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.sortOrder}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Lower numbers appear first</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
