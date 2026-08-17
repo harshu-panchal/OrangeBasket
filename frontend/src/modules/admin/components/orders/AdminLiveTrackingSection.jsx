@@ -28,7 +28,7 @@ import {
   subscribeToOrderLocation,
   subscribeToOrderRoute,
 } from "@/core/services/trackingClient";
-import { adminApi } from "../services/adminApi";
+import { adminApi } from "../../services/api";
 
 const DEFAULT_CITY_SPEED_KMPH = 24;
 const ROUTE_REFRESH_THRESHOLD_M = 150;
@@ -62,13 +62,13 @@ const formatArrivalTime = (ms) =>
 const formatArrivingIn = (minutes) => {
   if (!Number.isFinite(minutes) || minutes < 0) return "Soon";
   const r = Math.max(1, Math.round(minutes));
-  return ${r} min;
+  return `${r} min`;
 };
 
 const formatDistance = (meters) => {
   if (!Number.isFinite(meters) || meters <= 0) return "—";
-  if (meters < 1000) return ${Math.max(50, Math.round(meters / 10) * 10)} m;
-  return ${(meters / 1000).toFixed(meters >= 10000 ? 1 : 2)} km;
+  if (meters < 1000) return `${Math.max(50, Math.round(meters / 10) * 10)} m`;
+  return `${(meters / 1000).toFixed(meters >= 10000 ? 1 : 2)} km`;
 };
 
 const estimateMinutesFromDistance = (meters) => {
@@ -259,13 +259,13 @@ const AdminLiveTrackingSection = ({ orderId, order }) => {
     const rider = liveLocation;
     if (rider && hasValidLatLng(rider) && dest && hasValidLatLng(dest)) {
       window.open(
-        https://www.google.com/maps/dir/?api=1&origin=,&destination=,,
-        "_blank",
+        `https://www.google.com/maps/dir/?api=1&origin=${rider.lat},${rider.lng}&destination=${dest.lat},${dest.lng}`,
+        "_blank"
       );
       return;
     }
     if (dest && hasValidLatLng(dest)) {
-      window.open(https://www.google.com/maps/dir/?api=1&destination=,, "_blank");
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`, "_blank");
       return;
     }
     window.open("https://maps.google.com", "_blank");
