@@ -54,6 +54,9 @@ export function getOrderSocket(getToken) {
       if (Array.isArray(s._ticketRooms)) {
         s._ticketRooms.forEach((roomId) => s.emit("join_ticket", roomId));
       }
+      if (s._registeredDeliveryId) {
+        s.emit("register_delivery", s._registeredDeliveryId);
+      }
     });
 
     s.on("disconnect", (reason) => {
@@ -149,6 +152,13 @@ export function onTicketMessage(getToken, handler) {
   if (!s || typeof handler !== "function") return () => { };
   s.on("ticket:message", handler);
   return () => s.off("ticket:message", handler);
+}
+
+export function registerDeliveryRoom(deliveryId, getToken) {
+  const s = getOrderSocket(getToken);
+  if (!s || !deliveryId) return;
+  s._registeredDeliveryId = deliveryId;
+  s.emit("register_delivery", deliveryId);
 }
 
 export function onTicketCreated(getToken, handler) {

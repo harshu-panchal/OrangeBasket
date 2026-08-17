@@ -10,6 +10,7 @@ import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import ParticleBurst from "./ParticleBurst";
+import { useVariantSelection } from "../../context/VariantSelectionContext";
 
 /**
  * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string }} props
@@ -24,6 +25,7 @@ const ProductCard = React.memo(
 
     const navigate = useNavigate();
     const { openProduct } = useProductDetail();
+    const { openVariantSelection } = useVariantSelection();
     const [showHeartPopup, setShowHeartPopup] = React.useState(false);
 
     const imageRef = React.useRef(null);
@@ -108,6 +110,14 @@ const ProductCard = React.memo(
       (e) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        if (Array.isArray(product?.variants) && product.variants.length > 1) {
+            if (openVariantSelection) {
+                openVariantSelection(product);
+            }
+            return;
+        }
+
         if (imageRef.current) {
           animateAddToCart(
             imageRef.current.getBoundingClientRect(),
@@ -120,7 +130,7 @@ const ProductCard = React.memo(
           variantName: defaultVariant?.name || "",
         });
       },
-      [animateAddToCart, product, addToCart, variantKey, defaultVariant?.name],
+      [animateAddToCart, product, addToCart, variantKey, defaultVariant?.name, openVariantSelection],
     );
 
     const handleIncrement = React.useCallback(

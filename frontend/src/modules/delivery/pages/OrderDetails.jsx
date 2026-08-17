@@ -586,7 +586,7 @@ const OrderDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-28 font-sans">
       {/* Header */}
-      <div className="bg-white/85 backdrop-blur-md sticky top-0 z-30 px-4 py-3 flex items-center justify-between border-b border-slate-100">
+      <div className="bg-white/85 backdrop-blur-md sticky top-0 z-30 px-4 pt-12 pb-3 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center">
           <Button
             variant="ghost"
@@ -931,7 +931,14 @@ const OrderDetails = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={() =>
+                        (window.location.href = `sms:${isReturn ? order.seller?.phone : order.address?.phone}`)
+                      }
+                    >
                       <MessageSquare size={18} />
                     </Button>
                     {(isReturn ? order.seller?.phone : order.address?.phone) && (

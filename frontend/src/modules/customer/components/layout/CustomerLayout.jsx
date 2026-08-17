@@ -4,6 +4,7 @@ import Footer from './Footer';
 import BottomNav from './BottomNav';
 import MiniCart from '../shared/MiniCart';
 import ProductDetailSheet from '../shared/ProductDetailSheet';
+import VariantSelectionSheet from '../shared/VariantSelectionSheet';
 import MobileFooterMessage from './MobileFooterMessage';
 import { useProductDetail } from '../../context/ProductDetailContext';
 import { cn } from '@/lib/utils';
@@ -114,12 +115,13 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
                 </>
             )}
 
-            <main className={cn("flex-1 md:pb-0", !showHeader && "pt-0", !fullHeight && "pb-16")}>
+            <main className={cn("flex-1 md:pb-0", showHeader ? "pt-[100px] md:pt-[130px]" : "pt-0")}>
                 {children}
             </main>
 
             {showCart && <MiniCart />}
             <ProductDetailSheet />
+            <VariantSelectionSheet />
 
             <div className="hidden md:block">
                 <Footer />
@@ -129,6 +131,11 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
             <div className="md:hidden">
                 {finalShowFooterMessageMobile && <MobileFooterMessage />}
             </div>
+
+            {/* Spacer to push content above the fixed BottomNav */}
+            {finalShowBottomNavMobile && (
+                <div className="h-32 md:hidden w-full shrink-0" aria-hidden="true" />
+            )}
 
             {/* Bottom Nav logic */}
             <div className="md:hidden">

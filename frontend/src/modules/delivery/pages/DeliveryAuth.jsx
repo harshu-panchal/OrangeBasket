@@ -33,11 +33,11 @@ const isValidName = (val) => /^[a-zA-Z\s]{2,50}$/.test((val || "").trim());
 const isValidPhone = (val) => /^[6-9]\d{9}$/.test((val || "").trim()) || /^\d{10}$/.test((val || "").trim());
 const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || "").trim());
 const isValidAddress = (val) => (val || "").trim().length >= 10;
-const isValidVehicleNumber = (val) => /^[A-Z]{2}\s?[0-9]{2}\s?[A-Z]{1,2}\s?[0-9]{4}$/.test((val || "").trim().toUpperCase()) || (val || "").trim().length >= 8;
-const isValidDL = (val) => /^[A-Z]{2}[- ]?[0-9]{13}$/.test((val || "").trim().toUpperCase()) || /^[A-Z0-9]{13,16}$/.test((val || "").replace(/[^A-Z0-9]/gi, ""));
+const isValidVehicleNumber = (val) => /^[A-Z]{2}[ -]?[0-9]{1,2}(?:[ -]?[A-Z]{1,3})?[ -]?[0-9]{1,4}$/.test((val || "").trim().toUpperCase());
+const isValidDL = (val) => /^[A-Z]{2}[- ]?[0-9]{13}$/.test((val || "").trim().toUpperCase());
 const isValidAadhar = (val) => /^\d{12}$/.test((val || "").trim());
 const isValidPan = (val) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((val || "").trim().toUpperCase());
-const isValidAccountHolder = (val) => /^[a-zA-Z\s]{3,50}$/.test((val || "").trim());
+const isValidAccountHolder = (val) => /^[a-zA-Z]+(?:\s+[a-zA-Z]+)+$/.test((val || "").trim());
 const isValidAccountNumber = (val) => /^\d{9,18}$/.test((val || "").trim());
 const isValidIfsc = (val) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test((val || "").trim().toUpperCase());
 
@@ -301,51 +301,53 @@ const DeliveryAuth = () => {
 
   return (
     <>
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-8 font-['Outfit',_sans-serif]">
+    <div className="flex min-h-screen flex-col items-center justify-start sm:justify-center bg-white px-4 pt-4 pb-8 sm:py-8 font-['Outfit',_sans-serif]">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-[380px] bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 relative z-10"
       >
-        {/* Logo */}
-        <div className="flex flex-col items-center justify-center mb-6">
-          <img
-            src="/image.png"
-            alt="Logo"
-            className="h-28 w-auto object-contain"
-          />
-        </div>
-
-        {step === "form" && (
-          <div className="text-left mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
-              Login / Signup
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {mode === "login" ? 'Enter your mobile number' : `Partner Registration - Step ${signupStep} of 4`}
-            </p>
+        <div className="sticky top-0 bg-white z-50 pt-6 pb-2 -mt-6 -mx-6 px-6 rounded-t-3xl">
+          {/* Logo */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <img
+              src="/image.png"
+              alt="Logo"
+              className="h-28 w-auto object-contain"
+            />
           </div>
-        )}
 
-        {step === "otp" && (
-          <div className="text-left mb-6">
-            <div className="flex items-center gap-3 mb-1">
-              <button
-                onClick={() => setStep("form")}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
+          {step === "form" && (
+            <div className="text-left mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                Verify OTP
+                Login / Signup
               </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {mode === "login" ? 'Enter your mobile number' : `Partner Registration - Step ${signupStep} of 4`}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-gray-500 ml-8">
-              Sent to +91 {mode === "login" ? loginPhone : signupPhone}
-            </p>
-          </div>
-        )}
+          )}
+
+          {step === "otp" && (
+            <div className="text-left mb-6">
+              <div className="flex items-center gap-3 mb-1">
+                <button
+                  onClick={() => setStep("form")}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Verify OTP
+                </h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-500 ml-8">
+                Sent to +91 {mode === "login" ? loginPhone : signupPhone}
+              </p>
+            </div>
+          )}
+        </div>
 
         <div>
           <AnimatePresence mode="wait">
@@ -611,67 +613,71 @@ const DeliveryAuth = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Vehicle Plate Number</label>
-                          <div className="relative">
-                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
-                            <input
-                              type="text"
-                              value={signupVehicleNumber}
-                              onChange={(e) => {
-                                setSignupVehicleNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9\s]/g, ""));
-                                markTouched("signupVehicleNumber");
-                              }}
-                              onBlur={() => markTouched("signupVehicleNumber")}
-                              className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupVehicleNumber", signupVehicleNumber, isValidVehicleNumber(signupVehicleNumber))}`}
-                              placeholder="KA 05 MN 8921"
-                            />
-                          </div>
-                          {touched.signupVehicleNumber && signupVehicleNumber && (
-                            <div className="mt-1 px-1 text-xs font-semibold">
-                              {isValidVehicleNumber(signupVehicleNumber) ? (
-                                <span className="text-emerald-600 flex items-center gap-1">
-                                  <CheckCircle size={13} className="shrink-0" /> Standard Vehicle Plate format
-                                </span>
-                              ) : (
-                                <span className="text-rose-500 flex items-center gap-1">
-                                  <AlertCircle size={13} className="shrink-0" /> Enter valid vehicle plate number (e.g. KA05MN8921)
-                                </span>
+                        {signupVehicle !== "cycle" && (
+                          <>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Vehicle Plate Number</label>
+                              <div className="relative">
+                                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                                <input
+                                  type="text"
+                                  value={signupVehicleNumber}
+                                  onChange={(e) => {
+                                    setSignupVehicleNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9\s]/g, ""));
+                                    markTouched("signupVehicleNumber");
+                                  }}
+                                  onBlur={() => markTouched("signupVehicleNumber")}
+                                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupVehicleNumber", signupVehicleNumber, isValidVehicleNumber(signupVehicleNumber))}`}
+                                  placeholder="KA 05 MN 8921"
+                                />
+                              </div>
+                              {touched.signupVehicleNumber && signupVehicleNumber && (
+                                <div className="mt-1 px-1 text-xs font-semibold">
+                                  {isValidVehicleNumber(signupVehicleNumber) ? (
+                                    <span className="text-emerald-600 flex items-center gap-1">
+                                      <CheckCircle size={13} className="shrink-0" /> Standard Vehicle Plate format
+                                    </span>
+                                  ) : (
+                                    <span className="text-rose-500 flex items-center gap-1">
+                                      <AlertCircle size={13} className="shrink-0" /> Enter valid vehicle plate number (e.g. KA05MN8921)
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Driving License Number</label>
-                          <div className="relative">
-                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
-                            <input
-                              type="text"
-                              value={signupDLNumber}
-                              onChange={(e) => {
-                                setSignupDLNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
-                                markTouched("signupDLNumber");
-                              }}
-                              onBlur={() => markTouched("signupDLNumber")}
-                              className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupDLNumber", signupDLNumber, isValidDL(signupDLNumber))}`}
-                              placeholder="DL-1420110012345"
-                            />
-                          </div>
-                          {touched.signupDLNumber && signupDLNumber && (
-                            <div className="mt-1 px-1 text-xs font-semibold">
-                              {isValidDL(signupDLNumber) ? (
-                                <span className="text-emerald-600 flex items-center gap-1">
-                                  <CheckCircle size={13} className="shrink-0" /> Standard Driving License format
-                                </span>
-                              ) : (
-                                <span className="text-rose-500 flex items-center gap-1">
-                                  <AlertCircle size={13} className="shrink-0" /> Enter valid DL number (e.g. RJ1420110012345)
-                                </span>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Driving License Number</label>
+                              <div className="relative">
+                                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                                <input
+                                  type="text"
+                                  value={signupDLNumber}
+                                  onChange={(e) => {
+                                    setSignupDLNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+                                    markTouched("signupDLNumber");
+                                  }}
+                                  onBlur={() => markTouched("signupDLNumber")}
+                                  className={`w-full pl-11 pr-4 py-3.5 bg-gray-50 border rounded-2xl text-sm font-bold text-gray-900 transition-all ${getDeliveryFieldBorderClass("signupDLNumber", signupDLNumber, isValidDL(signupDLNumber))}`}
+                                  placeholder="DL-1420110012345"
+                                />
+                              </div>
+                              {touched.signupDLNumber && signupDLNumber && (
+                                <div className="mt-1 px-1 text-xs font-semibold">
+                                  {isValidDL(signupDLNumber) ? (
+                                    <span className="text-emerald-600 flex items-center gap-1">
+                                      <CheckCircle size={13} className="shrink-0" /> Standard Driving License format
+                                    </span>
+                                  ) : (
+                                    <span className="text-rose-500 flex items-center gap-1">
+                                      <AlertCircle size={13} className="shrink-0" /> Enter valid DL number (e.g. RJ1420110012345)
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
+                          </>
+                        )}
 
                         {renderTermsCheckbox()}
                         <div className="flex gap-4 pt-2">
@@ -687,24 +693,28 @@ const DeliveryAuth = () => {
                                 toast.error("Please read and agree to the Terms and Privacy Policy to proceed");
                                 return;
                               }
-                              markTouched("signupVehicleNumber");
-                              markTouched("signupDLNumber");
-                              if (!signupVehicleNumber) {
-                                toast.error("Please enter your vehicle plate number");
-                                return;
+                              
+                              if (signupVehicle !== "cycle") {
+                                markTouched("signupVehicleNumber");
+                                markTouched("signupDLNumber");
+                                if (!signupVehicleNumber) {
+                                  toast.error("Please enter your vehicle plate number");
+                                  return;
+                                }
+                                if (!isValidVehicleNumber(signupVehicleNumber)) {
+                                  toast.error("Please enter a valid vehicle plate number");
+                                  return;
+                                }
+                                if (!signupDLNumber) {
+                                  toast.error("Please enter your driving license number");
+                                  return;
+                                }
+                                if (!isValidDL(signupDLNumber)) {
+                                  toast.error("Please enter a valid driving license number");
+                                  return;
+                                }
                               }
-                              if (!isValidVehicleNumber(signupVehicleNumber)) {
-                                toast.error("Please enter a valid vehicle plate number");
-                                return;
-                              }
-                              if (!signupDLNumber) {
-                                toast.error("Please enter your driving license number");
-                                return;
-                              }
-                              if (!isValidDL(signupDLNumber)) {
-                                toast.error("Please enter a valid driving license number");
-                                return;
-                              }
+                              
                               setSignupStep(3);
                             }}
                             className="flex-[2] mt-2 text-white bg-[#f97316] hover:bg-orange-600 py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center transition-all"
@@ -799,7 +809,7 @@ const DeliveryAuth = () => {
                                 </span>
                               ) : (
                                 <span className="text-rose-500 flex items-center gap-1">
-                                  <AlertCircle size={13} className="shrink-0" /> Name as per bank records (letters only, min 3 chars)
+                                  <AlertCircle size={13} className="shrink-0" /> Name as per bank records (First & Last Name required)
                                 </span>
                               )}
                             </div>
@@ -889,7 +899,7 @@ const DeliveryAuth = () => {
                                 return;
                               }
                               if (!isValidAccountHolder(signupAccountHolder)) {
-                                toast.error("Please enter a valid account holder name (min 3 letters)");
+                                toast.error("Please enter both First and Last name as per bank records");
                                 return;
                               }
                               if (!isValidAccountNumber(signupAccountNumber)) {
@@ -921,7 +931,7 @@ const DeliveryAuth = () => {
                           {[
                             { label: "Aadhar Card (Front/Back)", state: aadharFile, setter: setAadharFile, id: "aadhar" },
                             { label: "PAN Card", state: panFile, setter: setPanFile, id: "pan" },
-                            { label: "Driving License", state: dlFile, setter: setDlFile, id: "dl" },
+                            ...(signupVehicle !== "cycle" ? [{ label: "Driving License", state: dlFile, setter: setDlFile, id: "dl" }] : []),
                           ].map((doc) => (
                             <div key={doc.id} className="relative">
                               <input
@@ -985,7 +995,7 @@ const DeliveryAuth = () => {
                           </button>
                           <button
                             onClick={handleSendOtp}
-                            disabled={loading || !dlFile || !panFile || !aadharFile}
+                            disabled={loading || (signupVehicle !== "cycle" && !dlFile) || !panFile || !aadharFile}
                             className="flex-[2] mt-2 text-white bg-[#f97316] hover:bg-orange-600 py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             {loading ? (

@@ -323,26 +323,28 @@ const CustomerAuth = () => {
                 )}
 
                 {/* Legal Agreement Footer */}
-                <div className="pt-8 flex flex-col items-center gap-1.5">
-                    <p className="text-[11px] text-gray-400 text-center font-medium">
-                        {t('agreeText')}
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button 
-                            onClick={() => navigate('/terms')}
-                            className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
-                        >
-                            {t('terms')}
-                        </button>
-                        <span className="text-[10px] text-gray-300">•</span>
-                        <button 
-                            onClick={() => navigate('/privacy')}
-                            className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
-                        >
-                            {t('privacy')}
-                        </button>
+                {!showOtp && (
+                    <div className="pt-8 flex flex-col items-center gap-1.5">
+                        <p className="text-[11px] text-gray-400 text-center font-medium">
+                            {t('agreeText')}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => navigate('/terms')}
+                                className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
+                            >
+                                {t('terms')}
+                            </button>
+                            <span className="text-[10px] text-gray-300">•</span>
+                            <button 
+                                onClick={() => navigate('/privacy')}
+                                className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
+                            >
+                                {t('privacy')}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

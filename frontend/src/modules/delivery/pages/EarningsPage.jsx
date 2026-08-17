@@ -129,7 +129,7 @@ const EarningsPage = () => {
   return (
     <div className="bg-gray-50/50 min-h-screen pb-24">
       {/* Header & Sticky Area */}
-      <div className="bg-white sticky top-0 z-30 px-5 py-4 shadow-sm border-b border-slate-100">
+      <div className="bg-white sticky top-0 z-30 px-5 pt-12 pb-4 shadow-sm border-b border-slate-100">
         <div className="flex items-center justify-between mb-6">
           <button onClick={() => navigate(-1)} className="p-1 -ml-1">
             <ChevronLeft size={24} className="text-gray-900" />

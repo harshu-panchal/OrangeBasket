@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import warehouseApi from '../../../core/api/axios';
+import adminApi from '../../../core/api/axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -38,7 +38,7 @@ const makeSku = (name, index = 1) => {
     return `KIT-${prefix}-${String(index).padStart(3, "0")}`;
 };
 
-const AddMonthlyKit = () => {
+const EditMonthlyKit = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [activeTab, setActiveTab] = useState('general');
@@ -76,7 +76,7 @@ const AddMonthlyKit = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await warehouseApi.get('/categories');
+                const response = await adminApi.get('/categories');
                 const allCats = response.data.results || response.data.result || [];
                 const kitCats = allCats.filter(c => c.isKitCategory);
                 setCategories(kitCats.length > 0 ? kitCats : allCats);
@@ -97,7 +97,7 @@ const AddMonthlyKit = () => {
             const fetchKit = async () => {
                 setLoading(true);
                 try {
-                    const response = await warehouseApi.get(`/kits/${id}`);
+                    const response = await adminApi.get(`/kits/${id}`);
                     const kit = response.data.results || response.data.result || response.data.data;
                     if (kit) {
                         setFormData({
@@ -216,6 +216,7 @@ const AddMonthlyKit = () => {
                 data.append("tags", JSON.stringify(tagsArr));
             }
 
+            data.append("status", formData.status);
             data.append("highlights", JSON.stringify(formData.highlights || []));
 
             const validItems = formData.includedItems.filter(v => v.name && v.quantity).map(v => ({
@@ -235,13 +236,12 @@ const AddMonthlyKit = () => {
             }
 
             if (id) {
-                await warehouseApi.put(`/kits/warehouse/${id}`, data);
+                await adminApi.put(`/kits/admin/edit/${id}`, data);
                 toast.success('Monthly Kit updated successfully!');
             } else {
-                await warehouseApi.post('/kits/warehouse', data);
-                toast.success('Monthly Kit created! Pending admin approval.');
+                toast.error('Cannot create kits from admin portal');
             }
-            navigate('/warehouse/monthly-kits');
+            navigate('/admin/monthly-baskets/approvals');
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.message || 'Failed to create kit');
@@ -746,4 +746,4 @@ const AddMonthlyKit = () => {
     );
 };
 
-export default AddMonthlyKit;
+export default EditMonthlyKit;

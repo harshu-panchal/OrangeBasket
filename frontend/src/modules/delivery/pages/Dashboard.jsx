@@ -138,6 +138,7 @@ const Dashboard = () => {
     socket?.emit("queue:offer_response", { orderId, accepted: true });
     setPendingOffer(null);
     toast.success("Order accepted! Preparing for pickup...");
+    navigate(`/delivery/order-details/${orderId}`);
   };
 
   const handleOfferReject = (reason) => {
@@ -181,7 +182,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-gray-50/50 min-h-screen pb-24 relative overflow-y-auto overflow-x-hidden font-sans">
+    <div className="bg-gray-50/50 min-h-full pb-24 font-sans">
       {/* Queue Order Offer Modal */}
       {pendingOffer && (
         <OrderOfferModal
@@ -193,8 +194,8 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-2.5">
-          <Home size={22} className="text-gray-800" strokeWidth={2.5} />
-          <h1 className="text-[1.35rem] font-bold text-gray-900 tracking-tight">Dashboard</h1>
+          <img src="/image.png" alt="Logo" className="h-8 object-contain" />
+          <h1 className="text-lg font-bold text-gray-900 tracking-tight ml-1">{user?.name || "Delivery Partner"}</h1>
         </div>
         <div
           className="relative p-2.5 bg-gray-50 border border-gray-100 rounded-full hover:bg-gray-100 transition-colors cursor-pointer group"

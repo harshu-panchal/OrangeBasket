@@ -158,6 +158,12 @@ const AddProduct = () => {
       return;
     }
 
+    // Validate variants price vs salePrice
+    const invalidVariant = formData.variants.find((v) => v.salePrice && Number(v.salePrice) > Number(v.price));
+    if (invalidVariant) {
+      toast.error(`Sale Price cannot be greater than Price for variant: ${invalidVariant.name || 'Main Variant'}`);
+      return;
+    }
     setIsSaving(true);
     try {
       const data = new FormData();
@@ -509,6 +515,12 @@ const AddProduct = () => {
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val !== '' && Number(val) < 0) return;
+
+                          if (val !== '' && variant.salePrice && Number(val) < Number(variant.salePrice)) {
+                            toast.error("Regular price cannot be less than sale price");
+                            return;
+                          }
+
                           const newVariants = [...formData.variants];
                           newVariants[index].price = val;
                           setFormData({ ...formData, variants: newVariants });
@@ -533,6 +545,12 @@ const AddProduct = () => {
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val !== '' && Number(val) < 0) return;
+
+                          if (val !== '' && variant.price && Number(val) > Number(variant.price)) {
+                            toast.error("Sale price cannot be greater than regular price");
+                            return;
+                          }
+
                           const newVariants = [...formData.variants];
                           newVariants[index].salePrice = val;
                           setFormData({ ...formData, variants: newVariants });

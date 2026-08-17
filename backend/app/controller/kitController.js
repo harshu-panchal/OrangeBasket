@@ -97,6 +97,9 @@ export const createKit = async (req, res) => {
         if (typeof kitData.highlights === "string") {
             try { kitData.highlights = JSON.parse(kitData.highlights); } catch (e) {}
         }
+        if (typeof kitData.includedItems === "string") {
+            try { kitData.includedItems = JSON.parse(kitData.includedItems); } catch (e) {}
+        }
 
         if (!kitData.slug) {
             kitData.slug = kitData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
@@ -178,10 +181,19 @@ export const updateKit = async (req, res) => {
         if (typeof kitData.highlights === "string") {
             try { kitData.highlights = JSON.parse(kitData.highlights); } catch (e) {}
         }
+        if (typeof kitData.includedItems === "string") {
+            try { kitData.includedItems = JSON.parse(kitData.includedItems); } catch (e) {}
+        }
+
+        const query = { _id: id, isMonthlyKit: true };
+        if (req.user.role !== "admin") {
+            query.warehouseId = req.user.id;
+            kitData.approvalStatus = "pending";
+        }
 
         const kit = await Product.findOneAndUpdate(
-            { _id: id, warehouseId: req.user.id, isMonthlyKit: true },
-            { ...kitData, approvalStatus: "pending" }, // resets approval
+            query,
+            kitData,
             { new: true }
         );
 
@@ -200,11 +212,10 @@ export const updateKit = async (req, res) => {
 export const getPendingKits = async (req, res) => {
     try {
         const kits = await Product.find({
-            isMonthlyKit: true,
-            approvalStatus: "pending"
+            isMonthlyKit: true
         }).populate("warehouseId", "name").populate("categoryId", "name");
         
-        return handleResponse(res, 200, "Pending kits fetched", kits);
+        return handleResponse(res, 200, "Admin kits fetched", kits);
     } catch (error) {
         return handleResponse(res, 500, "Failed to fetch pending kits");
     }
@@ -235,3 +246,23 @@ export const approveKit = async (req, res) => {
         return handleResponse(res, 500, "Failed to approve kit");
     }
 };
+
+export const deleteKit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const query = { _id: id, isMonthlyKit: true };
+        if (req.user.role !== "admin") {
+            query.warehouseId = req.user.id;
+        }
+        
+        const kit = await Product.findOneAndDelete(query);
+        if (!kit) {
+            return handleResponse(res, 404, "Kit not found or unauthorized");
+        }
+        return handleResponse(res, 200, "Kit deleted successfully");
+    } catch (error) {
+        logger.error("Delete Kit Error:", { scope: "deleteKit", error });
+        return handleResponse(res, 500, "Failed to delete kit");
+    }
+};
+

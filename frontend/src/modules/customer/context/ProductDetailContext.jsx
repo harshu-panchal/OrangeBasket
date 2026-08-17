@@ -8,7 +8,6 @@ const ProductDetailContext = createContext();
 export const useProductDetail = () => {
     const context = useContext(ProductDetailContext);
     if (!context) {
-        // console.warn('useProductDetail used outside Provider');
         return {};
     }
     return context;
@@ -17,6 +16,8 @@ export const useProductDetail = () => {
 export const ProductDetailProvider = ({ children }) => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const { currentLocation } = useAppLocation();
@@ -31,22 +32,34 @@ export const ProductDetailProvider = ({ children }) => {
                     params.lat = currentLocation.latitude;
                     params.lng = currentLocation.longitude;
                 }
-                
+
+                setIsLoading(true);
+                setError(null);
+
                 customerApi.getProductById(productParam, params)
                     .then(res => {
                         if (res.data.success) {
                             setSelectedProduct(res.data.result || res.data.results || res.data);
                             setIsOpen(true);
+                            setError(null);
                         }
                     })
                     .catch(err => {
                         console.error("Failed to fetch product from URL", err);
-                        setSearchParams(prev => { prev.delete('product'); return prev; }, { replace: true });
+                        setError(err.response?.data?.message || "Failed to load product");
+                        setIsOpen(true); // Open sheet to show error state
+                        setSelectedProduct(null);
+                    })
+                    .finally(() => {
+                        setIsLoading(false);
                     });
             }
         } else if (!productParam && isOpen) {
             setIsOpen(false);
-            setTimeout(() => setSelectedProduct(null), 300);
+            setTimeout(() => {
+                setSelectedProduct(null);
+                setError(null);
+            }, 300);
         }
     }, [searchParams.get('product'), currentLocation?.latitude, currentLocation?.longitude]);
 
@@ -64,7 +77,10 @@ export const ProductDetailProvider = ({ children }) => {
 
     const closeProduct = () => {
         setIsOpen(false);
-        setTimeout(() => setSelectedProduct(null), 300);
+        setTimeout(() => {
+            setSelectedProduct(null);
+            setError(null);
+        }, 300);
         setSearchParams((prev) => {
             prev.delete('product');
             return prev;
@@ -72,8 +88,8 @@ export const ProductDetailProvider = ({ children }) => {
     };
 
     const value = useMemo(
-        () => ({ selectedProduct, isOpen, openProduct, closeProduct }),
-        [selectedProduct, isOpen]
+        () => ({ selectedProduct, isOpen, isLoading, error, openProduct, closeProduct }),
+        [selectedProduct, isOpen, isLoading, error]
     );
 
     return (

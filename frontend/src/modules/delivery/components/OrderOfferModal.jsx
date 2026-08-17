@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 
 /**
  * OrderOfferModal — full-screen overlay shown when a queue-based order is offered to the rider.
- * Shows a 20-second countdown ring and Accept / Reject buttons.
+ * Shows a 60-second countdown ring and Accept / Reject buttons.
  */
 const OrderOfferModal = ({ offer, onAccept, onReject }) => {
-  const [timeLeft, setTimeLeft] = useState(offer?.countdown || 20);
+  const [timeLeft, setTimeLeft] = useState(offer?.countdown || 60);
   const [accepting, setAccepting] = useState(false);
   const intervalRef = useRef(null);
-  const TOTAL = offer?.countdown || 20;
+  const TOTAL = offer?.countdown || 60;
 
   useEffect(() => {
     setTimeLeft(TOTAL);

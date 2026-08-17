@@ -593,38 +593,40 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-8 font-['Outfit']">
+    <div className="flex min-h-screen flex-col items-center justify-start sm:justify-center bg-white px-4 pt-4 pb-8 sm:py-8 font-['Outfit']">
       <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center justify-center">
-          {logoUrl ? (
-            <img src={logoUrl} alt={`${appName} logo`} className="h-32 w-auto object-contain" />
-          ) : (
-            <Store size={64} className="text-slate-700" />
-          )}
+        <div className="sticky top-0 bg-white z-50 pt-2 pb-4 -mx-4 px-4 sm:-mx-0 sm:px-0 border-b border-gray-100 sm:border-0 shadow-sm sm:shadow-none mb-6">
+          <div className="flex flex-col items-center justify-center mb-6">
+            {logoUrl ? (
+              <img src={logoUrl} alt={`${appName} logo`} className="h-24 sm:h-32 w-auto object-contain" />
+            ) : (
+              <Store size={64} className="text-slate-700" />
+            )}
+          </div>
+          
+          <div className="text-left space-y-2">
+            <span className="inline-block px-4 py-1 bg-slate-100 text-slate-800 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
+              {isLogin
+                ? "Welcome Back"
+                : `New Partnership - Step ${signupStep} of 3`}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tighter">
+              Seller{" "}
+              <span className="text-slate-900">
+                {isLogin ? "Login" : "Signup"}
+              </span>
+            </h1>
+            <p className="text-slate-600 font-medium text-sm sm:text-base leading-relaxed hidden sm:block">
+              {isLogin
+                ? "Access your unified Seller Dashboard and manage orders."
+                : signupStep === 1
+                  ? "Register your store and Start Operating instantly."
+                  : signupStep === 2
+                    ? "Set your shop address and service area precisely."
+                    : "Upload verification documents to complete your application."}
+            </p>
+          </div>
         </div>
-        
-        <div className="text-left space-y-2">
-          <span className="inline-block px-4 py-1 bg-slate-100 text-slate-800 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
-            {isLogin
-              ? "Welcome Back"
-              : `New Partnership - Step ${signupStep} of 3`}
-          </span>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
-                  Seller{" "}
-                  <span className="text-slate-900">
-                    {isLogin ? "Login" : "Signup"}
-                  </span>
-                </h1>
-                <p className="text-slate-600 font-medium text-base leading-relaxed">
-                  {isLogin
-                    ? "Access your unified seller dashboard and manage orders."
-                    : signupStep === 1
-                      ? "Register your store and start selling instantly."
-                      : signupStep === 2
-                        ? "Set your shop address and service area precisely."
-                        : "Upload verification documents to complete your application."}
-                </p>
-              </div>
 
                             {forgotPasswordStep > 0 ? (
                 <div className="space-y-4">

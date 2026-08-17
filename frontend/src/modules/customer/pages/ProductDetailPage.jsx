@@ -40,7 +40,7 @@ const ProductDetailPage = () => {
     useEffect(() => {
         import('@/assets/lottie/animation.json')
             .then((m) => setNoServiceData(m.default))
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const fetchData = async (showLoader = true) => {
@@ -176,18 +176,18 @@ const ProductDetailPage = () => {
                     Item <span className="text-primary">Unavailable</span>
                 </h3>
                 <p className="text-slate-500 font-bold text-sm max-w-[280px] mb-8 leading-relaxed">
-                    {error === "Product not available in your area" 
-                        ? "This item is not available at your current location yet." 
+                    {error === "Product not available in your area"
+                        ? "This item is not available at your current location yet."
                         : "We couldn't load this product details. Try again later!"}
                 </p>
                 <div className="flex flex-col gap-3 w-full max-w-xs">
-                    <button 
+                    <button
                         onClick={() => navigate('/')}
                         className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-xl shadow-black/10"
                     >
                         Go to Home
                     </button>
-                    <button 
+                    <button
                         onClick={() => navigate(-1)}
                         className="px-10 py-4 bg-white text-slate-900 border border-slate-200 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 active:scale-95 transition-all"
                     >
@@ -271,7 +271,7 @@ const ProductDetailPage = () => {
                             <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-primary/20">
                                 {product.categoryId?.name || 'Essential'}
                             </span>
-                            
+
                             {(product.sellerId?.shopName || product.warehouseId?.name) && (
                                 <span className="bg-slate-100 text-slate-600 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-slate-200">
                                     {product.sellerId?.shopName ? (

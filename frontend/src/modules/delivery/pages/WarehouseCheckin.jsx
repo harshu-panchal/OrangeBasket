@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Building2, QrCode, MapPin, CheckCircle2, AlertTriangle } from "lucide-react";
 import axiosInstance from "@core/api/axios";
 
 /* ── API helpers ──────────────────────────────────────────────────────────── */
@@ -6,6 +7,7 @@ const api = {
   checkin: (data) => axiosInstance.post("/delivery/warehouse/checkin", data),
   checkout: () => axiosInstance.post("/delivery/warehouse/checkout"),
   getStatus: () => axiosInstance.get("/delivery/warehouse/checkin-status"),
+  getHistory: () => axiosInstance.get("/delivery/warehouse/checkin-history"),
 };
 
 /* ── QR Scanner shim (uses MediaDevices API + jsQR CDN via dynamic import) ── */
@@ -49,6 +51,7 @@ function distM(lat1, lng1, lat2, lng2) {
 const WarehouseCheckin = () => {
   const [step, setStep] = useState("status"); // status | scan | location | success | error
   const [checkinStatus, setCheckinStatus] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [gps, setGps] = useState(null);
@@ -74,6 +77,13 @@ const WarehouseCheckin = () => {
       const d = res.data?.result || res.data?.data;
       setCheckinStatus(d);
       setStep(d?.isCheckedIn ? "success" : "status");
+
+      try {
+        const histRes = await api.getHistory();
+        setHistory(histRes.data?.result || histRes.data?.data || []);
+      } catch (err) {
+        console.error("Failed to load history", err);
+      }
     } catch {
       setStep("status");
     } finally {
@@ -177,7 +187,9 @@ const WarehouseCheckin = () => {
     <div style={S.page}>
       {/* Header */}
       <div style={S.header}>
-        <div style={S.headerIcon}>🏭</div>
+        <div style={S.headerIcon}>
+          <Building2 size={48} color="#2563eb" />
+        </div>
         <h1 style={S.title}>Warehouse Check-in</h1>
         <p style={S.sub}>Scan the warehouse QR code to join the delivery queue</p>
       </div>
@@ -190,15 +202,42 @@ const WarehouseCheckin = () => {
       {/* STEP: Not checked in */}
       {step === "status" && !checkinStatus?.isCheckedIn && (
         <div style={S.card}>
-          <div style={S.qrIcon}>📍 + 📷</div>
+          <div style={S.qrIcon}>
+            <QrCode size={40} color="#64748b" style={{display: 'inline', marginRight: 8}} />
+            <span style={{fontSize: 24, verticalAlign: 'middle', color: '#cbd5e1'}}>+</span>
+            <MapPin size={40} color="#64748b" style={{display: 'inline', marginLeft: 8}} />
+          </div>
           <h2 style={S.cardTitle}>Attendance Not Marked</h2>
           <p style={S.cardSub}>You must verify your live location AND scan the warehouse QR code to mark your attendance.</p>
-          
+
           <button style={S.btnPrimary} onClick={startScan}>
             Start Attendance Check-in
           </button>
-          
+
           <GPSNote />
+        </div>
+      )}
+
+      {/* STEP: Not checked in - History */}
+      {step === "status" && !checkinStatus?.isCheckedIn && history && history.length > 0 && (
+        <div style={{...S.card, marginTop: 24, padding: "20px 16px"}}>
+          <h3 style={{...S.cardTitle, fontSize: 16, textAlign: "left", marginBottom: 12}}>Recent Attendance</h3>
+          <div style={{display: "flex", flexDirection: "column", gap: 10}}>
+            {history.slice(0, 5).map((h, i) => {
+              const d = new Date(h.checkinTime);
+              return (
+                <div key={i} style={{background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+                  <div>
+                    <div style={{fontWeight: 600, color: "#334155", fontSize: 13, textAlign: "left"}}>{d.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'})}</div>
+                    <div style={{color: "#64748b", fontSize: 12, marginTop: 2, textAlign: "left"}}>{h.warehouseId?.name || "Warehouse"}</div>
+                  </div>
+                  <div style={{background: "#e0f2fe", color: "#0284c7", padding: "4px 8px", borderRadius: 6, fontSize: 12, fontWeight: 700}}>
+                    {d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -225,10 +264,12 @@ const WarehouseCheckin = () => {
       {step === "location" && (
         <div style={S.card}>
           <div style={S.stepPill}>Step 2 of 2</div>
-          <div style={S.qrIcon}>📍</div>
+          <div style={S.qrIcon}>
+             <MapPin size={48} color="#2563eb" />
+          </div>
           <h2 style={S.cardTitle}>Verify Live Location</h2>
           <p style={S.cardSub}>QR code scanned! Now we need to verify your location to make sure you are at the warehouse.</p>
-          
+
           <button style={S.btnPrimary} onClick={verifyLocationAndSubmit}>
             Verify Location & Check-in
           </button>
@@ -241,7 +282,9 @@ const WarehouseCheckin = () => {
       {/* STEP: Error */}
       {step === "error" && (
         <div style={S.card}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+          <div style={{ marginBottom: 16 }}>
+            <AlertTriangle size={56} color="#ef4444" />
+          </div>
           <h2 style={{ ...S.cardTitle, color: "#ef4444" }}>Check-in Failed</h2>
           <p style={S.cardSub}>{error}</p>
           <button style={S.btnPrimary} onClick={startScan}>Try Again</button>
@@ -256,7 +299,9 @@ const WarehouseCheckin = () => {
 
 const CheckedInCard = ({ status, onCheckout }) => (
   <div style={{ ...S.card, borderColor: "rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.05)" }}>
-    <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+    <div style={{ marginBottom: 16 }}>
+       <CheckCircle2 size={56} color="#22c55e" />
+    </div>
     <h2 style={{ ...S.cardTitle, color: "#22c55e" }}>Attendance Marked!</h2>
     <p style={S.cardSub}>You are checked in at {status.warehouseName}</p>
 
@@ -292,30 +337,30 @@ const LoadingScreen = () => (
 
 /* ── Styles ─────────────────────────────────────────────────────────────── */
 const S = {
-  page: { minHeight: "100vh", background: "#0a0f1a", padding: "24px 16px", fontFamily: "system-ui,sans-serif", color: "#f1f5f9" },
+  page: { minHeight: "100vh", background: "#f8fafc", padding: "24px 16px", fontFamily: "system-ui,sans-serif", color: "#0f172a" },
   header: { textAlign: "center", marginBottom: 24 },
-  headerIcon: { fontSize: 48, marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 800, margin: 0, background: "linear-gradient(135deg,#60a5fa,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
+  headerIcon: { display: "flex", justifyContent: "center", marginBottom: 16 },
+  title: { fontSize: 24, fontWeight: 800, margin: 0, color: "#1e293b" },
   sub: { color: "#64748b", fontSize: 13, margin: "6px 0 0" },
-  card: { background: "linear-gradient(145deg,#0f172a,#1e293b)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 20, padding: "28px 20px", textAlign: "center", maxWidth: 400, margin: "0 auto" },
-  qrIcon: { fontSize: 56, marginBottom: 12 },
-  cardTitle: { fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#f1f5f9" },
-  cardSub: { color: "#94a3b8", fontSize: 14, margin: "0 0 20px", lineHeight: 1.6 },
+  card: { background: "#ffffff", border: "1px solid rgba(0,0,0,0.05)", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)", borderRadius: 20, padding: "28px 20px", textAlign: "center", maxWidth: 400, margin: "0 auto" },
+  qrIcon: { display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  cardTitle: { fontSize: 20, fontWeight: 700, margin: "0 0 8px", color: "#1e293b" },
+  cardSub: { color: "#64748b", fontSize: 14, margin: "0 0 20px", lineHeight: 1.6 },
   btnPrimary: { display: "block", width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#3b82f6,#2563eb)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 },
-  btnSecondary: { display: "block", width: "100%", padding: "12px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#94a3b8", fontSize: 14, cursor: "pointer", marginTop: 8 },
+  btnSecondary: { display: "block", width: "100%", padding: "12px", borderRadius: 14, border: "1px solid rgba(0,0,0,0.1)", background: "transparent", color: "#475569", fontSize: 14, cursor: "pointer", marginTop: 8 },
   btnDanger: { display: "block", width: "100%", padding: "13px", borderRadius: 14, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 16 },
   videoWrap: { position: "relative", borderRadius: 16, overflow: "hidden", background: "#000", marginBottom: 12 },
   video: { width: "100%", display: "block", maxHeight: 260, objectFit: "cover" },
   scanOverlay: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" },
   scanCorner: { width: 160, height: 160, border: "3px solid #3b82f6", borderRadius: 16, boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" },
-  gpsTag: { background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 99, padding: "6px 14px", fontSize: 12, color: "#60a5fa", marginBottom: 12, display: "inline-block" },
-  infoGrid: { background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "12px 16px", marginBottom: 4, textAlign: "left" },
-  infoRow: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" },
+  gpsTag: { background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 99, padding: "6px 14px", fontSize: 12, color: "#3b82f6", marginBottom: 12, display: "inline-block" },
+  infoGrid: { background: "rgba(0,0,0,0.02)", borderRadius: 14, padding: "12px 16px", marginBottom: 4, textAlign: "left" },
+  infoRow: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" },
   infoLabel: { color: "#64748b", fontSize: 13 },
-  infoVal: { color: "#f1f5f9", fontSize: 13, fontWeight: 500 },
-  note: { color: "#475569", fontSize: 12, marginTop: 12 },
-  stepPill: { background: "rgba(59,130,246,0.2)", color: "#60a5fa", display: "inline-block", padding: "4px 12px", borderRadius: 99, fontSize: 12, fontWeight: 600, marginBottom: 12 },
-  spinner: { width: 32, height: 32, border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" },
+  infoVal: { color: "#334155", fontSize: 13, fontWeight: 500 },
+  note: { color: "#64748b", fontSize: 12, marginTop: 12 },
+  stepPill: { background: "rgba(59,130,246,0.1)", color: "#3b82f6", display: "inline-block", padding: "4px 12px", borderRadius: 99, fontSize: 12, fontWeight: 600, marginBottom: 12 },
+  spinner: { width: 32, height: 32, border: "3px solid rgba(0,0,0,0.1)", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" },
 };
 
 export default WarehouseCheckin;

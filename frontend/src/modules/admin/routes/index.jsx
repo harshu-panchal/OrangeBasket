@@ -97,6 +97,7 @@ const AdminProfile = React.lazy(() => import("../pages/AdminProfile"));
 const MonthlyBasketCategories = React.lazy(() => import("../pages/MonthlyBasketCategories"));
 const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBanners"));
 const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
+const EditMonthlyKit = React.lazy(() => import("../pages/EditMonthlyKit"));
 
 const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 
@@ -287,6 +288,7 @@ const AdminRoutes = () => {
         <Route path="/monthly-baskets/categories" element={<MonthlyBasketCategories />} />
         <Route path="/monthly-baskets/banners" element={<MonthlyBasketBanners />} />
         <Route path="/monthly-baskets/approvals" element={<MonthlyBasketApprovals />} />
+        <Route path="/monthly-baskets/edit/:id" element={<EditMonthlyKit />} />
         
         <Route path="/experience-studio" element={<ContentManager />} />
         <Route path="/hero-categories" element={<HeroCategoriesPerPage />} />

@@ -319,6 +319,17 @@ const ProductManagement = () => {
         return;
       }
 
+      if (formData.salePrice && Number(formData.salePrice) > Number(formData.price)) {
+        toast.error("Sale Price cannot be greater than Price");
+        return;
+      }
+
+      const invalidVariant = formData.variants?.find((v) => v.salePrice && Number(v.salePrice) > Number(v.price));
+      if (invalidVariant) {
+        toast.error(`Sale Price cannot be greater than Price for variant: ${invalidVariant.name || 'Main Variant'}`);
+        return;
+      }
+
       const data = new FormData();
       data.append("name", formData.name);
       data.append("slug", formData.slug);
@@ -1307,6 +1318,12 @@ const ProductManagement = () => {
                               <input type="number" min="0" value={v.price} onChange={e => {
                                 const val = e.target.value;
                                 if (val !== '' && Number(val) < 0) return;
+                                
+                                if (val !== '' && v.salePrice && Number(val) < Number(v.salePrice)) {
+                                  toast.error("Regular price cannot be less than sale price");
+                                  return;
+                                }
+                                
                                 const news = [...formData.variants];
                                 news[i].price = val;
                                 setFormData({ ...formData, variants: news });
@@ -1317,6 +1334,12 @@ const ProductManagement = () => {
                               <input type="number" min="0" value={v.salePrice} onChange={e => {
                                 const val = e.target.value;
                                 if (val !== '' && Number(val) < 0) return;
+                                
+                                if (val !== '' && v.price && Number(val) > Number(v.price)) {
+                                  toast.error("Sale price cannot be greater than regular price");
+                                  return;
+                                }
+                                
                                 const news = [...formData.variants];
                                 news[i].salePrice = val;
                                 setFormData({ ...formData, variants: news });

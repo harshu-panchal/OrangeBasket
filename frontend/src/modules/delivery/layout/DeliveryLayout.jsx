@@ -11,6 +11,7 @@ import {
   getOrderSocket,
   onDeliveryBroadcast,
   onDeliveryBroadcastWithdrawn,
+  registerDeliveryRoom,
 } from "@/core/services/orderSocket";
 import {
   loadHandledIncomingOrderIds,
@@ -514,7 +515,11 @@ const DeliveryLayout = () => {
   useEffect(() => {
     if (!user?.isOnline) return undefined;
     const getToken = getDeliveryToken;
-    getOrderSocket(getToken);
+    if (user?._id || user?.id) {
+      registerDeliveryRoom(user._id || user.id, getToken);
+    } else {
+      getOrderSocket(getToken);
+    }
     return onDeliveryBroadcast(getToken, (payload) => {
       if (activeOrderRef.current || suppressIncomingModal) return;
       const opened = applyFromBroadcastPayload(payload);
@@ -768,7 +773,7 @@ const DeliveryLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-gray-100">
+    <div className="h-[100dvh] bg-gray-50 text-gray-900 font-sans max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-gray-100 flex flex-col">
       {/* Full-screen order alert — portaled so it always stacks above nav/content */}
       {typeof document !== "undefined" &&
         createPortal(
@@ -907,7 +912,7 @@ const DeliveryLayout = () => {
         )}
 
       <main
-        className={`h-full min-h-screen overflow-y-auto ${shouldShowBottomNav ? "pb-24" : ""} no-scrollbar`}>
+        className={`flex-1 overflow-y-auto ${shouldShowBottomNav ? "pb-24" : ""} no-scrollbar`}>
         <Outlet />
       </main>
 

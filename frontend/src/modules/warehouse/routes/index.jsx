@@ -63,6 +63,7 @@ const WarehouseRoutes = () => {
         <Route path="/products/add" element={<AddProduct />} />
         <Route path="/monthly-kits" element={<MonthlyKits />} />
         <Route path="/monthly-kits/add" element={<AddMonthlyKit />} />
+        <Route path="/monthly-kits/edit/:id" element={<AddMonthlyKit />} />
         <Route path="/inventory" element={<StockManagement />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/returns" element={<Returns />} />

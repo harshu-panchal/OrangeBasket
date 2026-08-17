@@ -13,7 +13,7 @@ import { queueOfferTimeoutQueue, JOB_NAMES } from "../queues/orderQueues.js";
 // NOTE: deliveryAcceptAtomic is dynamically imported to avoid circular deps
 import logger from "./logger.js";
 
-const OFFER_TIMEOUT_SECONDS = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "20", 10);
+const OFFER_TIMEOUT_SECONDS = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "60", 10);
 
 function getIo() {
   try {
@@ -49,8 +49,8 @@ export async function warehouseAcceptAtomic(warehouseId, orderId) {
   const now = new Date();
   
   // WAREHOUSES don't broadcast to the map. They pop from the queue.
-  // Delivery timeout represents the queue's 20-second offer timeout.
-  const deliveryMs = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "20", 10) * 1000;
+  // Delivery timeout represents the queue's 60-second offer timeout.
+  const deliveryMs = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "60", 10) * 1000;
 
   const updated = await Order.findOneAndUpdate(
     {
@@ -166,7 +166,7 @@ export async function offerToNextInQueue(orderId, warehouseId, skippedIds = []) 
     io.to(`delivery:${riderId}`).emit("queue:order_offered", offerPayload);
   }
 
-  // Schedule 20-second timeout job
+  // Schedule 60-second timeout job
   await queueOfferTimeoutQueue.add(
     JOB_NAMES.QUEUE_OFFER_TIMEOUT,
     {
@@ -255,7 +255,7 @@ export async function handleOfferTimeout({ orderId, warehouseId, riderId, skippe
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
 /**
- * Clears a pending 20s timeout job for a specific order+rider.
+ * Clears a pending 60s timeout job for a specific order+rider.
  * We use a job naming convention so we can look it up.
  */
 async function removeOfferTimeoutJob(orderId, riderId) {

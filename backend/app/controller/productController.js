@@ -793,7 +793,7 @@ export const createProduct = async (req, res) => {
     if (!productData.name) {
       return handleResponse(res, 400, "Product name is required");
     }
-    
+
     // Auto-generate slug
     if (!productData.slug || productData.slug.trim() === "") {
       productData.slug = slugify(productData.name);
@@ -854,7 +854,7 @@ export const createProduct = async (req, res) => {
     Object.assign(productData, moderationUpdate);
 
     const product = await Product.create(productData);
-    
+
     if (product && product._id) {
       // Enqueue search indexing asynchronously
       await enqueueProductIndex(product._id.toString());
@@ -969,8 +969,8 @@ export const updateProduct = async (req, res) => {
         existingGallery = Array.isArray(productData.galleryImages)
           ? productData.galleryImages
           : (typeof productData.galleryImages === "string"
-              ? productData.galleryImages.split(",")
-              : [productData.galleryImages]);
+            ? productData.galleryImages.split(",")
+            : [productData.galleryImages]);
       } else {
         existingGallery = product.galleryImages || [];
       }
@@ -1045,7 +1045,7 @@ export const updateProduct = async (req, res) => {
       { $set: productData },
       { new: true, runValidators: true },
     );
-    
+
     // Enqueue search indexing asynchronously
     await enqueueProductIndex(id);
     await invalidate(`cache:catalog:product:${id}`);
@@ -1103,7 +1103,7 @@ export const deleteProduct = async (req, res) => {
     if (!product) {
       return handleResponse(res, 404, "Product not found or unauthorized");
     }
-    
+
     // Enqueue search index removal asynchronously
     await enqueueProductRemoval(id);
     await invalidate(`cache:catalog:product:${id}`);
@@ -1202,24 +1202,24 @@ export const getProductById = async (req, res) => {
     }
 
     const payload = normalizeProductDocumentModeration(product);
-    
-    if (req.user) {
-        const userId = req.user.id;
-        const purchase = await Order.findOne({
-            customer: userId,
-            "items.product": product._id,
-            $or: [
-                { orderStatus: { $regex: /^delivered$/i } },
-                { status: { $regex: /^delivered$/i } }
-            ]
-        });
-        payload.hasPurchased = !!purchase;
 
-        const existingReview = await Review.findOne({
-            userId,
-            productId: id
-        });
-        payload.hasReviewed = !!existingReview;
+    if (req.user) {
+      const userId = req.user.id;
+      const purchase = await Order.findOne({
+        customer: userId,
+        "items.product": product._id,
+        $or: [
+          { orderStatus: { $regex: /^delivered$/i } },
+          { status: { $regex: /^delivered$/i } }
+        ]
+      });
+      payload.hasPurchased = !!purchase;
+
+      const existingReview = await Review.findOne({
+        userId,
+        productId: id
+      });
+      payload.hasReviewed = !!existingReview;
     }
 
     return handleResponse(

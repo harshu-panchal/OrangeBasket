@@ -8,6 +8,7 @@ import {
   checkOutRider,
   getWarehouseQueue,
   getRiderCheckinStatus,
+  getRiderCheckinHistory,
   checkInRiderByLocation,
 } from "../services/warehouseCheckinService.js";
 import {
@@ -80,6 +81,19 @@ export const getCheckinStatus = async (req, res) => {
     const deliveryId = req.user.id;
     const status = await getRiderCheckinStatus(deliveryId);
     return handleResponse(res, 200, "Checkin status fetched", status);
+  } catch (err) {
+    return handleResponse(res, err.statusCode || 500, err.message);
+  }
+};
+
+/**
+ * GET /api/delivery/warehouse/checkin-history
+ */
+export const getCheckinHistory = async (req, res) => {
+  try {
+    const deliveryId = req.user.id;
+    const history = await getRiderCheckinHistory(deliveryId);
+    return handleResponse(res, 200, "Checkin history fetched", history);
   } catch (err) {
     return handleResponse(res, err.statusCode || 500, err.message);
   }

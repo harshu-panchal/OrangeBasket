@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import warehouseApi from '../../../core/api/axios';
 import { Link } from 'react-router-dom';
-import { Plus, Package, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Package, Clock, CheckCircle2, XCircle, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MonthlyKits = () => {
@@ -22,6 +22,18 @@ const MonthlyKits = () => {
         };
         fetchKits();
     }, []);
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this kit?")) return;
+        try {
+            await warehouseApi.delete(`/kits/warehouse/${id}`);
+            setKits(prev => prev.filter(kit => kit._id !== id));
+            toast.success("Kit deleted successfully");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to delete kit");
+        }
+    };
 
     const getStatusIcon = (status) => {
         switch(status) {
@@ -85,10 +97,24 @@ const MonthlyKits = () => {
                                 </div>
                                 <div className="flex justify-between items-center border-t border-slate-50 pt-3 mt-1">
                                     <p className="font-medium text-slate-600 text-sm">{kit.stock} units</p>
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border ${getStatusStyle(kit.approvalStatus)}`}>
-                                        {getStatusIcon(kit.approvalStatus)}
-                                        <span className="capitalize">{kit.approvalStatus}</span>
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border ${getStatusStyle(kit.approvalStatus)}`}>
+                                            {getStatusIcon(kit.approvalStatus)}
+                                            <span className="capitalize">{kit.approvalStatus}</span>
+                                        </span>
+                                        <Link 
+                                            to={`/warehouse/monthly-kits/edit/${kit._id}`}
+                                            className="p-1.5 text-slate-400 hover:text-primary transition-colors hover:bg-slate-50 rounded-md"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Link>
+                                        <button 
+                                            onClick={() => handleDelete(kit._id)}
+                                            className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors hover:bg-slate-50 rounded-md"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -103,12 +129,13 @@ const MonthlyKits = () => {
                                     <th className="p-4">Price</th>
                                     <th className="p-4">Stock</th>
                                     <th className="p-4">Status</th>
+                                    <th className="p-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {kits.length === 0 ? (
                                     <tr>
-                                        <td colSpan="4" className="p-12 text-center text-slate-500">
+                                        <td colSpan="5" className="p-12 text-center text-slate-500">
                                             <Package className="h-12 w-12 mx-auto mb-3 text-slate-300" />
                                             <p className="font-medium">No kits created yet.</p>
                                         </td>
@@ -141,6 +168,22 @@ const MonthlyKits = () => {
                                                 {getStatusIcon(kit.approvalStatus)}
                                                 <span className="capitalize">{kit.approvalStatus}</span>
                                             </span>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Link 
+                                                    to={`/warehouse/monthly-kits/edit/${kit._id}`}
+                                                    className="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-slate-100 rounded-lg"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Link>
+                                                <button 
+                                                    onClick={() => handleDelete(kit._id)}
+                                                    className="p-2 text-slate-400 hover:text-rose-500 transition-colors hover:bg-rose-50 rounded-lg"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

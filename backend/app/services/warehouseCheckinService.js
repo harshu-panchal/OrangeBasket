@@ -452,6 +452,19 @@ export async function getRiderCheckinStatus(deliveryId) {
 
   if (!checkin) return { isCheckedIn: false };
 
+  // Check if checkin was from a previous calendar day
+  const today = new Date();
+  const checkinDate = new Date(checkin.checkinTime);
+  if (
+    today.getDate() !== checkinDate.getDate() ||
+    today.getMonth() !== checkinDate.getMonth() ||
+    today.getFullYear() !== checkinDate.getFullYear()
+  ) {
+    // Automatically checkout the stale checkin
+    await checkOutRider(deliveryId, "auto_evicted");
+    return { isCheckedIn: false };
+  }
+
   const position = await getQueuePosition(deliveryId, checkin.warehouseId._id);
   return {
     isCheckedIn: true,
@@ -462,4 +475,16 @@ export async function getRiderCheckinStatus(deliveryId) {
     queuePosition: position,
     currentOrderId: checkin.currentOrderId,
   };
+}
+
+/**
+ * Returns check-in history for a rider.
+ */
+export async function getRiderCheckinHistory(deliveryId) {
+  return await WarehouseCheckin.find({
+    deliveryId: toObjectId(deliveryId)
+  })
+    .sort({ checkinTime: -1 })
+    .populate("warehouseId", "warehouseName name")
+    .lean();
 }

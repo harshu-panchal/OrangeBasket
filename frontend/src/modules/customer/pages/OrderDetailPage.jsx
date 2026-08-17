@@ -858,32 +858,32 @@ const OrderDetailPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-brand-500 to-brand-600 rounded-3xl p-5 shadow-lg text-white"
+            className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100"
           >
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="h-14 w-14 rounded-full bg-white/20 backdrop-blur-sm overflow-hidden border-2 border-white/40 shadow-lg">
+                <div className="h-14 w-14 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
                   <img
                     src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&auto=format&fit=crop&q=60"
                     alt="Rider"
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-white text-brand-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-md">
+                <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm border border-white">
                   4.8 ★
                 </div>
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">Your Courier</p>
-                <h3 className="font-bold text-white text-lg">{order.deliveryBoy?.name || "Delivery Partner"}</h3>
-                <p className="text-xs text-white/90 mt-0.5">On the way to you</p>
+                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Your Courier</p>
+                <h3 className="font-bold text-slate-900 text-lg leading-tight">{order.deliveryBoy?.name || "Delivery Partner"}</h3>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">On the way to you</p>
               </div>
               <div className="flex items-center gap-2">
-                <a href={`sms:${order.deliveryBoy?.phone || ''}`} className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors border border-white/30">
-                  <MessageSquare size={20} className="text-white" />
+                <a href={`sms:${order.deliveryBoy?.phone || ''}`} className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors border border-orange-100">
+                  <MessageSquare size={18} className="text-orange-600" />
                 </a>
-                <a href={`tel:${order.deliveryBoy?.phone || ''}`} className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors border border-white/30">
-                  <Phone size={20} className="text-white" />
+                <a href={`tel:${order.deliveryBoy?.phone || ''}`} className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors border border-orange-100">
+                  <Phone size={18} className="text-orange-600" />
                 </a>
               </div>
             </div>

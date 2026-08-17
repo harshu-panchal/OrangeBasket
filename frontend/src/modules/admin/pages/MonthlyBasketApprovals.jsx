@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import adminApi from '../../../core/api/axios';
 import { toast } from 'sonner';
-import { Check, X, Package, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, X, Package, Clock, CheckCircle2, XCircle, Pencil, Trash2 } from 'lucide-react';
 
 const MonthlyBasketApprovals = () => {
     const [kits, setKits] = useState([]);
@@ -38,11 +39,42 @@ const MonthlyBasketApprovals = () => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this kit?")) return;
+        setActionLoading(id);
+        try {
+            await adminApi.delete(`/kits/admin/${id}`);
+            toast.success('Kit deleted successfully');
+            fetchKits();
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to delete kit');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch(status) {
+            case 'approved': return <CheckCircle2 className="h-3 w-3" />;
+            case 'rejected': return <XCircle className="h-3 w-3" />;
+            default: return <Clock className="h-3 w-3" />;
+        }
+    };
+
+    const getStatusStyle = (status) => {
+        switch(status) {
+            case 'approved': return 'bg-emerald-500 text-white';
+            case 'rejected': return 'bg-rose-500 text-white';
+            default: return 'bg-amber-500 text-white';
+        }
+    };
+
     return (
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-2xl font-black text-slate-900">Monthly Basket Approvals</h1>
-                <p className="text-slate-500 font-medium">Review and approve kits submitted by warehouses</p>
+                <h1 className="text-2xl font-black text-slate-900">Manage Monthly Baskets</h1>
+                <p className="text-slate-500 font-medium">Review, approve, and manage kits submitted by warehouses</p>
             </div>
 
             {loading ? (
@@ -53,7 +85,7 @@ const MonthlyBasketApprovals = () => {
                 <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
                     <Check className="h-12 w-12 mx-auto text-emerald-400 mb-4" />
                     <h3 className="text-lg font-bold text-slate-900 mb-1">All caught up!</h3>
-                    <p className="text-slate-500">No pending kits awaiting approval.</p>
+                    <p className="text-slate-500">No kits found.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -67,9 +99,9 @@ const MonthlyBasketApprovals = () => {
                                         <Package className="h-12 w-12 text-slate-300" />
                                     </div>
                                 )}
-                                <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                                    <Clock className="h-3 w-3" />
-                                    Pending
+                                <div className={`absolute top-4 right-4 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg ${getStatusStyle(kit.approvalStatus)}`}>
+                                    {getStatusIcon(kit.approvalStatus)}
+                                    <span className="capitalize">{kit.approvalStatus}</span>
                                 </div>
                             </div>
                             <div className="p-5">
@@ -87,20 +119,39 @@ const MonthlyBasketApprovals = () => {
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    {kit.approvalStatus !== 'rejected' && (
+                                        <button 
+                                            onClick={() => handleApproval(kit._id, 'rejected')}
+                                            disabled={actionLoading === kit._id}
+                                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 font-bold hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                        >
+                                            <X className="h-4 w-4" /> Reject
+                                        </button>
+                                    )}
+                                    {kit.approvalStatus !== 'approved' && (
+                                        <button 
+                                            onClick={() => handleApproval(kit._id, 'approved')}
+                                            disabled={actionLoading === kit._id}
+                                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                        >
+                                            <Check className="h-4 w-4" /> Approve
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button 
-                                        onClick={() => handleApproval(kit._id, 'rejected')}
-                                        disabled={actionLoading === kit._id}
-                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 font-bold hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                    <Link 
+                                        to={`/admin/monthly-baskets/edit/${kit._id}`}
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors"
                                     >
-                                        <X className="h-4 w-4" /> Reject
-                                    </button>
+                                        <Pencil className="h-4 w-4" /> Edit
+                                    </Link>
                                     <button 
-                                        onClick={() => handleApproval(kit._id, 'approved')}
+                                        onClick={() => handleDelete(kit._id)}
                                         disabled={actionLoading === kit._id}
-                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 text-rose-600 font-bold hover:bg-rose-100 transition-colors disabled:opacity-50"
                                     >
-                                        <Check className="h-4 w-4" /> Approve
+                                        <Trash2 className="h-4 w-4" /> Delete
                                     </button>
                                 </div>
                             </div>

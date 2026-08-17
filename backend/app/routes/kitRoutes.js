@@ -15,10 +15,13 @@ router.get("/home-data", kitController.getHomeData);
 router.post("/warehouse", verifyToken, allowRoles("warehouse"), upload.any(), kitController.createKit);
 router.get("/warehouse", verifyToken, allowRoles("warehouse"), kitController.getWarehouseKits);
 router.put("/warehouse/:id", verifyToken, allowRoles("warehouse"), upload.any(), kitController.updateKit);
+router.delete("/warehouse/:id", verifyToken, allowRoles("warehouse"), kitController.deleteKit);
 
 // Admin endpoints
 router.get("/admin/approvals", verifyToken, allowRoles("admin"), kitController.getPendingKits);
 router.put("/admin/:id/approve", verifyToken, allowRoles("admin"), kitController.approveKit);
+router.put("/admin/edit/:id", verifyToken, allowRoles("admin"), upload.any(), kitController.updateKit);
+router.delete("/admin/:id", verifyToken, allowRoles("admin"), kitController.deleteKit);
 
 // Put ID route last to prevent it from matching other paths like /warehouse
 router.get("/:id", kitController.getKitById);

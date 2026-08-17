@@ -393,3 +393,9 @@ body {
     -webkit-touch-callout: none;
   }
 }
+
+/* Google Maps Places Autocomplete - ensure it stays above dialogs and is clickable */
+.pac-container {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}

@@ -109,12 +109,12 @@ const productSchema = new mongoose.Schema(
         sellerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Seller",
-            required: function() { return !this.isMonthlyKit; }
+            required: function () { return !this.isMonthlyKit; }
         },
         warehouseId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Warehouse",
-            required: function() { return this.isMonthlyKit; }
+            required: function () { return this.isMonthlyKit; }
         },
         isMonthlyKit: {
             type: Boolean,
@@ -153,6 +153,10 @@ const productSchema = new mongoose.Schema(
             enum: ["seller", "admin"],
             default: null,
         },
+        includedItems: [{
+            name: { type: String, trim: true },
+            quantity: { type: String, trim: true }
+        }],
         variants: [
             {
                 name: String,
