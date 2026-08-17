@@ -140,7 +140,7 @@ const AddProduct = () => {
     // Validate variants price vs salePrice
     const invalidVariant = formData.variants.find((v) => v.salePrice && Number(v.salePrice) > Number(v.price));
     if (invalidVariant) {
-      toast.error(Sale Price cannot be greater than Price for variant: );
+      toast.error("Sale Price cannot be greater than Price for a variant.");
       return;
     }
     setIsSaving(true);
