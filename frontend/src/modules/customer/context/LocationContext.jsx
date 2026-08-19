@@ -169,20 +169,24 @@ export const LocationProvider = ({ children }) => {
 
             const displayParts = [];
             if (premise) displayParts.push(premise);
+            
+            const streetNumber = getComponent(["street_number"]);
+            const route = getComponent(["route"]);
+            if (streetNumber && route) {
+              displayParts.push(`${streetNumber} ${route}`);
+            } else if (route) {
+              displayParts.push(route);
+            }
+
             if (neighborhood) displayParts.push(neighborhood);
             if (sublocality && sublocality !== neighborhood)
               displayParts.push(sublocality);
-            if (locality) displayParts.push(locality);
 
-            let statePincode = "";
-            if (state) statePincode += state;
-            if (pincode) statePincode += (statePincode ? " " : "") + pincode;
-            if (statePincode) displayParts.push(statePincode);
-
-            if (country) displayParts.push(country);
-
-            const friendlyName =
-              displayParts.join(", ") || data.results[0].formatted_address;
+            let friendlyName = displayParts.join(", ");
+            if (!friendlyName) {
+              const parts = (data.results[0].formatted_address || "").split(",");
+              friendlyName = parts[0] || "Unknown Location";
+            }
 
             liveLocation = {
               name: friendlyName,
