@@ -40,21 +40,21 @@ const Transactions = () => {
   const stats = [
     {
       label: "Settled Balance",
-      value: `â‚¹${(data?.balances?.settledBalance || 0).toLocaleString()}`,
+      value: `₹${(data?.balances?.settledBalance || 0).toLocaleString()}`,
       icon: HiOutlineBanknotes,
       color: "text-brand-600",
       bg: "bg-brand-50",
     },
     {
       label: "Pending Payouts",
-      value: `â‚¹${(data?.balances?.pendingPayouts || 0).toLocaleString()}`,
+      value: `₹${(data?.balances?.pendingPayouts || 0).toLocaleString()}`,
       icon: HiOutlineClock,
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
     {
       label: "Total Revenue",
-      value: `â‚¹${(data?.balances?.totalRevenue || 0).toLocaleString()}`,
+      value: `₹${(data?.balances?.totalRevenue || 0).toLocaleString()}`,
       icon: HiOutlineCreditCard,
       color: "text-brand-600",
       bg: "bg-brand-50",
@@ -102,7 +102,7 @@ const Transactions = () => {
       const record = {
         id: txn.id ?? txn.ref ?? "",
         type: txn.type ?? "",
-        amount: `â‚¹${Math.abs(Number(txn.amount ?? 0)).toLocaleString()}`,
+        amount: `₹${Math.abs(Number(txn.amount ?? 0)).toLocaleString()}`,
         status: txn.status ?? "",
         date:
           txn.date ??
@@ -167,7 +167,7 @@ const Transactions = () => {
                   const exportData = filteredTransactions.map((txn) => ({
                     id: txn.id ?? txn.ref ?? "",
                     type: txn.type ?? "",
-                    amount: `â‚¹${Number(txn.amount ?? 0).toLocaleString()}`,
+                    amount: `₹${Number(txn.amount ?? 0).toLocaleString()}`,
                     status: txn.status ?? "",
                     date: txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ""),
                     time: txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""),
@@ -297,13 +297,13 @@ const Transactions = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-900 truncate">
-                        {txn.id ?? txn.ref ?? "â€”"}
+                        {txn.id ?? txn.ref ?? "—"}
                       </p>
                       <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">
-                        {txn.type ?? "â€”"}
+                        {txn.type ?? "—"}
                       </p>
                       <p className="text-[10px] font-bold text-slate-500 mt-1">
-                         {txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "â€”")} â€¢ {txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "â€”")}
+                         {txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "—")} • {txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—")}
                       </p>
                     </div>
                   </div>
@@ -311,7 +311,7 @@ const Transactions = () => {
                   <div className="flex justify-between items-end border-t border-slate-50 pt-3">
                     <div className="flex flex-col gap-1">
                       <p className="text-xs font-bold text-slate-900">
-                        {txn.customer ?? "â€”"}
+                        {txn.customer ?? "—"}
                       </p>
                       <Badge
                         variant={
@@ -333,7 +333,7 @@ const Transactions = () => {
                           Number(txn.amount ?? 0) > 0 ? "text-brand-600" : "text-rose-600"
                         )}
                       >
-                        {Number(txn.amount ?? 0) > 0 ? "+" : ""}â‚¹
+                        {Number(txn.amount ?? 0) > 0 ? "+" : ""}₹
                         {Math.abs(Number(txn.amount ?? 0)).toLocaleString()}
                       </p>
                       <button
@@ -410,24 +410,24 @@ const Transactions = () => {
                           </div>
                           <div>
                             <p className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">
-                              {txn.id ?? txn.ref ?? "â€”"}
+                              {txn.id ?? txn.ref ?? "—"}
                             </p>
                             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-                              {txn.type ?? "â€”"}
+                              {txn.type ?? "—"}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <p className="text-xs font-bold text-slate-900">
-                          {txn.customer ?? "â€”"}
+                          {txn.customer ?? "—"}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <Badge className="text-[10px] sm:text-xs px-1 py-0 bg-slate-100 text-slate-600 font-bold border-none">
-                            {txn.ref ?? "â€”"}
+                            {txn.ref ?? "—"}
                           </Badge>
                           <span className="text-[10px] sm:text-xs text-slate-600 font-bold uppercase tracking-tighter">
-                            {txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "â€”")} â€¢ {txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "â€”")}
+                            {txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "—")} • {txn.time ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—")}
                           </span>
                         </div>
                       </td>
@@ -439,7 +439,7 @@ const Transactions = () => {
                               ? "text-brand-600"
                               : "text-rose-600",
                           )}>
-                          {Number(txn.amount ?? 0) > 0 ? "+" : ""}â‚¹
+                          {Number(txn.amount ?? 0) > 0 ? "+" : ""}₹
                           {Math.abs(Number(txn.amount ?? 0)).toLocaleString()}
                         </p>
                         <p className="text-[10px] sm:text-xs font-bold text-slate-600 mt-0.5">
@@ -516,11 +516,11 @@ const Transactions = () => {
                   "text-4xl font-black tracking-tight",
                   Number(selectedTxn.amount ?? 0) > 0 ? "text-brand-600" : "text-rose-600",
                 )}>
-                {Number(selectedTxn.amount ?? 0) > 0 ? "+" : ""}â‚¹
+                {Number(selectedTxn.amount ?? 0) > 0 ? "+" : ""}₹
                 {Math.abs(Number(selectedTxn.amount ?? 0)).toLocaleString()}
               </h2>
               <Badge className="mt-4 uppercase font-black text-[10px] sm:text-xs px-3 py-1">
-                {selectedTxn.status ?? "â€”"}
+                {selectedTxn.status ?? "—"}
               </Badge>
             </div>
 
@@ -528,13 +528,13 @@ const Transactions = () => {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-600 font-bold">Transaction ID</span>
                 <span className="text-slate-900 font-black">
-                  {selectedTxn.id ?? selectedTxn.ref ?? "â€”"}
+                  {selectedTxn.id ?? selectedTxn.ref ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-600 font-bold">Type</span>
                 <span className="text-slate-900 font-black">
-                  {selectedTxn.type ?? "â€”"}
+                  {selectedTxn.type ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
@@ -542,13 +542,13 @@ const Transactions = () => {
                   Customer/Recipient
                 </span>
                 <span className="text-slate-900 font-black">
-                  {selectedTxn.customer ?? "â€”"}
+                  {selectedTxn.customer ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-600 font-bold">Reference</span>
                 <span className="text-slate-900 font-black">
-                  {selectedTxn.ref ?? "â€”"}
+                  {selectedTxn.ref ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm">
@@ -558,7 +558,7 @@ const Transactions = () => {
                     ? `${selectedTxn.date} at ${selectedTxn.time}`
                     : selectedTxn.createdAt
                       ? `${new Date(selectedTxn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} at ${new Date(selectedTxn.createdAt).toLocaleTimeString()}`
-                      : "â€”"}
+                      : "—"}
                 </span>
               </div>
             </div>

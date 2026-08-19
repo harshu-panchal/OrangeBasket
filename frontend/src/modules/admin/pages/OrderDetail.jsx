@@ -321,7 +321,6 @@ const OrderDetail = () => {
                                         <h4 className="text-xs font-black uppercase tracking-tight text-slate-900">
                                             Status: {order.status.replace(/_/g, ' ')}
                                         </h4>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(order.updatedAt).toLocaleTimeString()}</span>
                                     </div>
                                     <p className="text-[11px] font-bold text-slate-400 leading-relaxed italic">"System verified current logistical state as {order.status}."</p>
                                 </div>
@@ -356,7 +355,7 @@ const OrderDetail = () => {
                         <div className="space-y-6 text-left mt-6">
                             <div className="flex flex-col gap-2">
                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-3">
-                                    <Mail className="h-3.5 w-3.5" /> {order.customer?.email}
+                                    <Mail className="h-3.5 w-3.5" /> {order.customer?.email || 'NA'}
                                 </span>
                                 <span className="text-[10px] font-bold text-slate-400 flex items-center gap-3">
                                     <Phone className="h-3.5 w-3.5" /> {order.customer?.phone}
@@ -454,13 +453,7 @@ const OrderDetail = () => {
                                     {order.payment?.status || 'PENDING'}
                                 </Badge>
                             </div>
-                            <div className="flex items-center justify-between px-2">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TXN Hash</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black text-slate-700 truncate max-w-[100px]">{order.payment?.transactionId || 'N/A'}</span>
-                                    <button onClick={() => copyToClipboard(order.payment?.transactionId, 'Transaction ID')} className="p-1.5 hover:bg-slate-50 rounded-md text-slate-300"><Copy className="h-3 w-3" /></button>
-                                </div>
-                            </div>
+
                             <div className="flex items-center justify-between px-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gateway Method</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{order.payment?.method || 'CASH'}</span>
@@ -468,16 +461,7 @@ const OrderDetail = () => {
                         </div>
                     </Card>
 
-                    {/* Intelligence Notes */}
-                    <Card className="border-none shadow-xl ring-1 ring-amber-100 bg-amber-50/30 rounded-xl p-6 text-left">
-                        <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Info className="h-4 w-4" />
-                            Intelligence Notes
-                        </h4>
-                        <p className="text-xs font-bold text-amber-800 leading-relaxed italic">
-                            "{order.cancelReason ? `Cancellation Payload: ${order.cancelReason}` : `Delivery window scheduled for ${order.timeSlot}. Instructions: Follow local logistical protocols.`}"
-                        </p>
-                    </Card>
+
                 </div>
             </div>
 

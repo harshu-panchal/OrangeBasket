@@ -90,7 +90,7 @@ const CustomerAuth = () => {
             const { token, customer } = response.data.result;
             login({ ...customer, token, role: 'customer' });
             toast.success(t('loggedInSuccess'));
-            navigate('/');
+            navigate('/', { replace: true });
         } catch (error) {
             const apiMessage = error?.response?.data?.message;
             toast.error(apiMessage || t('invalidOtp'));

@@ -73,7 +73,7 @@ const AdminAuth = () => {
             login(authData);
 
             toast.success(isLogin ? 'Welcome back, Administrator.' : 'Administrator Account Created.');
-            navigate('/admin');
+            navigate('/admin', { replace: true });
         } catch (error) {
             console.error('Login error:', error);
             toast.error(error.response?.data?.message || 'Authentication failed');

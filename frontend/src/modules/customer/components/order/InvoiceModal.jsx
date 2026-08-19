@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Printer, Download, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@core/context/SettingsContext';
@@ -8,6 +8,17 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
     const appName = settings?.appName || 'App';
     const primaryColor = settings?.primaryColor || 'var(--primary)';
     if (!order) return null;
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
 
     const handlePrint = () => {
         window.print();
@@ -22,7 +33,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        className="print-wrapper fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                     >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -30,13 +41,13 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative"
+                            className="print-modal bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative"
                         >
                             {/* Header */}
-                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between print:hidden">
                                 <div>
                                     <h2 className="text-lg font-black text-slate-800">Invoice</h2>
-                                    <p className="text-xs text-slate-500 font-medium">#{order.id}</p>
+                                    <p className="text-xs text-slate-500 font-medium">#{order.orderId || order.id}</p>
                                 </div>
                                 <button onClick={onClose} className="p-2 bg-white rounded-full hover:bg-slate-200 transition-colors shadow-sm border border-slate-100">
                                     <X size={20} className="text-slate-500" />
@@ -45,12 +56,16 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
 
                             {/* Printable Area */}
                             <div className="p-8 space-y-6" id="printable-invoice">
-                                <div className="flex justify-between items-start">
-                                    <div>
+                                <div className="flex justify-between items-start gap-4">
+                                    <div className="flex-1 min-w-0">
                                         <h1 className="text-2xl font-black tracking-tight" style={{ color: primaryColor }}>{appName}</h1>
-                                        <p className="text-xs text-slate-500 mt-1">{settings?.companyName || 'Quick Commerce'}<br />{settings?.address || '—'}</p>
+                                        <p className="text-xs text-slate-500 mt-1 truncate">{settings?.companyName || 'Quick Commerce'}<br />{settings?.address || '—'}</p>
+                                        <div className="mt-4">
+                                            <p className="text-sm font-bold text-slate-800">Order ID: <span className="font-medium text-slate-600 break-all">#{order.orderId || order.id}</span></p>
+                                            <p className="text-sm font-bold text-slate-800">Date: <span className="font-medium text-slate-600">{new Date(order.createdAt || Date.now()).toLocaleDateString()}</span></p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right shrink-0">
                                         <p className="text-sm font-bold text-slate-800">Bill To:</p>
                                         <p className="text-xs text-slate-500 mt-1">{order.address.name}<br />{order.address.phone}</p>
                                     </div>
@@ -83,11 +98,27 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
                                         <span>₹{order.pricing?.subtotal || 0}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-slate-500">
-                                        <span>Tax</span>
+                                        <span>Delivery Fee</span>
+                                        <span>₹{order.pricing?.deliveryFee || 0}</span>
+                                    </div>
+                                    {(order.pricing?.packagingFee || 0) > 0 && (
+                                        <div className="flex justify-between text-sm text-slate-500">
+                                            <span>Packaging Fee</span>
+                                            <span>₹{order.pricing?.packagingFee}</span>
+                                        </div>
+                                    )}
+                                    {(order.pricing?.discount || 0) > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600 font-medium">
+                                            <span>Discount</span>
+                                            <span>- ₹{order.pricing?.discount}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-sm text-slate-500">
+                                        <span>Tax (GST)</span>
                                         <span>₹{order.pricing?.gst || 0}</span>
                                     </div>
                                     <div className="flex justify-between text-base font-black text-slate-800 pt-2 border-t border-slate-100">
-                                        <span>Total Paid</span>
+                                        <span>Grand Total</span>
                                         <span>₹{order.pricing?.total || 0}</span>
                                     </div>
                                 </div>
@@ -102,29 +133,37 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
 
                             <style>
                                 {`
-                                    @media print {
-                                        body * { visibility: hidden; }
-                                        #printable-invoice, #printable-invoice * { visibility: visible; }
-                                        #printable-invoice { 
-                                            position: absolute !important; 
-                                            left: 0 !important; 
-                                            top: 0 !important; 
-                                            width: 100% !important; 
-                                            -webkit-print-color-adjust: exact;
-                                            print-color-adjust: exact;
+                                        @media print {
+                                            body * { visibility: hidden; }
+                                            
+                                            .print-wrapper {
+                                                position: absolute !important;
+                                                top: 0 !important;
+                                                left: 0 !important;
+                                                width: 100% !important;
+                                                height: auto !important;
+                                                align-items: flex-start !important;
+                                                padding: 0 !important;
+                                                background: white !important;
+                                            }
+                                            
+                                            .print-modal {
+                                                transform: none !important;
+                                                box-shadow: none !important;
+                                                max-width: 100% !important;
+                                                border-radius: 0 !important;
+                                            }
+
+                                            #printable-invoice, #printable-invoice * { 
+                                                visibility: visible; 
+                                            }
+                                            
+                                            #printable-invoice { 
+                                                width: 100% !important; 
+                                                -webkit-print-color-adjust: exact;
+                                                print-color-adjust: exact;
+                                            }
                                         }
-                                        /* Prevent clipping and transform context issues */
-                                        .fixed, .relative, .absolute {
-                                            position: static !important;
-                                            transform: none !important;
-                                        }
-                                        .overflow-hidden {
-                                            overflow: visible !important;
-                                        }
-                                        .max-w-lg {
-                                            max-width: 100% !important;
-                                        }
-                                    }
                                 `}
                             </style>
                         </motion.div>

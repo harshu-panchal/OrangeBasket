@@ -278,6 +278,11 @@ const OtpInput = ({ orderId, isReturn = false, isReturnDrop = false, onSuccess, 
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={index === 0 ? handlePaste : undefined}
+            onFocus={(e) => {
+              setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
             disabled={isLoading}
             className={`w-14 h-16 text-center text-2xl font-bold font-mono border-2 rounded-xl transition-all duration-200 outline-none focus:outline-none focus:ring-2 focus:ring-offset-0 ${error
                 ? "border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500"

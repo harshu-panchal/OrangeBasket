@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useAuth } from "@core/context/AuthContext";
 import { onTicketMessage } from "@core/services/orderSocket";
 import { getJSON, setJSON, remove as removeStorage } from "@core/utils/storage";
+import { toast } from "sonner";
 
 const SupportUnreadContext = createContext(undefined);
 
@@ -140,6 +141,12 @@ export const SupportUnreadProvider = ({ children }) => {
         isViewingRef.current && activeTicketIdRef.current && activeTicketIdRef.current === tid;
 
       if (isCurrentlyViewing) return;
+
+      if (typeof toast !== "undefined" && typeof toast.info === "function") {
+        toast.info("New support message", {
+          description: msg.text || "You have received a new support ticket response.",
+        });
+      }
 
       setUnreadByTicket((prev) => {
         const nextPrev = prev && typeof prev === "object" ? prev : {};

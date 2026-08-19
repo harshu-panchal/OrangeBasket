@@ -823,6 +823,7 @@ const Orders = () => {
                                                     <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm">
                                                         <p className="text-xs font-bold text-slate-800">{selectedOrder.customer.name}</p>
                                                         <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.customer.phone}</p>
+                                                        <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.customer.email || 'NA'}</p>
                                                     </div>
                                                 </div>
                                             </div>

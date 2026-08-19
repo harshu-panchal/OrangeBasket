@@ -218,7 +218,7 @@ const SupportPage = () => {
                                     <button
                                         type="submit"
                                         disabled={ticketLoading}
-                                        className="flex-1 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-[#0a701a] transition-colors flex items-center justify-center gap-2 text-sm shadow-md"
+                                        className="flex-1 py-3 bg-[#f97316] text-white font-bold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-sm shadow-md"
                                     >
                                         {ticketLoading ? (
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

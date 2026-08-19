@@ -50,7 +50,7 @@ const Earnings = () => {
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0 || amount > totalBalance) {
       alert(
-        "Please enter a valid amount between â‚¹0.01 and â‚¹" +
+        "Please enter a valid amount between ₹0.01 and ₹" +
         totalBalance.toLocaleString(),
       );
       return;
@@ -61,7 +61,7 @@ const Earnings = () => {
       setIsWithdrawing(false);
       setIsWithdrawModalOpen(false);
       alert(
-        `Withdrawal request of â‚¹${amount.toLocaleString()} submitted successfully!`,
+        `Withdrawal request of ₹${amount.toLocaleString()} submitted successfully!`,
       );
     }, 1500);
   };
@@ -91,7 +91,7 @@ const Earnings = () => {
                 const exportData = ledger.map((txn) => ({
                   id: txn.id ?? txn.ref ?? "",
                   type: txn.type ?? "",
-                  amount: `â‚¹${Number(txn.amount ?? 0).toLocaleString()}`,
+                  amount: `₹${Number(txn.amount ?? 0).toLocaleString()}`,
                   status: txn.status ?? "",
                   date: txn.date ?? (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ""),
                   customer: txn.customer ?? "",
@@ -128,7 +128,7 @@ const Earnings = () => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-brand-100 font-medium">Total Revenue</p>
-                <h3 className="text-4xl font-bold mt-2">â‚¹{Number(data?.balances?.totalRevenue ?? 0).toLocaleString()}</h3>
+                <h3 className="text-4xl font-bold mt-2">₹{Number(data?.balances?.totalRevenue ?? 0).toLocaleString()}</h3>
               </div>
               <div className="p-3 bg-white/20 rounded-xl">
                 <DollarSign className="h-8 w-8 text-white" />
@@ -149,7 +149,7 @@ const Earnings = () => {
                   Total Withdrawn
                 </p>
                 <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                  â‚¹{Number(data?.balances?.totalWithdrawn ?? 0).toLocaleString()}
+                  ₹{Number(data?.balances?.totalWithdrawn ?? 0).toLocaleString()}
                 </h2>
               </div>
               <div className="p-3 bg-brand-50 rounded-lg group-hover:scale-110 transition-transform duration-300">
@@ -166,7 +166,7 @@ const Earnings = () => {
                     Available to Withdraw
                   </p>
                   <p className="text-xs font-black text-slate-900">
-                    â‚¹{Number(data?.balances?.settledBalance ?? 0).toLocaleString()}
+                    ₹{Number(data?.balances?.settledBalance ?? 0).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -205,7 +205,7 @@ const Earnings = () => {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }}
-                    tickFormatter={(value) => `â‚¹${value}`}
+                    tickFormatter={(value) => `₹${value}`}
                   />
                   <Tooltip
                     cursor={{ fill: "#f8fafc" }}
@@ -216,7 +216,7 @@ const Earnings = () => {
                       fontSize: "12px",
                       fontWeight: "700",
                     }}
-                    formatter={(value) => [`â‚¹${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value) => [`₹${value.toLocaleString()}`, "Revenue"]}
                   />
                   <Bar
                     dataKey="revenue"
@@ -256,7 +256,7 @@ const Earnings = () => {
               <p className="text-sm text-slate-600 font-medium mb-8">
                 Available Balance:{" "}
                 <span className="text-brand-600 font-bold">
-                  â‚¹{Number(data?.balances?.settledBalance ?? 0).toLocaleString()}
+                  ₹{Number(data?.balances?.settledBalance ?? 0).toLocaleString()}
                 </span>
               </p>
 
@@ -267,7 +267,7 @@ const Earnings = () => {
                   </label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">
-                      â‚¹
+                      ₹
                     </span>
                     <input
                       type="number"

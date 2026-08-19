@@ -248,7 +248,7 @@ const Orders = () => {
             const s = String(v ?? "").replace(/"/g, '""');
             return /[",\n\r]/.test(s) ? `"${s}"` : s;
         };
-        const headers = ["Order ID", "Customer", "Phone", "Date", "Time", "Total (â‚¹)", "Status", "Address", "Payment"];
+        const headers = ["Order ID", "Customer", "Phone", "Date", "Time", "Total (₹)", "Status", "Address", "Payment"];
         const rows = data.map((o) => [
             o.id,
             o.customer?.name ?? "",
@@ -474,7 +474,7 @@ const Orders = () => {
                                                     <p className="text-xs font-black text-slate-900 truncate">#{order.id}</p>
                                                     <p className="text-xs font-semibold text-slate-600 mt-0.5 flex items-center gap-1">
                                                         <HiOutlineCalendarDays className="h-3 w-3 shrink-0" />
-                                                        {order.date} â€¢ {order.time}
+                                                        {order.date} • {order.time}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <div className="h-7 w-7 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shrink-0">
@@ -482,7 +482,7 @@ const Orders = () => {
                                                         </div>
                                                         <p className="text-xs font-bold text-slate-800 truncate">{order.customer.name}</p>
                                                     </div>
-                                                    <p className="text-sm font-black text-slate-900 mt-2">â‚¹{order.total.toLocaleString()}</p>
+                                                    <p className="text-sm font-black text-slate-900 mt-2">₹{order.total.toLocaleString()}</p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2 shrink-0">
                                                     <Badge variant={getStatusColor(order.status)} className="text-[10px] font-black uppercase px-2 py-0">
@@ -551,7 +551,7 @@ const Orders = () => {
                                                             </span>
                                                             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mt-1">
                                                                 <HiOutlineCalendarDays className="h-3 w-3" />
-                                                                {order.date} â€¢ {order.time}
+                                                                {order.date} &bull; {order.time}
                                                             </div>
                                                         </div>
                                                     </td>
@@ -568,7 +568,7 @@ const Orders = () => {
                                                     </td>
                                                     <td className="px-4 lg:px-6 py-3 lg:py-4">
                                                         <div className="flex flex-col">
-                                                            <span className="text-xs font-bold text-slate-900">â‚¹{order.total.toLocaleString()}</span>
+                                                            <span className="text-xs font-bold text-slate-900">₹{order.total.toLocaleString()}</span>
                                                             <span className="text-xs font-semibold text-slate-600">{order.items.length} items</span>
                                                         </div>
                                                     </td>
@@ -681,7 +681,7 @@ const Orders = () => {
                     {/* Quick View Summary Modal */}
                     <AnimatePresence>
                         {isQuickViewModalOpen && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4">
+                            <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4">
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -715,11 +715,11 @@ const Orders = () => {
                                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                             <div className="p-3 sm:p-4 rounded-2xl bg-brand-50 border border-brand-100">
                                                 <p className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest mb-1">Total Revenue</p>
-                                                <p className="text-base sm:text-xl font-black text-brand-700 truncate">â‚¹{summary.totalAmount.toLocaleString('en-IN')}</p>
+                                                <p className="text-base sm:text-xl font-black text-brand-700 truncate">₹{summary.totalAmount.toLocaleString('en-IN')}</p>
                                             </div>
                                             <div className="p-3 sm:p-4 rounded-2xl bg-brand-50 border border-brand-100">
                                                 <p className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest mb-1">Avg. Order Value</p>
-                                                <p className="text-base sm:text-xl font-black text-brand-700">â‚¹{summary.totalOrders ? (summary.totalAmount / summary.totalOrders).toFixed(0) : '0'}</p>
+                                                <p className="text-base sm:text-xl font-black text-brand-700">₹{summary.totalOrders ? (summary.totalAmount / summary.totalOrders).toFixed(0) : '0'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -741,7 +741,7 @@ const Orders = () => {
                     </AnimatePresence>
                     <AnimatePresence>
                         {isDetailsModalOpen && selectedOrder && (
-                            <div className="fixed inset-0 z-[100] flex items-stretch sm:items-center justify-center p-3 sm:p-6 lg:p-12">
+                            <div className="fixed inset-0 z-[999] flex items-stretch sm:items-center justify-center p-3 sm:p-6 lg:p-12">
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -773,7 +773,7 @@ const Orders = () => {
                                                         {selectedOrder.date}
                                                         {selectedOrder.time && (
                                                             <>
-                                                                <span className="text-slate-300">â€¢</span>
+                                                                <span className="text-slate-300">•</span>
                                                                 <HiOutlineClock className="h-3.5 w-3.5" />
                                                                 {selectedOrder.time}
                                                             </>
@@ -824,6 +824,7 @@ const Orders = () => {
                                                     <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-sm">
                                                         <p className="text-xs font-bold text-slate-800">{selectedOrder.customer.name}</p>
                                                         <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.customer.phone}</p>
+                                                        <p className="text-xs font-semibold text-slate-600 mt-0.5">{selectedOrder.customer.email || 'NA'}</p>
                                                     </div>
                                                 </div>
                                                 {selectedOrder.deliveryBoy && (
@@ -849,16 +850,16 @@ const Orders = () => {
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-bold text-slate-600">Subtotal</span>
-                                                            <span className="font-black text-slate-900">â‚¹{(selectedOrder.total - 10).toFixed(2)}</span>
+                                                            <span className="font-black text-slate-900">₹{(selectedOrder.total - 10).toFixed(2)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-bold text-slate-600">Delivery Fee</span>
-                                                            <span className="font-black text-brand-600">â‚¹10.00</span>
+                                                            <span className="font-black text-brand-600">₹10.00</span>
                                                         </div>
                                                         <div className="h-px bg-primary/10 my-2" />
                                                         <div className="flex justify-between text-sm">
                                                             <span className="font-black text-slate-900">Total</span>
-                                                            <span className="font-black text-primary">â‚¹{selectedOrder.total.toFixed(2)}</span>
+                                                            <span className="font-black text-primary">₹{selectedOrder.total.toFixed(2)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -882,11 +883,11 @@ const Orders = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-xs font-bold text-slate-900">{item.name}</p>
-                                                            <p className="text-xs font-semibold text-slate-600 mt-0.5">â‚¹{item.price.toFixed(2)} Ã— {item.qty}</p>
+                                                            <p className="text-xs font-semibold text-slate-600 mt-0.5">₹{item.price.toFixed(2)} × {item.qty}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-xs font-black text-slate-900">â‚¹{(item.price * item.qty).toFixed(2)}</p>
+                                                        <p className="text-xs font-black text-slate-900">₹{(item.price * item.qty).toFixed(2)}</p>
                                                     </div>
                                                 </div>
                                             ))}

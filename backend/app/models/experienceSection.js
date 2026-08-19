@@ -69,7 +69,7 @@ const experienceSectionSchema = new mongoose.Schema(
     },
     displayType: {
       type: String,
-      enum: ["banners", "categories", "subcategories", "products"],
+      enum: ["banners", "categories", "subcategories", "products", "multiple_banners"],
       required: true,
     },
     title: {

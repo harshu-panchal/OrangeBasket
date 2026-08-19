@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MessageCircle, Phone, ChevronRight, AlertCircle, PackageX, Truck, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const HelpModal = ({ isOpen, onClose }) => {
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     const issues = [
         { icon: PackageX, label: 'Items missing or incorrect', sub: 'Get a refund or replacement' },
         { icon: AlertCircle, label: 'Item quality issue', sub: 'Report damaged or expired items' },

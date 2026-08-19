@@ -356,7 +356,7 @@ const DeliveryTracking = () => {
                                 Timing
                               </p>
                               <p className="text-[10px] font-black text-primary tracking-tight mt-0.5">
-                                {dlv.startTime || "â€”"}
+                                {dlv.startTime || "—"}
                               </p>
                             </div>
                           </div>

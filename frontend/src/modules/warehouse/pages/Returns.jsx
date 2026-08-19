@@ -640,7 +640,7 @@ const Returns = () => {
                                                         </p>
                                                     </div>
                                                     <p className="text-xs font-black text-slate-900">
-                                                        â‚¹{item.price * item.quantity}
+                                                        ₹{item.price * item.quantity}
                                                     </p>
                                                 </div>
                                             )

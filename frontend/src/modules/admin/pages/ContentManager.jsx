@@ -22,6 +22,7 @@ import { adminApi } from '../services/adminApi';
 
 const DISPLAY_TYPES = [
     { id: 'banners', label: 'Banners' },
+    { id: 'multiple_banners', label: 'Multiple Banners' },
     { id: 'categories', label: 'Categories' },
     { id: 'subcategories', label: 'Sub Categories' },
     { id: 'products', label: 'Products' },
@@ -224,7 +225,7 @@ const ContentManager = () => {
 
         let config = {};
 
-        if (displayType === 'banners') {
+        if (displayType === 'banners' || displayType === 'multiple_banners') {
             if ((formData.bannerItems || []).some(b => b.isUploading)) {
                 showToast('Please wait for all banner images to finish uploading', 'warning');
                 return;
@@ -464,7 +465,7 @@ const ContentManager = () => {
                                     <Card key={section._id} className="p-4 border-none shadow-lg ring-1 ring-slate-100 bg-white rounded-xl group">
                                         <div className="flex items-center gap-4">
                                             <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
-                                                {section.displayType === 'banners' && <HiOutlinePhoto className="h-6 w-6" />}
+                                                {['banners', 'multiple_banners'].includes(section.displayType) && <HiOutlinePhoto className="h-6 w-6" />}
                                                 {section.displayType === 'categories' && <HiOutlineSparkles className="h-6 w-6" />}
                                                 {section.displayType === 'subcategories' && <HiOutlineSparkles className="h-6 w-6" />}
                                                 {section.displayType === 'products' && <HiOutlineDevicePhoneMobile className="h-6 w-6" />}
@@ -485,7 +486,7 @@ const ContentManager = () => {
                                                     {section.title || '(No heading)'}
                                                 </h4>
                                                 <p className="text-[11px] text-slate-500">
-                                                    {section.displayType === 'banners' && `${section.config?.banners?.items?.length || 0} banners configured`}
+                                                    {['banners', 'multiple_banners'].includes(section.displayType) && `${section.config?.banners?.items?.length || 0} banners configured`}
                                                     {section.displayType === 'categories' && `${section.config?.categories?.categoryIds?.length || 0} categories • ${section.config?.categories?.rows || 1} rows`}
                                                     {section.displayType === 'subcategories' && `${section.config?.subcategories?.subcategoryIds?.length || 0} subcategories • ${section.config?.subcategories?.rows || 1} rows`}
                                                     {section.displayType === 'products' && `${section.config?.products?.productIds?.length || 0} products • ${section.config?.products?.rows || 1}x${section.config?.products?.columns || 2}${section.config?.products?.singleRowScrollable ? ' • Single row scroll' : ''}`}
@@ -590,7 +591,7 @@ const ContentManager = () => {
                     </div>
 
                     {/* Type-specific config */}
-                    {formData.displayType === 'banners' && (
+                    {['banners', 'multiple_banners'].includes(formData.displayType) && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">

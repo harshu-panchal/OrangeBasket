@@ -104,7 +104,7 @@ const Analytics = () => {
   const stats = [
     {
       label: "Total Sales",
-      value: statsData?.overview?.totalSales || "â‚¹0",
+      value: statsData?.overview?.totalSales || "₹0",
       trend: statsData?.overview?.salesTrend || "0%",
       icon: HiOutlineArrowTrendingUp,
       color: "text-brand-600",
@@ -120,7 +120,7 @@ const Analytics = () => {
     },
     {
       label: "Avg Order Value",
-      value: statsData?.overview?.avgOrderValue || "â‚¹0",
+      value: statsData?.overview?.avgOrderValue || "₹0",
       trend: "0%", // Trend for AOV can be added later
       icon: HiOutlineUsers,
       color: "text-amber-600",
@@ -157,7 +157,7 @@ const Analytics = () => {
       lines.push("Metric,Value");
       ["Total Sales", "Total Orders", "Avg Order Value", "Conversion Rate"].forEach((label, i) => {
         const key = ["totalSales", "totalOrders", "avgOrderValue", "conversionRate"][i];
-        lines.push(`${escapeCsv(label)},${escapeCsv(ov[key] ?? "â€”")}`);
+        lines.push(`${escapeCsv(label)},${escapeCsv(ov[key] ?? "—")}`);
       });
       lines.push("");
 
@@ -403,7 +403,7 @@ const Analytics = () => {
                     tickLine={false}
                     tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }}
                     dx={-10}
-                    tickFormatter={(value) => `â‚¹${value}`}
+                    tickFormatter={(value) => `₹${value}`}
                   />
                   <Tooltip
                     contentStyle={{

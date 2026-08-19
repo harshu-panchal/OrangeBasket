@@ -74,7 +74,7 @@ const Withdrawals = () => {
         lines.push(`Status,${item.status ?? ''}`);
         lines.push(`Date,${item.date ?? ''}`);
         lines.push(`Time,${item.time ?? ''}`);
-        lines.push(`Amount,â‚¹${Math.abs(item.amount ?? 0).toLocaleString()}`);
+        lines.push(`Amount,₹${Math.abs(item.amount ?? 0).toLocaleString()}`);
         lines.push(`Method,${item.customer ?? 'Bank Transfer'}`);
         if (item.reason) {
             lines.push(`Reason,${item.reason}`);
@@ -97,7 +97,7 @@ const Withdrawals = () => {
         const available = Math.max(0, settled - pending);
 
         if (!amount || parseFloat(amount) <= 0 || parseFloat(amount) > available) {
-            toast.error(`Please enter a valid amount within your available balance (â‚¹${available}).`);
+            toast.error(`Please enter a valid amount within your available balance (₹${available}).`);
             return;
         }
 
@@ -154,10 +154,10 @@ const Withdrawals = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
-                    { label: 'Available Balance', value: `â‚¹${balances.available.toLocaleString()}`, icon: Wallet, color: 'emerald', sub: 'Ready to withdraw' },
-                    { label: 'On Hold', value: `â‚¹${balances.onHold.toLocaleString()}`, icon: Clock, color: 'blue', sub: 'Return window open' },
-                    { label: 'Withdrawal Pending', value: `â‚¹${balances.pending.toLocaleString()}`, icon: History, color: 'amber', sub: 'Awaiting approval' },
-                    { label: 'Last Withdrawal', value: `â‚¹${balances.lastWithdrawal.toLocaleString()}`, icon: CheckCircle2, color: 'indigo', sub: 'Sent to bank' },
+                    { label: 'Available Balance', value: `₹${balances.available.toLocaleString()}`, icon: Wallet, color: 'emerald', sub: 'Ready to withdraw' },
+                    { label: 'On Hold', value: `₹${balances.onHold.toLocaleString()}`, icon: Clock, color: 'blue', sub: 'Return window open' },
+                    { label: 'Withdrawal Pending', value: `₹${balances.pending.toLocaleString()}`, icon: History, color: 'amber', sub: 'Awaiting approval' },
+                    { label: 'Last Withdrawal', value: `₹${balances.lastWithdrawal.toLocaleString()}`, icon: CheckCircle2, color: 'indigo', sub: 'Sent to bank' },
                 ].map((stat, i) => (
                     <BlurFade key={i} delay={0.2 + i * 0.1}>
                         <Card className="p-6 border-none shadow-sm ring-1 ring-slate-100 hover:ring-brand-200 transition-all bg-white group relative overflow-hidden">
@@ -217,7 +217,7 @@ const Withdrawals = () => {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-black text-slate-900 truncate">{item.id}</p>
                                         <p className="text-[10px] font-bold text-slate-600 mt-0.5 uppercase tracking-tighter">
-                                            {item.date} â€¢ {item.time}
+                                            {item.date} • {item.time}
                                         </p>
                                     </div>
                                     <Badge
@@ -234,7 +234,7 @@ const Withdrawals = () => {
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <p className="text-base font-black text-slate-900">
-                                            â‚¹{Math.abs(item.amount).toLocaleString()}
+                                            ₹{Math.abs(item.amount).toLocaleString()}
                                         </p>
                                         <button
                                             type="button"
@@ -272,10 +272,10 @@ const Withdrawals = () => {
                                     <tr key={item.id || item.ref || item.reference || `wd-${idx}`} className="group hover:bg-slate-50/50 transition-all">
                                         <td className="px-8 py-5">
                                             <p className="text-sm font-black text-slate-900">{item.id}</p>
-                                            <p className="text-xs font-bold text-slate-600 mt-0.5 uppercase tracking-tighter">{item.date} â€¢ {item.time}</p>
+                                            <p className="text-xs font-bold text-slate-600 mt-0.5 uppercase tracking-tighter">{item.date} • {item.time}</p>
                                         </td>
                                         <td className="px-8 py-5">
-                                            <p className="text-sm font-black text-slate-900">â‚¹{Math.abs(item.amount).toLocaleString()}</p>
+                                            <p className="text-sm font-black text-slate-900">₹{Math.abs(item.amount).toLocaleString()}</p>
                                         </td>
                                         <td className="px-8 py-5 text-center">
                                             <Badge
@@ -332,7 +332,7 @@ const Withdrawals = () => {
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between">
                         <div>
                             <p className="text-xs font-black text-slate-600 uppercase tracking-widest mb-1">Available to Withdraw</p>
-                            <h4 className="text-2xl font-black text-brand-600">â‚¹{balances.available.toLocaleString()}</h4>
+                            <h4 className="text-2xl font-black text-brand-600">₹{balances.available.toLocaleString()}</h4>
                         </div>
                         <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
                             <Info className="h-6 w-6 text-slate-300" />
@@ -343,7 +343,7 @@ const Withdrawals = () => {
                         <div>
                             <label className="text-xs font-black text-slate-600 uppercase tracking-widest mb-2 block ml-1">Enter Amount</label>
                             <div className="relative group">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300 group-focus-within:text-brand-500 transition-colors">â‚¹</span>
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300 group-focus-within:text-brand-500 transition-colors">₹</span>
                                 <input
                                     type="number"
                                     value={amount}

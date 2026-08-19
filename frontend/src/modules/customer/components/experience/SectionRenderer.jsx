@@ -80,8 +80,96 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           const items = section.config?.banners?.items || [];
           if (!items.length) return null;
           return (
-            <div key={section._id || sectionKey} className="-mt-8 md:-mt-8">
+            <div key={section._id || sectionKey} className="mt-2 md:mt-4">
               <ExperienceBannerCarousel section={section} items={items} slideGap={12} fullWidth={true} />
+            </div>
+          );
+        }
+
+        if (section.displayType === "multiple_banners") {
+          const items = section.config?.banners?.items || [];
+          if (!items.length) return null;
+
+          const handleBannerClick = (banner) => {
+            if (!banner.linkType || banner.linkType === 'none') return;
+            
+            if (banner.linkType === 'url' && banner.linkValue) {
+              window.open(banner.linkValue, '_blank');
+            } else if (banner.linkType === 'category' && banner.linkValue) {
+              navigate(`/category/${banner.linkValue}`);
+            } else if (banner.linkType === 'subcategory' && banner.linkValue) {
+              let route = banner.linkValue.trim();
+              if (route.startsWith('http://') || route.startsWith('https://')) {
+                try {
+                  const urlObj = new URL(route);
+                  route = urlObj.pathname + urlObj.search;
+                } catch(e) {}
+              }
+              if (route.startsWith('/') || route.startsWith('?')) {
+                navigate(route);
+              } else {
+                navigate(`/category/sub/${route}`);
+              }
+            } else if (banner.linkType === 'product' && banner.linkValue) {
+              let route = banner.linkValue.trim();
+              if (route.startsWith('http://') || route.startsWith('https://')) {
+                try {
+                  const urlObj = new URL(route);
+                  route = urlObj.pathname + urlObj.search;
+                } catch(e) {}
+              }
+              if (route.startsWith('/') || route.startsWith('?')) {
+                navigate(route);
+              } else {
+                navigate(`?product=${route}`);
+              }
+            } else if (banner.linkType === 'header' && banner.linkValue) {
+              navigate(`/?header=${banner.linkValue}`);
+            }
+          };
+
+          return (
+            <div
+              key={section._id || sectionKey}
+              id={`section-${section._id}`}
+              className="-mx-4 md:-mx-8 lg:-mx-[50px] mt-6 mb-2"
+            >
+              {heading && (
+                <div className="flex items-center justify-between mb-3 px-4 md:px-8 lg:px-[50px]">
+                  <h3 className="text-base font-black text-[#1A1A1A]">
+                    {heading}
+                  </h3>
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {items.length} banners
+                  </span>
+                </div>
+              )}
+              <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-4 px-[12vw] sm:px-[15vw] md:px-8 lg:px-[50px] pb-4 no-scrollbar snap-x snap-mandatory">
+                {items.map((banner, idx) => (
+                  <div
+                    key={idx}
+                    className="shrink-0 w-[76vw] sm:w-[70vw] md:w-[30%] lg:w-[28%] snap-center md:snap-start"
+                  >
+                    <div
+                      onClick={() => handleBannerClick(banner)}
+                      className="relative rounded-2xl overflow-hidden cursor-pointer shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border border-slate-100 aspect-[4/3] sm:aspect-[16/9] md:aspect-[3/2] group"
+                    >
+                      <img
+                        src={banner.imageUrl}
+                        alt={banner.title || heading || "Banner"}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      {(banner.title || banner.subtitle) && (
+                        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 md:p-6">
+                          {banner.title && <h3 className="text-white font-black text-lg md:text-xl drop-shadow-md leading-tight">{banner.title}</h3>}
+                          {banner.subtitle && <p className="text-white/90 font-medium text-xs md:text-sm mt-1 drop-shadow-md line-clamp-2">{banner.subtitle}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         }

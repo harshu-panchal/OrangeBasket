@@ -1529,8 +1529,8 @@ const ProductManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex flex-col items-center">
-                        <span className={cn("text-xs font-bold", v.salePrice > 0 ? "text-slate-600 line-through scale-90" : "text-slate-900")}>â‚¹{v.price}</span>
-                        {v.salePrice > 0 && <span className="text-xs font-bold text-brand-600">â‚¹{v.salePrice}</span>}
+                        <span className={cn("text-xs font-bold", v.salePrice > 0 ? "text-slate-600 line-through scale-90" : "text-slate-900")}>₹{v.price}</span>
+                        {v.salePrice > 0 && <span className="text-xs font-bold text-brand-600">₹{v.salePrice}</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">

@@ -639,10 +639,6 @@ const MainLocationHeader = ({
               />
               <div className="flex items-center gap-3.5 shrink-0 ml-1">
                 <MicIcon sx={{ color: "#78909c", fontSize: 20 }} className="cursor-pointer" />
-                {/* Barcode Scanner SVG */}
-                <svg className="w-5 h-5 text-[#FF8200] cursor-pointer" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 8V4h4M16 4h4v4M4 16v4h4M20 16v4h4M8 12h8" />
-                </svg>
               </div>
             </div>
           </div>

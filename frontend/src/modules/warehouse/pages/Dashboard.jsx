@@ -78,7 +78,7 @@ const Dashboard = () => {
     const arr = Array.isArray(raw) ? raw : [];
     if (arr.length > 0) {
       return arr.map((d) => ({
-        name: d.name ?? d.date ?? "â€”",
+        name: d.name ?? d.date ?? "—",
         sales: Number(d.sales ?? d.revenue ?? d.total ?? 0) || 0,
       }));
     }
@@ -93,7 +93,7 @@ const Dashboard = () => {
   const stats = [
     {
       label: "Total Revenue",
-      value: statsData?.overview?.totalSales || "â‚¹0",
+      value: statsData?.overview?.totalSales || "₹0",
       change: "+12.5%",
       changeType: "increase",
       icon: DollarSign,
@@ -115,7 +115,7 @@ const Dashboard = () => {
     },
     {
       label: "Avg Order Value",
-      value: statsData?.overview?.avgOrderValue || "â‚¹0",
+      value: statsData?.overview?.avgOrderValue || "₹0",
       change: "+2",
       changeType: "increase",
       icon: Package,
@@ -211,7 +211,7 @@ const Dashboard = () => {
         name: order.customer?.name || "Customer",
         phone: order.customer?.phone || "",
       },
-      address: addressStr || "â€”",
+      address: addressStr || "—",
       items,
       total: Number(order.pricing?.total ?? 0),
       status: order.status || "pending",
@@ -355,7 +355,7 @@ const Dashboard = () => {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "#475569", fontSize: 12, fontWeight: 600 }}
-                  tickFormatter={(value) => `â‚¹${Number(value).toLocaleString()}`}
+                  tickFormatter={(value) => `₹${Number(value).toLocaleString()}`}
                   domain={[0, revenueMax]}
                   allowDataOverflow
                 />
@@ -367,7 +367,7 @@ const Dashboard = () => {
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     color: "#334155",
                   }}
-                  formatter={(value) => [`â‚¹${Number(value).toLocaleString()}`, "Revenue"]}
+                  formatter={(value) => [`₹${Number(value).toLocaleString()}`, "Revenue"]}
                   labelFormatter={(label) => `Day: ${label}`}
                 />
                 <Area
@@ -510,7 +510,7 @@ const Dashboard = () => {
                     <span className="text-sm text-slate-600">{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                   </td>
                   <td className="py-4 px-4 align-middle">
-                    <span className="text-sm font-semibold text-slate-900">â‚¹{order.pricing?.total || 0}</span>
+                    <span className="text-sm font-semibold text-slate-900">₹{order.pricing?.total || 0}</span>
                   </td>
                   <td className="py-4 px-4 align-middle">
                     <Badge variant={getStatusColor(order.status)} className="capitalize">
@@ -620,7 +620,7 @@ const Dashboard = () => {
                             Subtotal
                           </span>
                           <span className="font-black text-slate-900">
-                            â‚¹{(selectedOrder.total - 10).toFixed(2)}
+                            ₹{(selectedOrder.total - 10).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs">
@@ -628,7 +628,7 @@ const Dashboard = () => {
                             Delivery Fee
                           </span>
                           <span className="font-black text-brand-600">
-                            â‚¹10.00
+                            ₹10.00
                           </span>
                         </div>
                         <div className="h-px bg-primary/10 my-2" />
@@ -637,7 +637,7 @@ const Dashboard = () => {
                             Total
                           </span>
                           <span className="font-black text-primary">
-                            â‚¹{selectedOrder.total.toFixed(2)}
+                            ₹{selectedOrder.total.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -675,7 +675,7 @@ const Dashboard = () => {
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-slate-600 text-xs font-bold">
-                              â€”
+                              —
                             </div>
                           )}
                         </div>
@@ -684,13 +684,13 @@ const Dashboard = () => {
                             {item.name}
                           </p>
                           <p className="text-[10px] font-semibold text-slate-600 mt-0.5">
-                            â‚¹{Number(item.price).toFixed(2)} Ã— {item.qty}
+                            ₹{Number(item.price).toFixed(2)} × {item.qty}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-xs font-black text-slate-900">
-                          â‚¹{(item.price * item.qty).toFixed(2)}
+                          ₹{(item.price * item.qty).toFixed(2)}
                         </p>
                       </div>
                     </div>

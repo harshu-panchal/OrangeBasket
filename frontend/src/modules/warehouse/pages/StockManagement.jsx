@@ -126,7 +126,7 @@ const StockManagement = () => {
         { label: 'Total Inventory', value: inventory.reduce((acc, item) => acc + item.stock, 0), icon: HiOutlineCube, color: 'text-brand-600', bg: 'bg-brand-50', status: 'All' },
         { label: 'Low Stock Items', value: inventory.filter(i => i.stock > 0 && i.stock <= i.threshold).length, icon: HiOutlineExclamationTriangle, color: 'text-amber-600', bg: 'bg-amber-50', status: 'Low Stock' },
         { label: 'Out of Stock', value: inventory.filter(i => i.stock === 0).length, icon: HiOutlineArchiveBoxXMark, color: 'text-rose-600', bg: 'bg-rose-50', status: 'Out of Stock' },
-        { label: 'Stock Valuation', value: `â‚¹${inventory.reduce((acc, item) => acc + (item.stock * item.price), 0).toLocaleString()}`, icon: HiOutlineArrowsUpDown, color: 'text-brand-600', bg: 'bg-brand-50', status: 'In Stock' }
+        { label: 'Stock Valuation', value: `₹${inventory.reduce((acc, item) => acc + (item.stock * item.price), 0).toLocaleString()}`, icon: HiOutlineArrowsUpDown, color: 'text-brand-600', bg: 'bg-brand-50', status: 'In Stock' }
     ], [inventory]);
 
     const filteredInventory = useMemo(() => {
@@ -392,7 +392,7 @@ const StockManagement = () => {
                                                                 </Badge>
                                                             </td>
                                                             <td className="px-6 py-5">
-                                                                <p className="text-sm font-black text-slate-900">â‚¹{item.price}</p>
+                                                                <p className="text-sm font-black text-slate-900">₹{item.price}</p>
                                                             </td>
                                                             <td className="px-6 py-5 text-right">
                                                                 <button
@@ -474,7 +474,7 @@ const StockManagement = () => {
                                         </div>
                                         <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold text-slate-600">
                                             <HiOutlineCalendarDays className="h-3.5 w-3.5" />
-                                            {new Date(log.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} â€¢ {new Date(log.createdAt).toLocaleTimeString()}
+                                            {new Date(log.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} • {new Date(log.createdAt).toLocaleTimeString()}
                                         </div>
                                     </div>
                                 </div>

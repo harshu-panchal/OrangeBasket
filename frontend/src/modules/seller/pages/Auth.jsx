@@ -543,7 +543,7 @@ const Auth = () => {
           role: "seller",
         });
         toast.success("Welcome back, Partner!");
-        navigate("/seller");
+        navigate("/seller", { replace: true });
       } else {
         setIsLogin(true);
         setSignupStep(1);

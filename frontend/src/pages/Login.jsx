@@ -23,7 +23,7 @@ const Login = () => {
             token: 'demo-token',
         };
         login(userData);
-        navigate(`/${role}`);
+        navigate(`/${role}`, { replace: true });
     };
 
     return (

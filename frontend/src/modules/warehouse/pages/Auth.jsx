@@ -498,7 +498,7 @@ const Auth = () => {
           role: "warehouse",
         });
         toast.success("Welcome back, Partner!");
-        navigate("/warehouse");
+        navigate("/warehouse", { replace: true });
       } else {
         setIsLogin(true);
         setSignupStep(1);

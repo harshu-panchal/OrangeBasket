@@ -25,7 +25,7 @@ const validateBasePayload = async (body) => {
     throw new Error("Invalid pageType");
   }
 
-  if (!["banners", "categories", "subcategories", "products"].includes(displayType)) {
+  if (!["banners", "multiple_banners", "categories", "subcategories", "products"].includes(displayType)) {
     throw new Error("Invalid displayType");
   }
 
@@ -75,7 +75,7 @@ const normalizeUrl = (value) => {
 const validateAndNormalizeConfig = async (displayType, config = {}) => {
   const normalized = {};
 
-  if (displayType === "banners") {
+  if (displayType === "banners" || displayType === "multiple_banners") {
     const items = Array.isArray(config.items) ? config.items : [];
     normalized.banners = {
       items: items
