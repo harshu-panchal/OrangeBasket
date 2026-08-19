@@ -65,11 +65,11 @@ export async function getDeliveryTransactionsData({ page, limit, skip }) {
 }
 
 export async function getSellerWithdrawalsData({ page, limit, skip }) {
-  const query = { userModel: "Seller", type: "Withdrawal" };
+  const query = { userModel: { $in: ["Seller", "Warehouse"] }, type: "Withdrawal" };
 
   const [transactions, total] = await Promise.all([
     Transaction.find(query)
-      .populate("user", "name shopName phone")
+      .populate("user", "name shopName warehouseName phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -87,7 +87,7 @@ export async function getSellerWithdrawalsData({ page, limit, skip }) {
 }
 
 export async function getSellerTransactionsData({ page, limit, skip }) {
-  const query = { userModel: "Seller" };
+  const query = { userModel: { $in: ["Seller", "Warehouse"] } };
   const transactions = await Transaction.find(query)
     .populate("user", "name shopName phone bankDetails")
     .populate({

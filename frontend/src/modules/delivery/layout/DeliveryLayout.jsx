@@ -499,7 +499,7 @@ const DeliveryLayout = () => {
            the rider just won't receive proximity matches until they
            grant location or move into a covered area. */
       },
-      { enableHighAccuracy: false, maximumAge: 15000, timeout: 30000 },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
     );
 
     return () => {
@@ -912,7 +912,7 @@ const DeliveryLayout = () => {
         )}
 
       <main
-        className={`flex-1 overflow-y-auto ${shouldShowBottomNav ? "pb-24" : ""} no-scrollbar`}>
+        className={`flex-1 min-h-0 overflow-y-auto ${shouldShowBottomNav ? "pb-24" : ""} no-scrollbar`}>
         <Outlet />
       </main>
 

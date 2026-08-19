@@ -203,7 +203,7 @@ const WithdrawalRequests = () => {
                             )}
                         >
                             <Building2 className="h-4 w-4" />
-                            SELLER REQUESTS
+                            SELLERS & WAREHOUSES
                             <span className={cn(
                                 "ml-1 px-2 py-0.5 rounded-full text-[10px]",
                                 activeTab === 'sellers' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-600"

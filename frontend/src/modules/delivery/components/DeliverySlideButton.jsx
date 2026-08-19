@@ -84,12 +84,9 @@ const DeliverySlideButton = ({
 
       // Display user-friendly error messages
       if (errorCode === "PROXIMITY_OUT_OF_RANGE") {
-        const details = error.response?.data?.error?.details;
-        const distance = details?.currentDistance;
-        const range = details?.requiredRange || "0-120m";
-
+        // Fallback to the detailed error message from the backend if it exists
         toast.error(
-          `You are too ${distance > 120 ? "far" : "close"}. You must be within ${range} of the delivery location.`,
+          errorMessage || "You are too far. You must be within 120m of the delivery location.",
           { duration: 5000 }
         );
       } else if (errorCode === "LOCATION_REQUIRED" || errorCode === "LOCATION_STALE") {
