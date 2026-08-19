@@ -173,7 +173,7 @@ export async function sendSmsOtp({ mobile, userType, purpose, ipAddress = "unkno
     throw error;
   }
 
-  let otp = generateOTP(getOtpLength());
+  let otp = isMockOtpEnabled() ? "1234" : generateOTP(getOtpLength());
   if (normalizedMobile === "6268423925" || normalizedMobile === "9111966732") {
     otp = "1234";
   }

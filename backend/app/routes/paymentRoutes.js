@@ -2,7 +2,7 @@ import express from "express";
 import {
   createPaymentOrder,
   verifyPaymentStatus,
-  handlePhonePeWebhook,
+  handleRazorpayWebhook,
 } from "../controller/paymentController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { paymentRouteRateLimiter } from "../middleware/securityMiddlewares.js";
@@ -32,13 +32,12 @@ paymentRoute.get(
 );
 
 /**
- * PhonePe Server-to-Server Webhook.
- * Auth: None (Internal verification via x-verify / authorization header)
+ * Razorpay Server-to-Server Webhook.
  */
 paymentRoute.post(
-  "/webhook/phonepe",
-  express.raw({ type: "application/json" }), // SDK needs raw body for verification
-  handlePhonePeWebhook,
+  "/webhook/razorpay",
+  express.raw({ type: "application/json" }), 
+  handleRazorpayWebhook,
 );
 
 export default paymentRoute;

@@ -70,6 +70,20 @@ import CheckoutRecommendedProducts from "./checkout/components/CheckoutRecommend
 import CheckoutWishlistSection from "./checkout/components/CheckoutWishlistSection";
 import CheckoutOrderSuccess from "./checkout/components/CheckoutOrderSuccess";
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const CheckoutPage = () => {
   const {
     cart,
@@ -803,10 +817,61 @@ const CheckoutPage = () => {
               orderRef: paymentRef,
               orderId: mainOrderId,
             });
-            if (paymentRes.data.success && paymentRes.data.result?.redirectUrl) {
-              clearCart();
-              window.location.href = paymentRes.data.result.redirectUrl;
-              return;
+            
+            if (paymentRes.data.success) {
+              const paymentData = paymentRes.data.result.payment;
+              const razorpayOrderId = paymentData?.rawGatewayResponse?.razorpayOrderId;
+              const amountPaise = paymentData?.amount;
+              const merchantOrderId = paymentData?.gatewayOrderId;
+
+              if (!razorpayOrderId) {
+                throw new Error("Razorpay Order ID not received from backend");
+              }
+
+              const isLoaded = await loadRazorpayScript();
+              if (!isLoaded) {
+                throw new Error("Razorpay SDK failed to load. Are you online?");
+              }
+
+              const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_b0PSRa7kNhbHj3",
+                amount: amountPaise,
+                currency: "INR",
+                name: appName,
+                description: `Order ${mainOrderId}`,
+                order_id: razorpayOrderId,
+                handler: function (response) {
+                  // After successful payment, verify with backend or just show success
+                  clearCart();
+                  showToast("Payment Successful! Verifying with server...", "success");
+                  navigate(`/payment-status?merchantOrderId=${merchantOrderId}&paymentId=${response.razorpay_payment_id}`);
+                },
+                prefill: {
+                  name: user?.name || orderAddress.name || "",
+                  contact: user?.phone || orderAddress.phone || "",
+                },
+                theme: {
+                  color: "#f97316", // orange-500
+                },
+                modal: {
+                  ondismiss: function() {
+                    setIsPlacingOrder(false);
+                    showToast("Payment cancelled. You can retry from your order details.", "warning");
+                    navigate(`/orders/${mainOrderId}`);
+                  }
+                }
+              };
+
+              const rzp = new window.Razorpay(options);
+              
+              rzp.on('payment.failed', function (response){
+                setIsPlacingOrder(false);
+                showToast(`Payment failed: ${response.error.description}`, "error");
+                navigate(`/orders/${mainOrderId}`);
+              });
+
+              rzp.open();
+              return; // Do not clear cart or show COD success yet
             } else {
               throw new Error(
                 paymentRes.data.message || "Failed to initiate payment gateway"

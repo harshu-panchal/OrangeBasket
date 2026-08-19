@@ -126,6 +126,20 @@ const getTrackingRoutePhase = (order) => {
   return isDeliveryPhase ? "delivery" : "pickup";
 };
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const matchesOrderIdentifier = (payloadOrderId, identifiers = []) => {
   const normalizedPayloadId = String(payloadOrderId || "").trim();
   if (!normalizedPayloadId) return false;
@@ -752,14 +766,61 @@ const OrderDetailPage = () => {
         Number(order.checkoutGroupSize || 1) > 1
           ? (order.checkoutGroupId || order.orderId)
           : order.orderId;
+      
+      const toastId = toast.loading("Initiating payment...");
+      
       const response = await customerApi.createPaymentOrder({
         orderRef: paymentRef,
       });
-      if (response.data.success && response.data.result?.redirectUrl) {
-        window.location.href = response.data.result.redirectUrl;
-      } else {
-        toast.error(response.data.message || "Failed to initiate payment");
+      
+      if (!response.data.success) {
+        toast.error(response.data.message || "Failed to initiate payment", { id: toastId });
+        return;
       }
+      
+      const paymentData = response.data.result;
+      const merchantOrderId = paymentData?.rawGatewayResponse?.merchantOrderId;
+      const amountPaise = paymentData?.rawGatewayResponse?.amount;
+      const razorpayOrderId = paymentData?.rawGatewayResponse?.razorpayOrderId;
+
+      if (!razorpayOrderId) {
+        toast.error("Razorpay Order ID not received from backend", { id: toastId });
+        return;
+      }
+
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        toast.error("Razorpay SDK failed to load. Are you online?", { id: toastId });
+        return;
+      }
+
+      toast.dismiss(toastId);
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_b0PSRa7kNhbHj3",
+        amount: amountPaise,
+        currency: "INR",
+        name: "Appzeto",
+        description: `Payment for Order ${paymentRef}`,
+        order_id: razorpayOrderId,
+        handler: function (response) {
+          toast.success("Payment Successful! Verifying...");
+          navigate(`/payment-status?merchantOrderId=${merchantOrderId}&paymentId=${response.razorpay_payment_id}`);
+        },
+        prefill: {
+          contact: order?.deliveryAddress?.phone || "",
+        },
+        theme: {
+          color: "#000000",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        toast.error(response.error.description || "Payment failed");
+      });
+      rzp.open();
+      
     } catch (err) {
       console.error("[OrderDetailPage] Retry payment error:", err);
       toast.error(

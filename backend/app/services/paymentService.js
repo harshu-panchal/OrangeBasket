@@ -546,6 +546,7 @@ export async function createPaymentOrderForOrderRef({
       redirectUrl: initResult.redirectUrl,
       merchantOrderId: merchantOrderId,
       amount: amountPaise,
+      ...(initResult.gatewayResponse || {}),
     },
     statusHistory: [
       {
@@ -572,7 +573,7 @@ export async function createPaymentOrderForOrderRef({
   return { payment, redirectUrl: initResult.redirectUrl, duplicate: false };
 }
 
-export async function verifyPhonePePaymentStatus({
+export async function verifyPaymentGatewayStatus({
   merchantOrderId,
   userId,
   correlationId = null,
@@ -592,7 +593,7 @@ export async function verifyPhonePePaymentStatus({
   }
 
   const provider = getActivePaymentProvider();
-  const statusResp = await provider.getPaymentStatus({ merchantOrderId });
+  const statusResp = await provider.getPaymentStatus({ merchantOrderId, payment });
   const nextStatus = provider.mapStatusToInternal(statusResp.state);
 
   await transitionPaymentState(payment, {
@@ -625,7 +626,7 @@ export async function verifyPhonePePaymentStatus({
   };
 }
 
-export async function processPhonePeWebhook({
+export async function processGatewayWebhook({
   rawBody,
   authorization,
   correlationId = null,
@@ -704,9 +705,8 @@ export async function processPhonePeWebhook({
   };
 }
 
-// Placeholder for Razorpay compatibility if needed by other services
 export async function verifyClientPaymentCallback(data) {
-    return verifyPhonePePaymentStatus({
+    return verifyPaymentGatewayStatus({
         merchantOrderId: data.gatewayOrderId || data.merchantOrderId,
         userId: data.userId,
         correlationId: data.correlationId
