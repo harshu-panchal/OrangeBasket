@@ -402,6 +402,34 @@ export async function placeOrderAtomic({
       }
     }
 
+    if (user && normalizedAddress?.address) {
+      const addressStr = normalizedAddress.address.toLowerCase().trim();
+      const existingAddresses = Array.isArray(user.addresses) ? user.addresses : [];
+      const isNewAddress = !existingAddresses.some(
+        (a) => a.fullAddress && a.fullAddress.toLowerCase().trim() === addressStr
+      );
+
+      if (isNewAddress) {
+        existingAddresses.unshift({
+          label: "home",
+          fullAddress: normalizedAddress.address,
+          formattedAddress: normalizedAddress.address,
+          city: normalizedAddress.city,
+          state: normalizedAddress.state,
+          pincode: normalizedAddress.pincode,
+          location: normalizedAddress.location,
+        });
+        
+        // Keep max 5 addresses
+        if (existingAddresses.length > 5) {
+          existingAddresses.length = 5;
+        }
+        
+        user.addresses = existingAddresses;
+        await user.save({ session });
+      }
+    }
+
     const {
       orderItemsInput,
       source: resolvedSource,
@@ -770,7 +798,7 @@ export async function placeOrderAtomic({
         customerId,
         userId: customerId,
       });
-      if (order.seller || order.warehouseId) {
+      if (shouldStartSellerWorkflow && (order.seller || order.warehouseId)) {
         emitNotificationEvent(NOTIFICATION_EVENTS.NEW_ORDER, {
           orderId: order.orderId,
           checkoutGroupId,

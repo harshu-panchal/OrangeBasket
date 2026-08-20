@@ -133,15 +133,20 @@ export const AuthProvider = ({ children }) => {
                     // Use deduplicated fetch to avoid multiple simultaneous profile calls
                     const endpoint = `/${currentRole}/profile`;
                     const response = await getWithDedupe(endpoint, {}, { ttl: 5000 });
-                    setUser(response.data.result);
+                    
+                    if (response?.data?.result) {
+                        setUser(response.data.result);
+                    } else {
+                        console.warn('Profile fetch returned no result, preserving existing user state:', response?.data);
+                    }
                 } catch (error) {
                     console.error('Failed to fetch profile:', error);
                     if (error.response?.status === 404 || error.response?.status === 401) {
                         console.warn('User not found or token invalid, logging out automatically.');
                         logout();
                     } else {
-                        // Preserve stored tokens on network failures or server errors
-                        setUser(null);
+                        // Preserve existing user state on network failures instead of clearing it completely
+                        // This prevents the UI from flashing empty data if a background refresh fails
                     }
                 } finally {
                     setIsLoading(false);

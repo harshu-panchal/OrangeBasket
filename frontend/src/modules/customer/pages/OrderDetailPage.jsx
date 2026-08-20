@@ -171,13 +171,13 @@ const OrderDetailPage = () => {
   const [handoffOtp, setHandoffOtp] = useState(null);
   const [clockTick, setClockTick] = useState(Date.now());
   const parsedReturnWindowMinutes = parseInt(
-    import.meta.env.VITE_RETURN_WINDOW_MINUTES || "2",
+    import.meta.env.VITE_RETURN_WINDOW_MINUTES || "5",
     10,
   );
   const returnWindowMinutes =
     Number.isFinite(parsedReturnWindowMinutes) && parsedReturnWindowMinutes > 0
       ? parsedReturnWindowMinutes
-      : 2;
+      : 5;
   const routeOriginRef = useRef(null);
   const routeRequestRef = useRef({ phase: "", startedAt: 0 });
   const [returnCountdown, setReturnCountdown] = useState(null);

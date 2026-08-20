@@ -369,7 +369,7 @@ const MainLocationHeader = ({
 
 
           {/* Desktop/Tablet Header Layout (md and above) */}
-          <div className="hidden md:flex items-center justify-between relative z-20 px-2 lg:px-6 mb-4 mt-1">
+          <div className="hidden md:flex items-center justify-between relative z-20 px-2 lg:px-6 mb-8 mt-1">
             {/* Left Section: Logo + Location row */}
             <div className="flex items-center gap-4 lg:gap-8">
               <div

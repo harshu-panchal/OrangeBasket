@@ -65,7 +65,21 @@ const translations = {
         languageDesc: "Choose your preferred language",
         english: "English",
         hindi: "Hindi (हिन्दी)",
-        marathi: "Marathi (मराठी)"
+        marathi: "Marathi (मराठी)",
+        // Delivery Settings
+        appSettings: "App Settings",
+        notificationsCap: "NOTIFICATIONS",
+        pushNotifications: "Push Notifications",
+        soundVibration: "Sound & Vibration",
+        generalCap: "GENERAL",
+        language: "Language",
+        darkMode: "Dark Mode",
+        darkModeDesc: "Easier on the eyes at night",
+        save: "Save",
+        settingsUpdated: "Settings updated",
+        languageUpdated: "Language updated",
+        clearCache: "Clear Cache (45 MB)",
+        appVersion: "App Version 1.2.0 (Build 450)"
     },
     hi: {
         // Login / Signup Page
@@ -122,7 +136,21 @@ const translations = {
         languageDesc: "अपनी पसंदीदा भाषा चुनें",
         english: "English",
         hindi: "हिन्दी (Hindi)",
-        marathi: "मराठी (Marathi)"
+        marathi: "मराठी (Marathi)",
+        // Delivery Settings
+        appSettings: "ऐप सेटिंग्स",
+        notificationsCap: "सूचनाएं",
+        pushNotifications: "पुश सूचनाएं",
+        soundVibration: "ध्वनि और कंपन",
+        generalCap: "सामान्य",
+        language: "भाषा",
+        darkMode: "डार्क मोड",
+        darkModeDesc: "रात में आंखों के लिए आसान",
+        save: "सहेजें",
+        settingsUpdated: "सेटिंग्स अपडेट की गईं",
+        languageUpdated: "भाषा अपडेट की गई",
+        clearCache: "कैश साफ़ करें (45 MB)",
+        appVersion: "ऐप संस्करण 1.2.0 (बिल्ड 450)"
     },
     mr: {
         // Login / Signup Page
@@ -179,7 +207,21 @@ const translations = {
         languageDesc: "तुमची पसंतीची भाषा निवडा",
         english: "English",
         hindi: "हिन्दी (Hindi)",
-        marathi: "मराठी (Marathi)"
+        marathi: "मराठी",
+        // Delivery Settings
+        appSettings: "अॅप सेटिंग्ज",
+        notificationsCap: "सूचना",
+        pushNotifications: "पुश सूचना",
+        soundVibration: "आवाज आणि कंपन",
+        generalCap: "सामान्य",
+        language: "भाषा",
+        darkMode: "डार्क मोड",
+        darkModeDesc: "रात्री डोळ्यांना सोपे",
+        save: "जतन करा",
+        settingsUpdated: "सेटिंग्ज अपडेट केल्या",
+        languageUpdated: "भाषा अपडेट केली",
+        clearCache: "कॅशे साफ करा (45 MB)",
+        appVersion: "अॅप आवृत्ती 1.2.0 (बिल्ड 450)"
     }
 };
 

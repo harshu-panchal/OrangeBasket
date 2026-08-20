@@ -281,19 +281,21 @@ export async function fetchAvailableOrdersForDelivery({
   }
 
   const deliveryPartner = await Delivery.findById(userId);
-  if (
-    !deliveryPartner ||
-    !deliveryPartner.location ||
-    !Array.isArray(deliveryPartner.location.coordinates)
-  ) {
-    return {
-      requiresLocation: showDeliveries && assignedReturnPickups.length === 0,
-      orders: assignedReturnPickups,
-      limit,
-    };
-  }
+  const hasLocation = deliveryPartner && deliveryPartner.location && Array.isArray(deliveryPartner.location.coordinates);
 
-  const { sellerIds } = await resolveNearbySellerIds(deliveryPartner, userId);
+  let sellerIds = [];
+  let usedFallback = false;
+
+  if (hasLocation) {
+    const result = await resolveNearbySellerIds(deliveryPartner, userId);
+    sellerIds = result.sellerIds;
+    usedFallback = result.usedFallback;
+  } else {
+    // If no location, fallback to all sellers so they can see returns/deliveries in dev or as a fallback
+    const allSellers = await Seller.find({}).select("_id");
+    sellerIds = allSellers.map((seller) => seller._id);
+    usedFallback = true;
+  }
 
   let v2Orders = [];
   if (showDeliveries) {

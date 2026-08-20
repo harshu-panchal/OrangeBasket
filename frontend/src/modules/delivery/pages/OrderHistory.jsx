@@ -22,6 +22,15 @@ const displayOrderStatus = (order) => {
   return order?.status || "active";
 };
 
+const getOrderEarnings = (order) => {
+  if (order?.returnStatus && order.returnStatus !== "none" && order.returnCommission != null) {
+    return order.returnCommission;
+  }
+  if (order?.riderEarnings != null) return order.riderEarnings;
+  if (order?.delivery?.riderEarning != null) return order.delivery.riderEarning;
+  return Math.round((order?.pricing?.total || 0) * 0.1);
+};
+
 const OrderHistory = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("all");
@@ -245,7 +254,7 @@ const OrderHistory = () => {
                       </div>
                       <div className="text-left sm:text-right shrink-0">
                         <span className="block font-bold text-lg text-brand-600 whitespace-nowrap">
-                          ₹{Math.round((order.pricing?.total || 0) * 0.1)}
+                          ₹{getOrderEarnings(order)}
                         </span>
                         <span className="ds-caption text-gray-400">Earnings</span>
                       </div>

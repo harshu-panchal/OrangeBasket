@@ -1153,52 +1153,19 @@ const OrderDetails = () => {
       {((isReturn && (step === 1 || step === 3) && isAssignedRider) || (!isReturn && step <= 2)) && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]">
           <div className="max-w-2xl mx-auto p-4">
-            <div className="relative h-16 bg-slate-100 rounded-full overflow-hidden select-none">
-              <motion.div
-                className={`absolute inset-0 flex items-center justify-center text-slate-400 font-bold text-lg pointer-events-none transition-opacity duration-300 ${dragX > 50 ? "opacity-0" : "opacity-100"
-                  }`}
-                animate={{ x: [0, 5, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              >
-                Slide to {
-                  isReturn
-                    ? step === 1 ? "ARRIVED AT CUSTOMER"
-                      : step === 3 ? "ARRIVED AT SELLER"
-                        : steps[step - 1]?.action
+            <Button 
+              onClick={() => {
+                setIsSlideComplete(true);
+                handleNextStep();
+              }}
+              className={`w-full h-14 rounded-xl font-bold text-lg text-white shadow-md transition-all active:scale-95 ${steps[step - 1]?.color || "bg-primary"}`}
+            >
+              {isReturn
+                ? step === 1 ? "ARRIVED AT CUSTOMER"
+                  : step === 3 ? "ARRIVED AT SELLER"
                     : steps[step - 1]?.action
-                } <ChevronRight className="ml-1" />
-              </motion.div>
-
-              <motion.div
-                className={`absolute inset-y-0 left-0 ${steps[step - 1].bg} opacity-50`}
-                style={{ width: dragX + 60 }}
-              />
-
-              <motion.div
-                className={`absolute top-1 bottom-1 left-1 w-14 rounded-full flex items-center justify-center shadow-md cursor-grab active:cursor-grabbing z-20 ${steps[step - 1].color || "bg-primary"
-                  }`}
-                drag="x"
-                dragConstraints={{ left: 0, right: 280 }}
-                dragElastic={0.05}
-                dragMomentum={false}
-                onDrag={(event, info) => {
-                  setDragX(info.point.x);
-                }}
-                onDragEnd={(event, info) => {
-                  if (info.offset.x > 150) {
-                    setIsSlideComplete(true);
-                    handleNextStep();
-                  } else {
-                    setDragX(0);
-                  }
-                }}
-                animate={{ x: isSlideComplete ? 280 : 0 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ChevronRight className="text-white" size={24} />
-              </motion.div>
-            </div>
+                : steps[step - 1]?.action}
+            </Button>
           </div>
         </div>
       )}

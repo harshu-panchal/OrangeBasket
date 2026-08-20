@@ -39,7 +39,7 @@ const Earnings = () => {
   const fetchEarnings = async () => {
     try {
       setLoading(true);
-      const earningsRes = await deliveryApi.getEarnings();
+      const earningsRes = await deliveryApi.getEarnings(activeTab);
       if (earningsRes.data.success && earningsRes.data.result) {
         const result = earningsRes.data.result;
         setEarningsData({
@@ -61,7 +61,7 @@ const Earnings = () => {
 
   React.useEffect(() => {
     fetchEarnings();
-  }, []);
+  }, [activeTab]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

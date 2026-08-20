@@ -512,7 +512,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen pt-[210px] md:pt-[160px] bg-white">
+    <div className="min-h-screen pt-[210px] md:pt-[220px] bg-white">
       <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
         <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
       </div>
@@ -545,10 +545,12 @@ const Home = () => {
         })()}
 
         <div className="w-full z-[60] bg-transparent pt-1 pb-2 mb-2">
-          <QuickCategorySlider
-            categories={effectiveQuickCategories}
-            onCategoryClick={(id) => setExpandedCategoryId(expandedCategoryId === id ? null : id)}
-          />
+          <div className="relative -mt-4 md:mt-8 z-30">
+            <QuickCategorySlider
+              categories={effectiveQuickCategories}
+              onCategoryClick={(id) => setExpandedCategoryId(expandedCategoryId === id ? null : id)}
+            />
+          </div>
         </div>
         {expandedCategoryId && (
           <div className="px-4 mb-5 pb-10 relative z-50 animate-in slide-in-from-top-2 fade-in duration-300">

@@ -88,8 +88,13 @@ const Dashboard = () => {
     try {
       const response = await deliveryApi.getAvailableOrders({ type: activeTab });
       if (response.data.success) {
-        const orders = response.data.results || response.data.result || [];
-        setAvailableOrders(orders);
+        let fetchedOrders = [];
+        if (Array.isArray(response.data.results)) fetchedOrders = response.data.results;
+        else if (Array.isArray(response.data.result)) fetchedOrders = response.data.result;
+        else if (response.data.result && Array.isArray(response.data.result.orders)) {
+          fetchedOrders = response.data.result.orders;
+        }
+        setAvailableOrders(fetchedOrders);
       }
     } catch (error) {
       console.error("Failed to fetch available orders:", error);
@@ -124,31 +129,54 @@ const Dashboard = () => {
       setPendingOffer(null);
       toast.warning("Order offer expired — moving to next rider");
     };
+    const handleBroadcast = (payload) => {
+      if (payload.type === "RETURN_PICKUP") {
+        toast.info(`📦 New Return Pickup available!`);
+        setPendingOffer({
+          ...payload,
+          countdown: 60,
+          isReturn: true,
+        });
+      }
+    };
+    
     socket.on("queue:order_offered", handleOffer);
     socket.on("queue:order_offer_expired", handleExpired);
+    socket.on("delivery:broadcast", handleBroadcast);
     return () => {
       socket.off("queue:order_offered", handleOffer);
       socket.off("queue:order_offer_expired", handleExpired);
+      socket.off("delivery:broadcast", handleBroadcast);
     };
   }, []);
 
-  const handleOfferAccept = (orderId) => {
-    const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
-    const socket = getOrderSocket(getToken);
-    socket?.emit("queue:offer_response", { orderId, accepted: true });
-    setPendingOffer(null);
-    toast.success("Order accepted! Preparing for pickup...");
-    navigate(`/delivery/order-details/${orderId}`);
+  const handleOfferAccept = async (orderId) => {
+    if (pendingOffer?.isReturn) {
+      await handleAcceptReturn(orderId);
+      setPendingOffer(null);
+    } else {
+      const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+      const socket = getOrderSocket(getToken);
+      socket?.emit("queue:offer_response", { orderId, accepted: true });
+      setPendingOffer(null);
+      toast.success("Order accepted! Preparing for pickup...");
+      navigate(`/delivery/order-details/${orderId}`);
+    }
   };
 
   const handleOfferReject = (reason) => {
-    if (pendingOffer?.orderId) {
-      const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
-      const socket = getOrderSocket(getToken);
-      socket?.emit("queue:offer_response", { orderId: pendingOffer.orderId, accepted: false });
+    if (pendingOffer?.isReturn) {
+      setPendingOffer(null);
+      if (reason !== "timeout") toast.info("Return skipped.");
+    } else {
+      if (pendingOffer?.orderId) {
+        const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+        const socket = getOrderSocket(getToken);
+        socket?.emit("queue:offer_response", { orderId: pendingOffer.orderId, accepted: false });
+      }
+      setPendingOffer(null);
+      if (reason !== "timeout") toast.info("Order declined.");
     }
-    setPendingOffer(null);
-    if (reason !== "timeout") toast.info("Order declined.");
   };
 
   const handleOnlineToggle = async () => {

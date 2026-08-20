@@ -32,13 +32,12 @@ export async function createLedgerEntry(
     reference = "",
     balanceBefore = null,
     balanceAfter = null,
-    // Phase 2 P2-3 additions. Both are optional and ignored by older
-    // call sites that don't pass them.
     idempotencyKey = null,
     correlationId = null,
   },
   { session } = {},
 ) {
+  console.log("createLedgerEntry data:", { type, actorType, amount });
   const normalizedAmount = roundCurrency(amount || 0);
   if (normalizedAmount < 0) {
     throw new Error("Ledger amount cannot be negative");
