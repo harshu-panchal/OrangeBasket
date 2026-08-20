@@ -150,7 +150,7 @@ const Settings = () => {
         </section>
 
         <div className="text-center pt-8">
-          <Button variant="ghost" className="text-red-500 hover:bg-red-50 hover:text-red-600">
+          <Button variant="ghost" className="text-gray-500 hover:bg-gray-50 hover:text-gray-600">
             {t('clearCache') || "Clear Cache (45 MB)"}
           </Button>
           <p className="text-xs text-gray-400 mt-2">{t('appVersion') || "App Version 1.2.0 (Build 450)"}</p>

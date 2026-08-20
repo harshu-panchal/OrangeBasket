@@ -330,7 +330,7 @@ const CustomerAuth = () => {
                         </p>
                         <div className="flex items-center gap-2">
                             <button 
-                                onClick={() => navigate('/terms')}
+                                onClick={() => navigate('/support')}
                                 className="text-[11px] font-semibold text-gray-500 hover:text-[#f97316] transition-colors"
                             >
                                 {t('terms')}

@@ -146,7 +146,7 @@ const AppRouter = () => {
                     element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="warehouse" /></Suspense>,
                 },
                 {
-                    path: 'delivery/terms',
+                    path: 'delivery/support',
                     element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="delivery" /></Suspense>,
                 },
                 {
@@ -204,7 +204,7 @@ const AppRouter = () => {
                         { path: 'categories', element: <CategoriesPage /> },
                         { path: 'category/:categoryName', element: <CategoryProductsPage /> },
                         { path: 'product/:id', element: <ProductDetailPage /> },
-                        { path: 'terms', element: <TermsPage /> },
+                        { path: 'support', element: <TermsPage /> },
                         { path: 'privacy', element: <PrivacyPage /> },
                         { path: 'about', element: <AboutPage /> },
                         { path: 'offers', element: <OffersPage /> },
@@ -215,7 +215,7 @@ const AppRouter = () => {
                         { path: 'transactions', element: <ProtectedRoute><OrderTransactionsPage /></ProtectedRoute> },
                         { path: 'addresses', element: <ProtectedRoute><AddressesPage /></ProtectedRoute> },
                         { path: 'settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
-                        { path: 'support', element: <ProtectedRoute><SupportPage /></ProtectedRoute> },
+                        { path: 'help', element: <ProtectedRoute><SupportPage /></ProtectedRoute> },
                         { path: 'chat', element: <ProtectedRoute><ChatPage /></ProtectedRoute> },
                         { path: 'checkout', element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
                         { path: 'payment-status', element: <PaymentStatusPage /> },

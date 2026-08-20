@@ -23,10 +23,10 @@ const isRouteActive = (itemPath, currentPath) => {
             currentPath.startsWith('/profile') ||
             currentPath.startsWith('/addresses') ||
             currentPath.startsWith('/settings') ||
+            currentPath.startsWith('/help') ||
             currentPath.startsWith('/support') ||
             currentPath.startsWith('/about') ||
             currentPath.startsWith('/privacy') ||
-            currentPath.startsWith('/terms') ||
             currentPath.startsWith('/wishlist') ||
             currentPath.startsWith('/transactions')
         );

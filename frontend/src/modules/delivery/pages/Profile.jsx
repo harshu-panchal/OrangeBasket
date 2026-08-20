@@ -15,6 +15,7 @@ import {
   Wallet,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Button from "@/shared/components/ui/Button";
@@ -25,12 +26,28 @@ import { useEffect } from 'react';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import DeliveryFooter from "../components/DeliveryFooter";
+import { deliveryApi } from "../services/deliveryApi";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
   const [faqs, setFaqs] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deliveryApi.deleteAccount();
+      toast.success("Account deleted successfully.");
+      setShowDeleteModal(false);
+      logout();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete account");
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchFaqs = async () => {
@@ -172,15 +189,54 @@ const Profile = () => {
           </div>
         </div>
 
-        <motion.div variants={itemVariants} className="pt-2 pb-6">
+        <motion.div variants={itemVariants} className="pt-2 pb-6 space-y-3">
           <Button
             onClick={logout}
             variant="ghost"
             className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50/50 font-medium py-3 px-4">
             <LogOut size={20} className="mr-4 text-red-500" strokeWidth={2} /> Logout
           </Button>
+
+          <Button
+            onClick={() => setShowDeleteModal(true)}
+            variant="ghost"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50/50 font-medium py-3 px-4 border border-red-100 rounded-xl bg-red-50/30">
+            <AlertTriangle size={20} className="mr-4 text-red-500" strokeWidth={2} /> Delete Account
+          </Button>
         </motion.div>
       </motion.div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+              <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+                  <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                      <AlertTriangle size={24} />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 text-center mb-2">Delete Account?</h3>
+                  <p className="text-sm font-medium text-slate-500 text-center mb-6">
+                      Are you sure you want to delete your account? This action cannot be undone. You will be logged out and your profile will become inactive.
+                  </p>
+                  <div className="flex gap-3">
+                      <button
+                          disabled={isDeleting}
+                          onClick={() => setShowDeleteModal(false)}
+                          className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors disabled:opacity-50"
+                      >
+                          Cancel
+                      </button>
+                      <button
+                          disabled={isDeleting}
+                          onClick={handleDeleteAccount}
+                          className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 disabled:opacity-50"
+                      >
+                          {isDeleting ? "Deleting..." : "Yes, Delete"}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       <DeliveryFooter />
     </div>
   );

@@ -109,6 +109,10 @@ const DeliveryAuth = () => {
   const [signupIfsc, setSignupIfsc] = useState(() => getSaved("signupIfsc", ""));
   const [signupAccountHolder, setSignupAccountHolder] = useState(() => getSaved("signupAccountHolder", ""));
 
+  const [hasClickedTerms, setHasClickedTerms] = useState(() => getSaved("hasClickedTerms", false));
+  const [signupAgreed, setSignupAgreed] = useState(() => getSaved("signupAgreed", false));
+  const [agreed, setAgreed] = useState(() => getSaved("agreed", false));
+
   useEffect(() => {
     sessionStorage.setItem("delivery_mode", JSON.stringify(mode));
     sessionStorage.setItem("delivery_step", JSON.stringify(step));
@@ -126,10 +130,13 @@ const DeliveryAuth = () => {
     sessionStorage.setItem("delivery_signupAccountNumber", JSON.stringify(signupAccountNumber));
     sessionStorage.setItem("delivery_signupIfsc", JSON.stringify(signupIfsc));
     sessionStorage.setItem("delivery_signupAccountHolder", JSON.stringify(signupAccountHolder));
+    sessionStorage.setItem("delivery_hasClickedTerms", JSON.stringify(hasClickedTerms));
+    sessionStorage.setItem("delivery_signupAgreed", JSON.stringify(signupAgreed));
+    sessionStorage.setItem("delivery_agreed", JSON.stringify(agreed));
   }, [
     mode, step, loginPhone, signupStep, signupName, signupPhone, signupEmail, signupAddress,
     signupVehicle, signupVehicleNumber, signupDLNumber, signupPanNumber, signupAadharNumber,
-    signupAccountNumber, signupIfsc, signupAccountHolder
+    signupAccountNumber, signupIfsc, signupAccountHolder, hasClickedTerms, signupAgreed, agreed
   ]);
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState(null);
@@ -142,14 +149,8 @@ const DeliveryAuth = () => {
 
   // OTP state
   const [otp, setOtp] = useState(["", "", "", ""]);
-  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
-
-  // Terms agreement states
-  const [hasClickedTerms, setHasClickedTerms] = useState(false);
-  const [signupAgreed, setSignupAgreed] = useState(false);
-  const [showLegalModal, setShowLegalModal] = useState(null); // 'terms' | 'privacy' | null
 
   // OCR States
 
@@ -264,6 +265,8 @@ const DeliveryAuth = () => {
     setPanFile(null);
     setDlFile(null);
     setAgreed(false);
+    setSignupAgreed(false);
+    setHasClickedTerms(false);
     setProfileImageFile(null);
     setProfileImagePreview("");
   };
@@ -287,11 +290,11 @@ const DeliveryAuth = () => {
       <div className={`text-xs leading-relaxed ${!hasClickedTerms ? 'text-gray-400' : 'text-gray-500'}`}>
         <label htmlFor={`signupTerms-${signupStep}`} className={`cursor-pointer ${!hasClickedTerms ? 'cursor-not-allowed' : ''}`}>I agree to the </label>
         <span 
-          onClick={() => { setHasClickedTerms(true); setShowLegalModal('terms'); }}
+          onClick={() => { setHasClickedTerms(true); navigate('/delivery/support'); }}
           className="text-[#f97316] font-bold hover:underline cursor-pointer"
         >Terms of Service</span> &amp;{" "}
         <span 
-          onClick={() => { setHasClickedTerms(true); setShowLegalModal('privacy'); }}
+          onClick={() => { setHasClickedTerms(true); navigate('/delivery/privacy'); }}
           className="text-[#f97316] font-bold hover:underline cursor-pointer"
         >Privacy Policy</span>.
         {!hasClickedTerms && <span className="block text-[10px] text-rose-500 mt-1 font-semibold">* Please click on the links to read them before agreeing.</span>}
@@ -1138,8 +1141,8 @@ const DeliveryAuth = () => {
                   />
                   <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
                     I confirm my phone number is correct and I agree to the{" "}
-                    <span className="text-brand-600 font-bold">Terms of Service</span> &amp;{" "}
-                    <span className="text-brand-600 font-bold">Privacy Policy</span>.
+                    <span onClick={() => navigate('/delivery/support')} className="text-brand-600 font-bold hover:underline cursor-pointer">Terms of Service</span> &amp;{" "}
+                    <span onClick={() => navigate('/delivery/privacy')} className="text-brand-600 font-bold hover:underline cursor-pointer">Privacy Policy</span>.
                   </label>
                 </div>
 
@@ -1173,23 +1176,6 @@ const DeliveryAuth = () => {
       </motion.div>
     </div>
 
-    {/* Legal Page Modal Overlay */}
-    <AnimatePresence>
-      {showLegalModal && (
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
-          className="fixed inset-0 z-50 bg-white overflow-y-auto"
-        >
-          <DynamicLegalPage 
-            type={showLegalModal} 
-            audience="delivery" 
-            onBack={() => setShowLegalModal(null)}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
     </>
   );
 };

@@ -127,6 +127,10 @@ export const loginDelivery = async (req, res) => {
             return handleResponse(res, 404, "Delivery partner not found");
         }
 
+        if (delivery.isActive === false) {
+            return handleResponse(res, 403, "Account has been deleted");
+        }
+
         let otp = generateOTP();
         if (phone === "6268423925" || phone === "+916268423925" || phone === "9111966732" || phone === "+919111966732") {
             otp = "1234";
@@ -240,3 +244,32 @@ export const updateDeliveryProfile = async (req, res) => {
         return handleResponse(res, 500, error.message);
     }
 };
+
+/* ===============================
+   DELETE ACCOUNT
+================================ */
+export const deleteDeliveryAccount = async (req, res) => {
+    try {
+        const delivery = await Delivery.findById(req.user.id);
+        if (!delivery) {
+            return handleResponse(res, 404, "Delivery partner not found");
+        }
+
+        delivery.isActive = false;
+        
+        // Ensure they go offline and are removed from maps
+        const wasOnline = delivery.isOnline === true;
+        delivery.isOnline = false;
+
+        await delivery.save();
+
+        if (wasOnline) {
+            clearRiderPresence(String(delivery._id)).catch(() => {});
+        }
+
+        return handleResponse(res, 200, "Account deleted successfully");
+    } catch (error) {
+        return handleResponse(res, 500, error.message);
+    }
+};
+

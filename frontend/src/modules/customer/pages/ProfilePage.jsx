@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
     User, MapPin, Package, CreditCard, Wallet, ChevronRight,
     LogOut, ShieldCheck, Heart, HelpCircle, Info, Edit2, ChevronLeft, Bell, ShoppingCart,
-    ClipboardCheck, Ticket, LifeBuoy, MapPinned, CalendarCheck, BadgePercent, Globe
+    ClipboardCheck, Ticket, LifeBuoy, MapPinned, CalendarCheck, BadgePercent, Globe, AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { customerApi } from '../services/customerApi';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
 import { useTranslation } from '@core/context/LanguageContext';
@@ -18,8 +20,23 @@ const ProfilePage = () => {
     const { t, language, setLanguage, languages } = useTranslation();
     const appName = settings?.appName || 'App';
     const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+    const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+    const [isDeleting, setIsDeleting] = React.useState(false);
     const [isCartOpen, setIsCartOpen] = React.useState(false);
     const [isLangExpanded, setIsLangExpanded] = React.useState(false);
+
+    const handleDeleteAccount = async () => {
+        setIsDeleting(true);
+        try {
+            await customerApi.deleteAccount();
+            toast.success("Account deleted successfully.");
+            setShowDeleteModal(false);
+            logout();
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Failed to delete account");
+            setIsDeleting(false);
+        }
+    };
 
     const formatIndiaPhone = (value) => {
         const raw = String(value || '').trim();
@@ -229,7 +246,7 @@ const ProfilePage = () => {
                             <MenuItem
                                 icon={LifeBuoy}
                                 label={t('helpSupport')}
-                                path="/support"
+                                path="/help"
                                 badgeBg="bg-purple-50/80 border-purple-100/70 text-purple-700"
                             />
                             <MenuItem
@@ -255,6 +272,15 @@ const ProfilePage = () => {
                 >
                     <LogOut size={18} className="text-slate-600" />
                     {t('signOut')}
+                </button>
+
+                {/* Delete Account Button */}
+                <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full py-3.5 rounded-2xl border border-red-200 text-red-600 font-bold bg-red-50/50 hover:bg-red-50 transition-colors flex items-center justify-center gap-2 mt-4 shadow-2xs"
+                >
+                    <AlertTriangle size={18} className="text-red-500" />
+                    Delete Account
                 </button>
 
                 <div className="text-center pb-8 mt-4">
@@ -290,6 +316,37 @@ const ProfilePage = () => {
                             className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
                         >
                             {t('yesSignOut')}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Delete Account Confirmation Modal */}
+        {showDeleteModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+                    <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                        <AlertTriangle size={24} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 text-center mb-2">Delete Account?</h3>
+                    <p className="text-sm font-medium text-slate-500 text-center mb-6">
+                        Are you sure you want to delete your account? This action cannot be undone. You will be logged out and your profile will become inactive.
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            disabled={isDeleting}
+                            onClick={() => setShowDeleteModal(false)}
+                            className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors disabled:opacity-50"
+                        >
+                            {t('cancel')}
+                        </button>
+                        <button
+                            disabled={isDeleting}
+                            onClick={handleDeleteAccount}
+                            className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 disabled:opacity-50"
+                        >
+                            {isDeleting ? "Deleting..." : "Yes, Delete"}
                         </button>
                     </div>
                 </div>

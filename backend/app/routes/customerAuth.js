@@ -6,6 +6,7 @@ import {
     getCustomerProfile,
     updateCustomerProfile,
     getCustomerTransactions,
+    deleteCustomerAccount,
 } from "../controller/customerAuthController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import {
@@ -26,6 +27,7 @@ router.post("/verify-otp", authRouteRateLimiter, otpRouteRateLimiter, smallAuthP
 // Profile routes
 router.get("/profile", verifyToken, getCustomerProfile);
 router.put("/profile", verifyToken, updateCustomerProfile);
+router.delete("/delete-account", verifyToken, deleteCustomerAccount);
 
 // Wallet
 router.get("/transactions", verifyToken, getCustomerTransactions);

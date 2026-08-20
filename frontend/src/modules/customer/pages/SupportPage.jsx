@@ -127,7 +127,7 @@ const SupportPage = () => {
                 <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                     <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Legal & Policy</h3>
                     <div className="space-y-3">
-                        <Link to="/terms" className="flex items-center gap-3 text-slate-700 hover:text-slate-900 font-bold text-sm">
+                        <Link to="/support" className="flex items-center gap-3 text-slate-700 hover:text-slate-900 font-bold text-sm">
                             <div className="w-8 h-8 rounded-full bg-indigo-50/80 border border-indigo-100 flex items-center justify-center text-indigo-700 shrink-0">
                                 <span className="text-xs">📜</span>
                             </div>

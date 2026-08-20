@@ -120,6 +120,12 @@ export async function issueCustomerOtp({
     throw err;
   }
 
+  if (customer && customer.isActive === false) {
+    const err = new Error("Account has been deleted");
+    err.statusCode = 403;
+    throw err;
+  }
+
   if (!customer) {
     customer = await Customer.create({
       name: name || "Customer",
