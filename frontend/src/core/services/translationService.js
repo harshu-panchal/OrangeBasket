@@ -4,9 +4,9 @@ import { getCachedTranslation, setCachedTranslation } from '../utils/translation
 const queue = [];
 let batchTimeout = null;
 const BATCH_WAIT_MS = 100;
-const MAX_BATCH_SIZE = 10;
+const MAX_BATCH_SIZE = 100;
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL_MS = 200;
+const MIN_REQUEST_INTERVAL_MS = 50;
 
 const processQueue = async () => {
   if (queue.length === 0) return;

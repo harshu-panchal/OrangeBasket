@@ -153,11 +153,15 @@ const MainLocationHeader = ({
   const { scrollY } = useScroll();
   const { t, language, setLanguage, languages } = useTranslation();
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
-  const langDropdownRef = useRef(null);
+  const desktopLangDropdownRef = useRef(null);
+  const mobileLangDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+      const clickedInDesktop = desktopLangDropdownRef.current && desktopLangDropdownRef.current.contains(event.target);
+      const clickedInMobile = mobileLangDropdownRef.current && mobileLangDropdownRef.current.contains(event.target);
+      
+      if (!clickedInDesktop && !clickedInMobile) {
         setIsLangDropdownOpen(false);
       }
     };
@@ -443,7 +447,7 @@ const MainLocationHeader = ({
             {/* Right Section: Action Icons */}
             <div className="flex items-center gap-5 lg:gap-8 shrink-0">
               {/* Language Selector Dropdown */}
-              <div className="relative" ref={langDropdownRef}>
+              <div className="relative" ref={desktopLangDropdownRef}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -560,7 +564,7 @@ const MainLocationHeader = ({
               {/* Right actions: Language Dropdown + Notification Bell Button */}
               <div className="flex items-center gap-2.5">
                 {/* Language Selector Dropdown (Mobile) */}
-                <div className="relative" ref={langDropdownRef}>
+                <div className="relative" ref={mobileLangDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
