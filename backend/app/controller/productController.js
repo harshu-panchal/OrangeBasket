@@ -574,7 +574,8 @@ export const getSellerProducts = async (req, res) => {
       maxLimit: 100,
     });
 
-    const baseSellerQuery = { sellerId };
+    const role = String(req.user?.role || "").toLowerCase();
+    const baseSellerQuery = role === "warehouse" ? { warehouseId: sellerId } : { sellerId };
     const query = { ...baseSellerQuery };
     if (stockStatus === "in") {
       query.stock = { $gt: 0 };
@@ -729,6 +730,8 @@ export const createProduct = async (req, res) => {
       if (!productData.sellerId) {
         return handleResponse(res, 400, "sellerId is required for admin-created products");
       }
+    } else if (role === "warehouse") {
+      productData.warehouseId = req.user.id;
     } else {
       productData.sellerId = req.user.id;
     }
@@ -956,7 +959,7 @@ export const updateProduct = async (req, res) => {
     }
 
     // Admin bypasses sellerId check
-    const query = role === "admin" ? { _id: id } : { _id: id, sellerId };
+    const query = role === "admin" ? { _id: id } : role === "warehouse" ? { _id: id, warehouseId: sellerId } : { _id: id, sellerId };
     const product = await Product.findOne(query);
 
     if (!product) {
@@ -1097,7 +1100,7 @@ export const deleteProduct = async (req, res) => {
     const sellerId = req.user.id;
     const role = req.user.role;
 
-    const query = role === "admin" ? { _id: id } : { _id: id, sellerId };
+    const query = role === "admin" ? { _id: id } : role === "warehouse" ? { _id: id, warehouseId: sellerId } : { _id: id, sellerId };
     const product = await Product.findOneAndDelete(query);
 
     if (!product) {

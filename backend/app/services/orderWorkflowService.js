@@ -116,7 +116,9 @@ export async function afterPlaceOrderV2(orderDoc) {
       event: "order:new",
       payload,
     });
-  } else if (orderDoc.warehouseId) {
+  }
+
+  if (orderDoc.warehouseId) {
     emitToWarehouse(orderDoc.warehouseId?.toString(), {
       event: "order:new",
       payload,
