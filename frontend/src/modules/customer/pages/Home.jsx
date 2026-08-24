@@ -42,7 +42,9 @@ import PromoMarquee from "../components/home/PromoMarquee";
 import QuickCategorySlider from "../components/home/QuickCategorySlider";
 import LowestPriceSection from "../components/home/LowestPriceSection";
 import OfferSections from "../components/home/OfferSections";
+import BestsellersSection from "../components/home/BestsellersSection";
 import MonthlyBasketSection from "../components/home/MonthlyBasketSection";
+import CategoryShowcase from "../components/home/CategoryShowcase";
 
 const DEFAULT_CATEGORY_THEME = {
   gradient: "linear-gradient(to bottom, var(--primary), var(--brand-400))",
@@ -227,6 +229,7 @@ const Home = () => {
   const [subcategoryMap, setSubcategoryMap] = useState(() => cachedHomePageData?.subcategoryMap || {});
   const [pendingReturn, setPendingReturn] = useState(null);
   const [offerSections, setOfferSections] = useState(() => cachedHomePageData?.offerSections || []);
+  const [bestsellerConfig, setBestsellerConfig] = useState(() => cachedHomePageData?.bestsellerConfig || null);
   const [noServiceData, setNoServiceData] = useState(null);
 
   const [displayCategories, setDisplayCategories] = useState(categories);
@@ -456,7 +459,25 @@ const Home = () => {
         setHeroConfig(resolved);
       } catch (e) { setHeroConfig(EMPTY_HERO_CONFIG); }
     };
+
+    const fetchBestsellerConfig = async () => {
+      try {
+        const isHeader = activeCategory && activeCategory._id !== "all";
+        let bestsellerPayload = null;
+        if (isHeader) {
+          const bRes = await customerApi.getBestsellerConfig(activeCategory._id);
+          if (bRes.data?.success && bRes.data?.result) bestsellerPayload = bRes.data.result;
+        }
+        if (!bestsellerPayload || !bestsellerPayload.mainCategoryIds || bestsellerPayload.mainCategoryIds.length === 0) {
+          const bHomeRes = await customerApi.getBestsellerConfig("all");
+          if (bHomeRes.data?.success && bHomeRes.data?.result) bestsellerPayload = bHomeRes.data.result;
+        }
+        setBestsellerConfig(bestsellerPayload);
+      } catch (e) { setBestsellerConfig(null); }
+    };
+
     fetchHeroConfig();
+    fetchBestsellerConfig();
   }, [activeCategory, currentLocation?.latitude, currentLocation?.longitude]);
 
   useEffect(() => {
@@ -633,7 +654,9 @@ const Home = () => {
         )}
         <LowestPriceSection products={displayProducts} onSeeAll={() => navigate("/category/all")} />
         <MonthlyBasketSection />
+        <CategoryShowcase categoryMap={displayCategoryMap} subcategoryMap={displaySubcategoryMap} />
         <OfferSections sections={displayOfferSections} noServiceData={noServiceData} />
+        <BestsellersSection config={bestsellerConfig} categoryMap={displayCategoryMap} subcategoryMap={displaySubcategoryMap} />
 
         {sectionsForRenderer.length > 0 && (
           <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-4 md:py-8">

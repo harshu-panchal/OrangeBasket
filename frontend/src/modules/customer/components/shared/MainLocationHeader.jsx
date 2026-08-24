@@ -191,6 +191,7 @@ const MainLocationHeader = ({
 
   // Horizontal scroll for categories navigation
   const navRef = useRef(null);
+  const mobileNavRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
@@ -649,20 +650,43 @@ const MainLocationHeader = ({
 
           {/* Categories Navigation Row (Shared for Desktop & Mobile) */}
           <div className="relative w-full overflow-visible">
+            {/* Scroll arrows: desktop only */}
             {showLeftArrow && (
               <button
                 onClick={() => handleScroll("left")}
-                className="absolute left-0 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -ml-1.5"
+                className="absolute left-0 z-30 hidden md:flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -ml-1.5"
                 style={{ top: "calc(50% - 14px)" }}
               >
                 <ChevronLeftIcon sx={{ fontSize: 18 }} />
               </button>
             )}
 
+            {/* Mobile wrapper */}
+            <div className="md:hidden w-full">
+              <motion.div
+                ref={mobileNavRef}
+                style={{ height: navHeight, opacity: navOpacity, marginTop: navMargin }}
+                className="relative z-10 flex items-end gap-1 overflow-x-auto overflow-y-visible px-2 pb-0 no-scrollbar"
+              >
+                {categories.map((cat) => (
+                  <CategoryNavColumn
+                    key={cat.id || cat._id}
+                    cat={cat}
+                    isActive={activeCategory?.id === (cat.id || cat._id)}
+                    categoryAccent={categoryAccent}
+                    onCategorySelect={onCategorySelect}
+                    headerFontColor={headerFontColor}
+                    headerIconColor={headerIconColor}
+                  />
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Desktop wrapper: full scrollable row */}
             <motion.div
               ref={navRef}
               style={{ height: navHeight, opacity: navOpacity, marginTop: navMargin }}
-              className="relative z-10 -mx-2 flex items-end gap-1 overflow-x-auto overflow-y-visible px-2 pb-0 no-scrollbar md:gap-4 md:px-4"
+              className="relative z-10 -mx-2 hidden md:flex items-end gap-4 overflow-x-auto overflow-y-visible px-4 pb-0 no-scrollbar"
             >
               {categories.map((cat) => (
                 <CategoryNavColumn
@@ -680,7 +704,7 @@ const MainLocationHeader = ({
             {showRightArrow && (
               <button
                 onClick={() => handleScroll("right")}
-                className="absolute right-0 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -mr-1.5"
+                className="absolute right-0 z-30 hidden md:flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md border border-slate-100 hover:bg-white active:scale-90 transition-all cursor-pointer -mr-1.5"
                 style={{ top: "calc(50% - 14px)" }}
               >
                 <ChevronRightIcon sx={{ fontSize: 18 }} />

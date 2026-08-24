@@ -109,7 +109,7 @@ const productSchema = new mongoose.Schema(
         sellerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Seller",
-            required: function () { return !this.isMonthlyKit; }
+            required: function () { return !this.isMonthlyKit && !this.warehouseId; }
         },
         warehouseId: {
             type: mongoose.Schema.Types.ObjectId,

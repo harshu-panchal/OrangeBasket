@@ -23,6 +23,7 @@ import mediaRoute from "./mediaRoutes.js";
 import healthRoute from "./healthRoutes.js";
 import metricsRoute from "./metricsRoutes.js";
 import kitRoute from "./kitRoutes.js";
+import bestsellerRoute from "./bestsellerRoutes.js";
 import authOtpRoute from "../modules/otp/otp.routes.js";
 import employeeRoute from "./employeeRoutes.js";
 import translationRoute from "./translationRoutes.js";
@@ -34,8 +35,10 @@ const setupRoutes = (app) => {
     const router = express.Router();
 
     // Health and metrics endpoints (no /api prefix for standard paths)
-    app.use("/health", healthRoute);
-    app.use("/metrics", metricsRoute);
+    app.use("/api/health", healthRoute);
+    app.use("/api/metrics", metricsRoute);
+    app.use("/api/kits", kitRoute);
+    app.use("/api/bestsellers", bestsellerRoute);
 
     router.use("/customer", customerRoute);
     router.use("/delivery", deliveryRoute);

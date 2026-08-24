@@ -135,6 +135,9 @@ export const customerApi = {
   // Offer sections (category → products, banner + side image)
   getOfferSections: (params) => getWithDedupe("/offer-sections", params),
 
+  // Bestsellers Config
+  getBestsellerConfig: (headerId) => getWithDedupe(`/bestsellers/customer/${headerId}`),
+
   // Coupons
   validateCoupon: (data) => axiosInstance.post("/coupons/validate", data),
   getActiveCoupons: () => getWithDedupe("/coupons", { status: "active" }),

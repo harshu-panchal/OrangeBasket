@@ -280,34 +280,36 @@ const ProductCard = React.memo(
               )}
             </div>
 
-            {/* Orange Plus/Check Toggle Button */}
-            <div className="shrink-0">
+            {/* ADD / Quantity Selector Button */}
+            <div className="shrink-0 ml-2">
               {quantity > 0 ? (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    removeFromCart(productId, variantKey);
-                  }}
-                  className="w-7.5 h-7.5 rounded-full bg-[#FF8200] hover:bg-red-550 text-white flex items-center justify-center font-extrabold text-base shadow-2xs hover:scale-105 active:scale-90 transition-all group/btn"
-                  title="Remove from Cart"
+                <div 
+                  className="h-8 min-w-[68px] flex items-center justify-between rounded-sm bg-[#FF8200] text-white shadow-sm"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 >
-                  <div className="relative w-4 h-4 flex items-center justify-center">
-                    <span className="absolute transition-all duration-200 opacity-100 scale-100 group-hover/btn:opacity-0 group-hover/btn:scale-75">
-                      <Check size={15} strokeWidth={3.5} />
-                    </span>
-                    <span className="absolute transition-all duration-200 opacity-0 scale-75 group-hover/btn:opacity-100 group-hover/btn:scale-100">
-                      <Minus size={15} strokeWidth={3.5} />
-                    </span>
-                  </div>
-                </button>
+                  <button 
+                    onClick={handleDecrement} 
+                    className="w-7 h-full flex items-center justify-center active:bg-orange-600 rounded-l-sm transition-colors"
+                  >
+                    <Minus size={15} strokeWidth={2.5} />
+                  </button>
+                  <span className="font-bold text-[13px]">
+                    {quantity}
+                  </span>
+                  <button 
+                    onClick={handleIncrement} 
+                    className="w-7 h-full flex items-center justify-center active:bg-orange-600 rounded-r-sm transition-colors"
+                  >
+                    <Plus size={15} strokeWidth={2.5} />
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={handleAddToCart}
-                  className="w-7.5 h-7.5 rounded-full bg-[#FF8200] hover:bg-[#FF8200]/95 text-white flex items-center justify-center font-extrabold text-base shadow-2xs hover:scale-105 active:scale-90 transition-all"
+                  className="h-8 min-w-[68px] px-4 rounded-sm border border-[#FF8200] bg-transparent text-[#FF8200] flex items-center justify-center font-bold text-[13px] uppercase active:scale-95 transition-all hover:bg-orange-50"
                   title="Add to Cart"
                 >
-                  <Plus size={16} strokeWidth={3.5} />
+                  ADD
                 </button>
               )}
             </div>

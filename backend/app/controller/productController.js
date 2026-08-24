@@ -398,7 +398,22 @@ export const getProducts = async (req, res) => {
             totalPages: 1,
           });
         }
-        query.sellerId = { $in: finalSellerIds };
+        if (query.$or) {
+          query.$and = query.$and || [];
+          query.$and.push({ $or: query.$or });
+          delete query.$or;
+          query.$and.push({
+            $or: [
+              { sellerId: { $in: finalSellerIds } },
+              { warehouseId: { $in: finalSellerIds } }
+            ]
+          });
+        } else {
+          query.$or = [
+            { sellerId: { $in: finalSellerIds } },
+            { warehouseId: { $in: finalSellerIds } }
+          ];
+        }
       } else {
         // If no specific seller requested, include nearby sellers OR monthly kits
         if (!finalSellerIds.length) {
@@ -411,12 +426,14 @@ export const getProducts = async (req, res) => {
             query.$and.push({
               $or: [
                 { sellerId: { $in: finalSellerIds } },
+                { warehouseId: { $in: finalSellerIds } },
                 { isMonthlyKit: true }
               ]
             });
           } else {
             query.$or = [
               { sellerId: { $in: finalSellerIds } },
+              { warehouseId: { $in: finalSellerIds } },
               { isMonthlyKit: true }
             ];
           }
@@ -432,7 +449,7 @@ export const getProducts = async (req, res) => {
       if (ids.length) query.categoryId = { $in: ids };
     }
     // Multiple sellers: sellerIds=id1,id2 (or single sellerId)
-    if (!query.sellerId) {
+    if (!enforceRadius && !query.sellerId) {
       if (sellerIds && typeof sellerIds === "string") {
         const ids = sellerIds
           .split(",")

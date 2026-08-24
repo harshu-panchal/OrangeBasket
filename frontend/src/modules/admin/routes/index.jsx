@@ -98,6 +98,7 @@ const MonthlyBasketCategories = React.lazy(() => import("../pages/MonthlyBasketC
 const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBanners"));
 const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
 const EditMonthlyKit = React.lazy(() => import("../pages/EditMonthlyKit"));
+const BestsellerManagement = React.lazy(() => import("../pages/BestsellerManagement"));
 
 const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 
@@ -212,6 +213,14 @@ const navItems = [
   { label: "Customers", path: "/admin/customers", icon: Users, color: "sky" },
   { label: "FAQs", path: "/admin/faqs", icon: HelpCircle, color: "pink" },
   {
+    label: "Home Content",
+    icon: Sparkles,
+    color: "purple",
+    children: [
+      { label: "Bestsellers", path: "/admin/content/bestsellers" },
+    ],
+  },
+  {
     label: "Orders",
     icon: ClipboardList,
     color: "fuchsia",
@@ -289,6 +298,7 @@ const AdminRoutes = () => {
         <Route path="/monthly-baskets/banners" element={<MonthlyBasketBanners />} />
         <Route path="/monthly-baskets/approvals" element={<MonthlyBasketApprovals />} />
         <Route path="/monthly-baskets/edit/:id" element={<EditMonthlyKit />} />
+        <Route path="content/bestsellers" element={<BestsellerManagement />} />
         
         <Route path="/experience-studio" element={<ContentManager />} />
         <Route path="/hero-categories" element={<HeroCategoriesPerPage />} />
