@@ -566,7 +566,7 @@ const Home = () => {
         })()}
 
         <div className="w-full z-[60] bg-transparent pt-1 pb-2 mb-2">
-          <div className="relative -mt-4 md:mt-8 z-30">
+          <div className="relative mt-2 md:mt-8 z-30">
             <QuickCategorySlider
               categories={effectiveQuickCategories}
               onCategoryClick={(id) => setExpandedCategoryId(expandedCategoryId === id ? null : id)}

@@ -16,6 +16,7 @@ import {
   HiOutlineSquaresPlus,
   HiOutlineSparkles,
 } from "react-icons/hi2";
+import { HiOutlinePhotograph } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ const AddProduct = () => {
   const navigate = useNavigate();
   const [modalTab, setModalTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
+  const [variantImageFiles, setVariantImageFiles] = useState({});
 
   const makeSku = (name, index = 1) => {
     const prefix =
@@ -191,22 +193,23 @@ const AddProduct = () => {
       data.append("categoryId", formData.category);
       data.append("subcategoryId", formData.subcategory);
 
-      // Tags
-      data.append("tags", formData.tags);
+      // Images (now handled via variants)
 
-      // Images
-      if (formData.mainImageFile) {
-        data.append("mainImage", formData.mainImageFile);
-      }
-
-      if (formData.galleryFiles && formData.galleryFiles.length > 0) {
-        formData.galleryFiles.forEach(file => {
-          data.append("galleryImages", file);
-        });
-      }
 
       // Variants
       data.append("variants", JSON.stringify(formData.variants));
+
+      // Append variant image files
+      Object.keys(variantImageFiles).forEach((vIndex) => {
+        const filesArray = variantImageFiles[vIndex];
+        if (Array.isArray(filesArray)) {
+           filesArray.forEach((file, imgIndex) => {
+              if (file) {
+                 data.append(`variantImage_${vIndex}_${imgIndex}`, file);
+              }
+           });
+        }
+      });
 
       // Highlights
       data.append("highlights", JSON.stringify(formData.highlights || []));
@@ -288,7 +291,7 @@ const AddProduct = () => {
             { id: "variants", label: "Item Variants", icon: HiOutlineSwatch },
             { id: "category", label: "Groups", icon: HiOutlineFolderOpen },
             { id: "highlights", label: "Highlights", icon: HiOutlineSparkles },
-            { id: "media", label: "Photos", icon: HiOutlinePhoto },
+
           ].map((tab) => (
             <button
               key={tab.id}
@@ -473,22 +476,17 @@ const AddProduct = () => {
 
               <div className="space-y-3">
                 {(formData.variants || []).map((variant, index) => (
-                  <div
-                    key={variant.id}
-                    className="p-4 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-4 items-end group relative">
-                    <div className="col-span-12 md:col-span-3 space-y-1">
+                  <div key={variant.id} className="grid grid-cols-12 gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 relative group">
+                    <div className="col-span-12 md:col-span-3 space-y-1 flex flex-col justify-end">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
                         Variant Name
                       </label>
                       <input
                         value={variant.name}
                         onChange={(e) => {
-                          const nextValue = e.target.value;
                           setFormData((prev) => {
-                            const newVariants = prev.variants.map((item, idx) => {
-                              if (idx !== index) return item;
-                              return { ...item, name: nextValue };
-                            });
+                            const newVariants = [...prev.variants];
+                            newVariants[index].name = e.target.value;
                             return {
                               ...prev,
                               variants: newVariants,
@@ -499,7 +497,7 @@ const AddProduct = () => {
                         className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/10"
                       />
                     </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1">
+                    <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
                         Price
                       </label>
@@ -529,7 +527,7 @@ const AddProduct = () => {
                         className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-primary/10"
                       />
                     </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1">
+                    <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                       <label className="text-[8px] font-bold text-brand-500 uppercase tracking-widest ml-1">
                         Sale
                       </label>
@@ -559,7 +557,7 @@ const AddProduct = () => {
                         className="w-full px-3 py-2 bg-brand-50 ring-1 ring-brand-100 border-none rounded-xl text-xs font-bold text-brand-700 outline-none focus:ring-2 focus:ring-brand-200"
                       />
                     </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1">
+                    <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
                         Stock
                       </label>
@@ -583,7 +581,7 @@ const AddProduct = () => {
                         className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-primary/10"
                       />
                     </div>
-                    <div className="col-span-5 md:col-span-2 space-y-1">
+                    <div className="col-span-5 md:col-span-2 space-y-1 flex flex-col justify-end">
                       <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
                         Product Code
                       </label>
@@ -598,7 +596,7 @@ const AddProduct = () => {
                         className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-primary/10"
                       />
                     </div>
-                    <div className="col-span-1 flex justify-end pb-1">
+                    <div className="col-span-1 flex justify-end pb-1 flex-col pb-2">
                       <button
                         onClick={() => {
                           if (formData.variants.length > 1) {
@@ -610,17 +608,65 @@ const AddProduct = () => {
                                   const shouldAuto =
                                     !item.variant.sku ||
                                     isAutoSku(item.variant.sku, prev.name, item.oldIndex);
-                                  return shouldAuto
-                                    ? { ...item.variant, sku: makeSku(prev.name, newIdx + 1) }
-                                    : item.variant;
+                                  return {
+                                    ...item.variant,
+                                    sku: shouldAuto ? makeSku(prev.name, newIdx + 1) : item.variant.sku,
+                                  };
                                 });
+
+                              const newFiles = { ...variantImageFiles };
+                              delete newFiles[index];
+                              
+                              // Re-index variant images
+                              const reindexedFiles = {};
+                              Object.keys(newFiles).forEach(key => {
+                                 const numKey = Number(key);
+                                 if (numKey > index) {
+                                    reindexedFiles[numKey - 1] = newFiles[key];
+                                 } else {
+                                    reindexedFiles[numKey] = newFiles[key];
+                                 }
+                              });
+                              setVariantImageFiles(reindexedFiles);
+
                               return { ...prev, variants: remaining };
                             });
                           }
                         }}
-                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                        <HiOutlineTrash className="h-4 w-4" />
+                        className={`p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors ${formData.variants.length === 1 ? "opacity-50 cursor-not-allowed" : ""
+                          }`}>
+                        <HiOutlineTrash className="h-5 w-5" />
                       </button>
+                    </div>
+
+                    {/* Variant Images Row */}
+                    <div className="col-span-12 mt-2 pt-3 border-t border-slate-200">
+                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block ml-1">Variant Images (Max 5)</label>
+                        <div className="flex gap-3 w-full overflow-x-auto pb-2 custom-scrollbar">
+                           {[0, 1, 2, 3, 4].map(imgIdx => (
+                              <div key={imgIdx} className="relative h-16 w-16 shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
+                                 {variantImageFiles[index]?.[imgIdx] ? (
+                                     <img src={URL.createObjectURL(variantImageFiles[index][imgIdx])} alt="" className="h-full w-full object-cover" />
+                                 ) : variant.images?.[imgIdx] ? (
+                                     <img src={variant.images[imgIdx]} alt="" className="h-full w-full object-cover" />
+                                 ) : (
+                                     <HiOutlinePhotograph className="h-5 w-5 text-slate-300" />
+                                 )}
+                                 <input
+                                     type="file"
+                                     accept="image/*"
+                                     className="absolute inset-0 opacity-0 cursor-pointer"
+                                     onChange={e => {
+                                         if (e.target.files?.[0]) {
+                                             const newFiles = [...(variantImageFiles[index] || [])];
+                                             newFiles[imgIdx] = e.target.files[0];
+                                             setVariantImageFiles({ ...variantImageFiles, [index]: newFiles });
+                                         }
+                                     }}
+                                 />
+                              </div>
+                           ))}
+                        </div>
                     </div>
                   </div>
                 ))}
@@ -698,88 +744,7 @@ const AddProduct = () => {
             </div>
           )}
 
-          {modalTab === "media" && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-              {/* Main Image Section */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                  Main Cover Photo
-                </label>
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="w-48 aspect-square rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                    <input
-                      type="file"
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                      onChange={(e) => handleImageUpload(e, "main")}
-                    />
-                    {formData.mainImage ? (
-                      <img
-                        src={formData.mainImage}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <>
-                        <HiOutlinePhoto className="h-10 w-10 text-slate-200 group-hover:text-primary transition-colors" />
-                        <p className="text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-widest group-hover:text-primary">
-                          Upload Cover
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2 pt-2">
-                    <p className="text-xs font-bold text-slate-900">
-                      Choose a primary image
-                    </p>
-                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                      We show this image on the search page and the main
-                      store listing. Make sure it is clear and bright.
-                    </p>
-                    <button className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline">
-                      Pick from Library
-                    </button>
-                  </div>
-                </div>
-              </div>
 
-              {/* Gallery Section */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                  Gallery Photos (Max 5)
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className="aspect-square rounded-md border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer relative overflow-hidden">
-                      {formData.galleryImages[i - 1] ? (
-                        <img
-                          src={formData.galleryImages[i - 1]}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <>
-                          <input
-                            type="file"
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                            onChange={(e) => handleImageUpload(e, "gallery")}
-                          />
-                          <HiOutlinePlus className="h-5 w-5 text-slate-200 group-hover:text-primary transition-colors" />
-                          <p className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-widest group-hover:text-primary">
-                            Add
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-600 font-medium italic text-center pt-4 border-t border-slate-50">
-                Quick Tip: Using WebP format at 800x800px makes your store load
-                3x faster.
-              </p>
-            </div>
-          )}
 
           {modalTab === "highlights" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">

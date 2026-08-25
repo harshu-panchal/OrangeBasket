@@ -755,22 +755,24 @@ export const createProduct = async (req, res) => {
 
     // Handle multipart files (mainImage and galleryImages)
     const files = req.files || [];
+    const variantImagesMap = {};
     if (files.length > 0) {
-      const galleryUrls = [];
       for (const file of files) {
         try {
-          if (file.fieldname === "mainImage") {
-            const url = await uploadToCloudinary(file.buffer, "products", {
+          if (file.fieldname.startsWith("variantImage_")) {
+            // expected format: variantImage_{variantIndex}_{imageIndex}
+            const parts = file.fieldname.split("_");
+            const vIndex = parts[1];
+            
+            const url = await uploadToCloudinary(file.buffer, "products/variants", {
               mimeType: file.mimetype,
               resourceType: "image",
             });
-            productData.mainImage = url;
-          } else if (file.fieldname === "galleryImages") {
-            const url = await uploadToCloudinary(file.buffer, "products", {
-              mimeType: file.mimetype,
-              resourceType: "image",
-            });
-            galleryUrls.push(url);
+            
+            if (!variantImagesMap[vIndex]) {
+              variantImagesMap[vIndex] = [];
+            }
+            variantImagesMap[vIndex].push(url);
           }
         } catch (err) {
           logger.error("Cloudinary upload failed", {
@@ -779,15 +781,30 @@ export const createProduct = async (req, res) => {
           });
         }
       }
-      if (galleryUrls.length > 0) {
-        productData.galleryImages = galleryUrls;
-      }
     }
 
     // Parse JSON fields if they come as strings from FormData
     if (typeof productData.variants === "string") {
       try {
         productData.variants = JSON.parse(productData.variants);
+        
+        // Map uploaded variant images to parsed variants
+        if (Array.isArray(productData.variants)) {
+          productData.variants = productData.variants.map((v, idx) => {
+            if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
+              v.images = variantImagesMap[idx];
+              
+              // Auto-populate product-level mainImage and galleryImages from the first variant
+              if (idx === 0) {
+                productData.mainImage = v.images[0];
+                productData.galleryImages = v.images.slice(1);
+              }
+            } else {
+               v.images = [];
+            }
+            return v;
+          });
+        }
       } catch (e) {
         logger.error("Failed to parse variants JSON", {
           scope: "createProduct",
@@ -923,22 +940,24 @@ export const updateProduct = async (req, res) => {
 
     // Handle multipart files (mainImage and galleryImages)
     const files = req.files || [];
-    let galleryUrls = [];
+    const variantImagesMap = {};
     if (files.length > 0) {
       for (const file of files) {
         try {
-          if (file.fieldname === "mainImage") {
-            const url = await uploadToCloudinary(file.buffer, "products", {
+          if (file.fieldname.startsWith("variantImage_")) {
+            // expected format: variantImage_{variantIndex}_{imageIndex}
+            const parts = file.fieldname.split("_");
+            const vIndex = parts[1];
+            
+            const url = await uploadToCloudinary(file.buffer, "products/variants", {
               mimeType: file.mimetype,
               resourceType: "image",
             });
-            productData.mainImage = url;
-          } else if (file.fieldname === "galleryImages") {
-            const url = await uploadToCloudinary(file.buffer, "products", {
-              mimeType: file.mimetype,
-              resourceType: "image",
-            });
-            galleryUrls.push(url);
+            
+            if (!variantImagesMap[vIndex]) {
+              variantImagesMap[vIndex] = [];
+            }
+            variantImagesMap[vIndex].push(url);
           }
         } catch (err) {
           logger.error("Cloudinary upload failed during update", {
@@ -953,6 +972,25 @@ export const updateProduct = async (req, res) => {
     if (typeof productData.variants === "string") {
       try {
         productData.variants = JSON.parse(productData.variants);
+        
+        // Map uploaded variant images to parsed variants
+        if (Array.isArray(productData.variants)) {
+          productData.variants = productData.variants.map((v, idx) => {
+            // If new images were uploaded for this variant, append them
+            if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
+              if (!Array.isArray(v.images)) v.images = [];
+              v.images = [...v.images, ...variantImagesMap[idx]];
+            }
+            
+            // Auto-populate product-level mainImage and galleryImages from the first variant
+            if (idx === 0 && Array.isArray(v.images) && v.images.length > 0) {
+              productData.mainImage = v.images[0];
+              productData.galleryImages = v.images.slice(1);
+            }
+            
+            return v;
+          });
+        }
       } catch (e) {
         logger.error("Failed to parse variants JSON during update", {
           scope: "updateProduct",

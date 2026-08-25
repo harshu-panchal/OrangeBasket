@@ -30,7 +30,7 @@ export const CartProvider = ({ children }) => {
     return items.map((item) => {
       const product = item.productId;
       const variantKey = String(item.variantSku || "").trim();
-      const { price, salePrice, variantName } = resolveVariantPricing(product, variantKey);
+      const { price, salePrice, variantName, variantImage } = resolveVariantPricing(product, variantKey);
       return {
         ...product,
         id: product?._id ? String(product._id) : "", // Normalize ID to string
@@ -39,7 +39,7 @@ export const CartProvider = ({ children }) => {
         variantName,
         price,
         salePrice,
-        image: product?.mainImage, // Handle mapping for frontend
+        image: variantImage || product?.mainImage, // Handle mapping for frontend
       };
     });
   };
@@ -51,6 +51,7 @@ export const CartProvider = ({ children }) => {
         price: Number(product?.price || 0),
         salePrice: Number(product?.salePrice || 0),
         variantName: "",
+        variantImage: "",
       };
     }
 
@@ -64,6 +65,7 @@ export const CartProvider = ({ children }) => {
       price: Number(hit?.price || product?.price || 0),
       salePrice: Number(hit?.salePrice || 0),
       variantName: String(hit?.name || "").trim(),
+      variantImage: (hit?.images && hit.images.length > 0) ? hit.images[0] : hit?.image || "",
     };
   };
 
@@ -132,7 +134,7 @@ export const CartProvider = ({ children }) => {
     const id = product.id || product._id;
     const key = `${id}::${variantSku || ""}`;
     console.log("DEBUG: addToCart product:", { id, name: product?.name, variantSku, key });
-    const { price, salePrice, variantName } = resolveVariantPricing(product, variantSku);
+    const { price, salePrice, variantName, variantImage } = resolveVariantPricing(product, variantSku);
 
     // Optimistic UI update for instant feedback
     setCart((prev) => {
@@ -159,7 +161,7 @@ export const CartProvider = ({ children }) => {
           price,
           salePrice,
           quantity: 1,
-          image: product.image || product.mainImage,
+          image: variantImage || product.image || product.mainImage,
         },
       ];
     });

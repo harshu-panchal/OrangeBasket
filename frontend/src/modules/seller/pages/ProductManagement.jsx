@@ -23,6 +23,7 @@ import {
   HiOutlineSquaresPlus,
   HiOutlineSparkles,
 } from "react-icons/hi2";
+import { HiOutlinePhotograph } from "react-icons/hi";
 import { PRESET_HIGHLIGHT_ICONS } from "./AddProduct";
 import Modal from "@shared/components/ui/Modal";
 import { cn } from "@/lib/utils";
@@ -126,6 +127,7 @@ const ProductManagement = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [viewingVariants, setViewingVariants] = useState(null);
   const [isVariantsViewModalOpen, setIsVariantsViewModalOpen] = useState(false);
+  const [variantImageFiles, setVariantImageFiles] = useState({});
   const [editingItem, setEditingItem] = useState(null);
   const [modalTab, setModalTab] = useState("general");
 
@@ -314,13 +316,14 @@ const ProductManagement = () => {
 
   const handleSave = async () => {
     try {
-      if (!formData.name || !formData.price || !formData.stock || !formData.header || !formData.category || !formData.subcategory) {
+      if (!formData.name || !formData.header || !formData.category || !formData.subcategory) {
         toast.error("Please fill all required fields, including categories");
         return;
       }
 
-      if (formData.salePrice && Number(formData.salePrice) > Number(formData.price)) {
-        toast.error("Sale Price cannot be greater than Price");
+      const firstVariant = formData.variants[0] || {};
+      if (!firstVariant.price || !firstVariant.stock) {
+        toast.error("Main variant must have price and stock");
         return;
       }
 
@@ -335,9 +338,11 @@ const ProductManagement = () => {
       data.append("slug", formData.slug);
       data.append("sku", formData.sku);
       data.append("description", formData.description);
-      data.append("price", Number(formData.price));
-      data.append("salePrice", Number(formData.salePrice) || 0);
-      data.append("stock", Number(formData.stock));
+      
+      // Map top-level price/stock from first variant
+      data.append("price", firstVariant.price);
+      data.append("salePrice", firstVariant.salePrice || 0);
+      data.append("stock", firstVariant.stock);
       data.append("headerId", formData.header);
       data.append("categoryId", formData.category);
       data.append("subcategoryId", formData.subcategory);
@@ -351,12 +356,17 @@ const ProductManagement = () => {
       data.append("variants", JSON.stringify(formData.variants));
       data.append("highlights", JSON.stringify(formData.highlights || []));
 
-      if (formData.mainImageFile) {
-        data.append("mainImage", formData.mainImageFile);
-      }
-      if (formData.galleryFiles && formData.galleryFiles.length > 0) {
-        formData.galleryFiles.forEach((file) => data.append("galleryImages", file));
-      }
+      // Append variant image files
+      Object.keys(variantImageFiles).forEach((vIndex) => {
+        const filesArray = variantImageFiles[vIndex];
+        if (Array.isArray(filesArray)) {
+           filesArray.forEach((file, imgIndex) => {
+              if (file) {
+                 data.append(`variantImage_${vIndex}_${imgIndex}`, file);
+              }
+           });
+        }
+      });
 
       if (editingItem) {
         const response = await sellerApi.updateProduct(editingItem._id || editingItem.id, data);
@@ -970,7 +980,7 @@ const ProductManagement = () => {
                       label: "Highlights",
                       icon: HiOutlineSparkles,
                     },
-                    { id: "media", label: "Photos", icon: HiOutlinePhoto },
+
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1218,65 +1228,6 @@ const ProductManagement = () => {
                     </div>
                   )}
 
-                  {modalTab === "media" && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                          Main Cover Photo
-                        </label>
-                        <div className="flex flex-col md:flex-row items-start gap-6">
-                          <div className="w-48 aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                            <input
-                              type="file"
-                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                              onChange={(e) => handleImageUpload(e, "main")}
-                            />
-                            {formData.mainImage ? (
-                              <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="flex flex-col items-center">
-                                <HiOutlinePhoto className="h-10 w-10 text-slate-200" />
-                                <p className="text-[10px] text-slate-600 font-bold mt-2">UPLOAD</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                          Gallery Photos
-                        </label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {(formData.galleryImages || []).slice(0, 4).map((img, idx) => (
-                            <div
-                              key={`${img}-${idx}`}
-                              className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden relative">
-                              <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                          {Array.from({ length: Math.max(0, 4 - (formData.galleryImages || []).length) }).map((_, idx) => (
-                            <div
-                              key={`upload-${idx}`}
-                              className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                              <input
-                                type="file"
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                onChange={(e) => handleImageUpload(e, "gallery")}
-                              />
-                              <div className="flex flex-col items-center">
-                                <HiOutlinePhoto className="h-8 w-8 text-slate-200" />
-                                <p className="text-[10px] text-slate-600 font-bold mt-2">UPLOAD</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <p className="text-[10px] text-slate-500 font-medium">
-                          Existing gallery images are shown here. Uploading new images will append them to the gallery.
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                   {modalTab === "variants" && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -1304,8 +1255,8 @@ const ProductManagement = () => {
                       </div>
                       <div className="space-y-3">
                         {formData.variants.map((v, i) => (
-                          <div key={v.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                            <div className="md:col-span-2 space-y-1">
+                          <div key={v.id} className="grid grid-cols-12 gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 relative group">
+                            <div className="col-span-12 md:col-span-3 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Variant Name</label>
                               <input value={v.name} onChange={e => {
                                 const news = [...formData.variants];
@@ -1313,7 +1264,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="e.g. 1kg, 1 pack, 1 liter..." className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Price</label>
                               <input type="number" min="0" value={v.price} onChange={e => {
                                 const val = e.target.value;
@@ -1329,7 +1280,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Price" className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-brand-400 uppercase tracking-widest ml-1">Sale Price</label>
                               <input type="number" min="0" value={v.salePrice} onChange={e => {
                                 const val = e.target.value;
@@ -1345,7 +1296,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Sale" className="w-full bg-brand-50/50 px-3 py-2 rounded-xl text-xs ring-1 ring-brand-100 text-brand-700 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Stock</label>
                               <input type="number" min="0" value={v.stock} onChange={e => {
                                 const val = e.target.value;
@@ -1355,16 +1306,31 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Stock" className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 space-y-1">
-                                <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">SKU</label>
-                                <input value={v.sku} onChange={e => {
-                                  const news = [...formData.variants];
-                                  news[i].sku = e.target.value;
-                                  setFormData({ ...formData, variants: news });
-                                }} placeholder="SKU" className="w-full bg-white px-3 py-2 rounded-xl text-[10px] ring-1 ring-slate-100 outline-none" />
-                              </div>
+                            <div className="col-span-5 md:col-span-2 space-y-1 flex flex-col justify-end">
+                              <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">SKU</label>
+                              <input value={v.sku} onChange={e => {
+                                const news = [...formData.variants];
+                                news[i].sku = e.target.value;
+                                setFormData({ ...formData, variants: news });
+                              }} placeholder="SKU" className="w-full bg-white px-3 py-2 rounded-xl text-[10px] ring-1 ring-slate-100 outline-none" />
+                            </div>
+                            <div className="col-span-1 flex justify-end flex-col pb-2">
                               <button type="button" onClick={() => {
+                                const newImageFiles = { ...variantImageFiles };
+                                delete newImageFiles[i];
+                                
+                                // Re-index variant images
+                                const reindexedFiles = {};
+                                Object.keys(newImageFiles).forEach(key => {
+                                   const numKey = Number(key);
+                                   if (numKey > i) {
+                                      reindexedFiles[numKey - 1] = newImageFiles[key];
+                                   } else {
+                                      reindexedFiles[numKey] = newImageFiles[key];
+                                   }
+                                });
+                                setVariantImageFiles(reindexedFiles);
+
                                 setFormData((prev) => {
                                   const remaining = prev.variants
                                     .map((variant, idx) => ({ variant, oldIndex: idx + 1 }))
@@ -1373,15 +1339,46 @@ const ProductManagement = () => {
                                       const shouldAuto =
                                         !item.variant.sku ||
                                         isAutoSku(item.variant.sku, prev.name, item.oldIndex);
-                                      return shouldAuto
-                                        ? { ...item.variant, sku: makeSku(prev.name, newIdx + 1) }
-                                        : item.variant;
+                                      return {
+                                        ...item.variant,
+                                        sku: shouldAuto ? makeSku(prev.name, newIdx + 1) : item.variant.sku,
+                                      };
                                     });
                                   return { ...prev, variants: remaining };
                                 });
-                              }} className="text-rose-500 p-2 hover:bg-rose-50 rounded-lg shrink-0 mb-0.5">
-                                <HiOutlineTrash className="h-4 w-4" />
+                              }} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all">
+                                <HiOutlineTrash className="w-4 h-4" />
                               </button>
+                            </div>
+
+                            {/* Variant Images Row */}
+                            <div className="col-span-12 mt-2 pt-3 border-t border-slate-200">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block ml-1">Variant Images (Max 5)</label>
+                                <div className="flex gap-3 w-full overflow-x-auto pb-2 custom-scrollbar">
+                                   {[0, 1, 2, 3, 4].map(imgIdx => (
+                                      <div key={imgIdx} className="relative h-16 w-16 shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
+                                         {variantImageFiles[i]?.[imgIdx] ? (
+                                             <img src={URL.createObjectURL(variantImageFiles[i][imgIdx])} alt="" className="h-full w-full object-cover" />
+                                         ) : v.images?.[imgIdx] ? (
+                                             <img src={v.images[imgIdx]} alt="" className="h-full w-full object-cover" />
+                                         ) : (
+                                             <HiOutlinePhotograph className="h-5 w-5 text-slate-300" />
+                                         )}
+                                         <input
+                                             type="file"
+                                             accept="image/*"
+                                             className="absolute inset-0 opacity-0 cursor-pointer"
+                                             onChange={e => {
+                                                 if (e.target.files?.[0]) {
+                                                     const newFiles = [...(variantImageFiles[i] || [])];
+                                                     newFiles[imgIdx] = e.target.files[0];
+                                                     setVariantImageFiles({ ...variantImageFiles, [i]: newFiles });
+                                                 }
+                                             }}
+                                         />
+                                      </div>
+                                   ))}
+                                </div>
                             </div>
                           </div>
                         ))}

@@ -22,6 +22,7 @@ import {
     HiOutlineSwatch,
     HiOutlineSquaresPlus
 } from 'react-icons/hi2';
+import { HiOutlinePhotograph } from 'react-icons/hi';
 import Modal from '@shared/components/ui/Modal';
 import Pagination from '@shared/components/ui/Pagination';
 import { cn } from '@/lib/utils';
@@ -88,6 +89,7 @@ const ProductManagement = () => {
 
     const [viewingVariants, setViewingVariants] = useState(null);
     const [isVariantsViewModalOpen, setIsVariantsViewModalOpen] = useState(false);
+    const [variantImageFiles, setVariantImageFiles] = useState({});
 
     const fetchCategories = async () => {
         try {
@@ -147,8 +149,18 @@ const ProductManagement = () => {
             return toast.error('Only product editing is allowed for admins');
         }
 
-        if (!formData.name || !formData.price || !formData.stock || !formData.header || !formData.categoryId || !formData.subcategoryId) {
+        if (!formData.name || !formData.header || !formData.categoryId || !formData.subcategoryId) {
             return toast.error('Please fill all required fields, including categories');
+        }
+
+        const firstVariant = (formData.variants && formData.variants.length > 0) ? formData.variants[0] : null;
+        if (!firstVariant || !firstVariant.price || !firstVariant.stock) {
+            return toast.error("Main variant must have price and stock");
+        }
+
+        const invalidVariant = formData.variants?.find((v) => v.salePrice && Number(v.salePrice) > Number(v.price));
+        if (invalidVariant) {
+            return toast.error(`Sale Price cannot be greater than Price for variant: ${invalidVariant.name || 'Main Variant'}`);
         }
 
         setIsSaving(true);
@@ -158,16 +170,18 @@ const ProductManagement = () => {
             data.append('slug', formData.slug);
             data.append('sku', formData.sku);
             data.append('description', formData.description);
-            data.append('price', Number(formData.price));
-            data.append('salePrice', Number(formData.salePrice) || 0);
-            data.append('stock', Number(formData.stock));
-            data.append('lowStockAlert', Number(formData.lowStockAlert) || 5);
+            
+            // Map top-level price/stock from first variant
+            data.append('price', String(firstVariant.price));
+            data.append('salePrice', String(firstVariant.salePrice || 0));
+            data.append('stock', String(firstVariant.stock));
+            data.append('lowStockAlert', String(Number(formData.lowStockAlert) || 5));
             data.append('unit', formData.unit);
             data.append('headerId', formData.header);
             data.append('categoryId', formData.categoryId);
             data.append('subcategoryId', formData.subcategoryId);
             data.append('status', formData.status);
-            data.append('isFeatured', formData.isFeatured);
+            data.append('isFeatured', String(formData.isFeatured));
             data.append('brand', formData.brand);
             data.append('weight', formData.weight);
             data.append('tags', formData.tags);
@@ -176,12 +190,17 @@ const ProductManagement = () => {
             data.append('fssaiLicense', formData.fssaiLicense);
             data.append('variants', JSON.stringify(formData.variants));
 
-            if (formData.mainImageFile) {
-                data.append('mainImage', formData.mainImageFile);
-            }
-            if (formData.galleryFiles && formData.galleryFiles.length > 0) {
-                formData.galleryFiles.forEach((file) => data.append('galleryImages', file));
-            }
+            // Append variant image files
+            Object.keys(variantImageFiles).forEach((vIndex) => {
+                const filesArray = variantImageFiles[vIndex];
+                if (Array.isArray(filesArray)) {
+                    filesArray.forEach((file, imgIndex) => {
+                        if (file) {
+                            data.append(`variantImage_${vIndex}_${imgIndex}`, file);
+                        }
+                    });
+                }
+            });
 
             await adminApi.updateProduct(editingItem._id, data);
             toast.success('Product updated successfully');
@@ -252,43 +271,7 @@ const ProductManagement = () => {
         setRejectionNote('');
     };
 
-    const handleImageUpload = (e, type) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length === 0) {
-            return;
-        }
 
-        if (type === 'main') {
-            const file = files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, mainImage: reader.result, mainImageFile: file });
-            };
-            reader.readAsDataURL(file);
-            return;
-        }
-
-        const remainingSlots = Math.max(0, 5 - (formData.galleryImages?.length || 0));
-        const galleryFiles = files.slice(0, remainingSlots);
-        if (galleryFiles.length === 0) {
-            toast.error('Max 5 gallery images allowed');
-            return;
-        }
-
-        Promise.all(
-            galleryFiles.map((file) => new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve({ file, url: reader.result });
-                reader.readAsDataURL(file);
-            }))
-        ).then((results) => {
-            setFormData({
-                ...formData,
-                galleryImages: [...(formData.galleryImages || []), ...results.map((item) => item.url)],
-                galleryFiles: [...(formData.galleryFiles || []), ...results.map((item) => item.file)]
-            });
-        });
-    };
 
     const openModal = (item = null) => {
         if (item) {
@@ -333,6 +316,7 @@ const ProductManagement = () => {
                 salePrice: '', stock: '', lowStockAlert: 5, unit: 'packet',
                 header: '', categoryId: '', subcategoryId: '', status: 'active',
                 isFeatured: false, tags: '', weight: '', brand: '',
+                shelfLife: '', countryOfOrigin: '', fssaiLicense: '',
                 mainImage: null, galleryImages: [],
                 variants: [
                     { id: Date.now(), name: 'Default', price: '', salePrice: '', stock: '', sku: '' }
@@ -340,6 +324,7 @@ const ProductManagement = () => {
             });
             setEditingItem(null);
         }
+        setVariantImageFiles({});
         setModalTab('general');
         setIsProductModalOpen(true);
     };
@@ -523,7 +508,7 @@ const ProductManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-20 text-center">
+                                    <td colSpan={7} className="px-6 py-20 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <HiOutlineArrowPath className="h-8 w-8 text-primary animate-spin" />
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Products...</p>
@@ -532,7 +517,7 @@ const ProductManagement = () => {
                                 </tr>
                             ) : productsList.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No products found</td>
+                                    <td colSpan={7} className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No products found</td>
                                 </tr>
                             ) : productsList.map((p) => (
                                 <tr
@@ -670,6 +655,7 @@ const ProductManagement = () => {
                             setPage(1);
                         }}
                         loading={isLoading}
+                        className=""
                     />
                 </div>
             </Card>
@@ -915,7 +901,7 @@ const ProductManagement = () => {
                                             <div className="space-y-3">
                                                 {formData.variants.map((v, i) => (
                                                     <div key={v.id} className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 shadow-sm">
-                                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
                                                             <div className="space-y-1.5">
                                                                 <label className="ml-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">Variant Name</label>
                                                                 <input
@@ -928,6 +914,28 @@ const ProductManagement = () => {
                                                                     placeholder="500g"
                                                                     className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none ring-0 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
                                                                 />
+                                                            </div>
+                                                            <div className="space-y-1.5 flex flex-col items-start justify-end h-full">
+                                                                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-1 w-full text-left ml-1">Image</label>
+                                                                <div className="relative h-11 w-full max-w-[4rem] shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
+                                                                    {variantImageFiles[i] ? (
+                                                                        <img src={URL.createObjectURL(variantImageFiles[i])} alt="" className="h-full w-full object-cover" />
+                                                                    ) : v.image ? (
+                                                                        <img src={v.image} alt="" className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        <HiOutlinePhotograph className="h-4 w-4 text-slate-300" />
+                                                                    )}
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                        onChange={e => {
+                                                                            if (e.target.files?.[0]) {
+                                                                                setVariantImageFiles({ ...variantImageFiles, [i]: e.target.files[0] });
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
                                                             </div>
                                                             <div className="space-y-1.5">
                                                                 <label className="ml-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">Price</label>
@@ -986,7 +994,12 @@ const ProductManagement = () => {
                                                                     />
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => setFormData({ ...formData, variants: formData.variants.filter((_, idx) => idx !== i) })}
+                                                                        onClick={() => {
+                                                                            const newImageFiles = { ...variantImageFiles };
+                                                                            delete newImageFiles[i];
+                                                                            setVariantImageFiles(newImageFiles);
+                                                                            setFormData({ ...formData, variants: formData.variants.filter((_, idx) => idx !== i) });
+                                                                        }}
                                                                         className="mt-0.5 rounded-xl p-2 text-rose-500 transition-colors hover:bg-rose-50"
                                                                         aria-label="Delete variant"
                                                                     >
@@ -1001,75 +1014,7 @@ const ProductManagement = () => {
                                         </div>
                                     )}
 
-                                    {modalTab === 'media' && (
-                                        <div className="ds-section-spacing animate-in fade-in slide-in-from-right-2 duration-300">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Main Cover Photo</label>
-                                                <div className="flex flex-col md:flex-row items-start gap-6">
-                                                    <div className="w-48 aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                                                        <input
-                                                            type="file"
-                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                            onChange={(e) => handleImageUpload(e, 'main')}
-                                                        />
-                                                        {formData.mainImage ? (
-                                                            <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="flex flex-col items-center">
-                                                                <HiOutlinePhoto className="h-10 w-10 text-slate-200" />
-                                                                <p className="text-[10px] text-slate-400 font-bold mt-2">UPLOAD</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
 
-                                            <div className="space-y-3 pt-2">
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Gallery Photos</label>
-                                                    <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest cursor-pointer hover:-translate-y-0.5 transition-all">
-                                                        <HiOutlinePhoto className="h-4 w-4" />
-                                                        <span>Add Photos</span>
-                                                        <input
-                                                            type="file"
-                                                            multiple
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={(e) => handleImageUpload(e, 'gallery')}
-                                                        />
-                                                    </label>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                                                    {(formData.galleryImages || []).length > 0 ? (
-                                                        formData.galleryImages.map((image, index) => (
-                                                            <div key={`${image}-${index}`} className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
-                                                                <img src={image} alt={`Gallery ${index + 1}`} className="h-full w-full object-cover" />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setFormData({
-                                                                        ...formData,
-                                                                        galleryImages: formData.galleryImages.filter((_, i) => i !== index)
-                                                                    })}
-                                                                    className="absolute top-2 right-2 p-2 rounded-full bg-white/90 text-rose-500 shadow-md opacity-0 group-hover:opacity-100 transition-all"
-                                                                >
-                                                                    <HiOutlineTrash className="h-4 w-4" />
-                                                                </button>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
-                                                            <p className="text-xs font-medium text-slate-400">No gallery photos added yet.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <p className="text-[10px] text-slate-400 font-medium italic text-center pt-4 border-t border-slate-50 outline-none">
-                                                Quick Tip: Multiple photos help users trust your products more!
-                                            </p>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
@@ -1195,6 +1140,7 @@ const ProductManagement = () => {
                 onClose={() => setIsVariantsViewModalOpen(false)}
                 title="Product Variants Details"
                 size="lg"
+                footer={null}
             >
                 <div className="py-2">
                     <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">

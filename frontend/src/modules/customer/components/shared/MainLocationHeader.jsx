@@ -318,6 +318,10 @@ const MainLocationHeader = ({
   const bgOpacity = useTransform(scrollY, [0, 160], [1, 1]);
 
   // Content animations
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const mobileTopHeight = useTransform(scrollY, [0, 80], ["96px", "0px"]);
+  const mobileTopOpacity = useTransform(scrollY, [0, 80], [1, 0]);
+
   const contentHeight = useTransform(scrollY, [0, 160], ["64px", "64px"]);
   const contentOpacity = useTransform(scrollY, [0, 160], [1, 1]);
   const navHeight = useTransform(scrollY, [0, 200], ["80px", "80px"]);
@@ -545,7 +549,15 @@ const MainLocationHeader = ({
           {/* Mobile Header Layout (MOBILE ONLY) */}
           <div className="md:hidden pt-1 pb-1.5 space-y-1.5 select-none">
             {/* Top row: Logo/Branding + Bell Button */}
-            <div className="flex items-center justify-between">
+            <motion.div
+              style={{
+                height: mobileTopHeight,
+                opacity: mobileTopOpacity,
+                overflow: "hidden"
+              }}
+              className="flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between">
               {/* Brand Logo & Name */}
               <div onClick={() => navigate("/")} className="flex items-center gap-2.5 cursor-pointer">
                 <img
@@ -629,6 +641,7 @@ const MainLocationHeader = ({
                 <ChevronDownIcon sx={{ color: "#64748b", fontSize: 15 }} className="shrink-0 ml-0.5" />
               </div>
             </div>
+            </motion.div>
 
             {/* Bottom row: Unified Search Bar with Mic and Scanner SVG */}
             <div

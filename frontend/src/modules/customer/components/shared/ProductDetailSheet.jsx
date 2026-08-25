@@ -125,6 +125,17 @@ const ProductDetailSheet = () => {
             images.push(...extra);
         }
 
+        // Add variant images
+        if (Array.isArray(selectedProduct.variants)) {
+            selectedProduct.variants.forEach(v => {
+                if (v.images && Array.isArray(v.images)) {
+                    images.push(...v.images);
+                } else if (v.image) {
+                    images.push(v.image);
+                }
+            });
+        }
+
         // Deduplicate
         const uniqueImages = [...new Set(images)];
 
@@ -134,6 +145,21 @@ const ProductDetailSheet = () => {
                 "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
             ];
     }, [selectedProduct]);
+
+    const handleVariantSelect = (v) => {
+        setSelectedVariant(v);
+        const variantImage = (v.images && v.images.length > 0) ? v.images[0] : v.image;
+        if (variantImage) {
+            const imgIndex = allImages.findIndex(img => img === variantImage);
+            if (imgIndex !== -1) {
+                setActiveImageIndex(imgIndex);
+                if (scrollRef.current) {
+                    const width = scrollRef.current.offsetWidth;
+                    scrollRef.current.scrollTo({ left: width * imgIndex, behavior: 'smooth' });
+                }
+            }
+        }
+    };
 
     const displayHighlights = useMemo(() => {
         if (Array.isArray(selectedProduct?.highlights) && selectedProduct.highlights.length > 0) {
@@ -676,7 +702,7 @@ const ProductDetailSheet = () => {
                                                         key={idx}
                                                         whileHover={{ scale: 1.03 }}
                                                         whileTap={{ scale: 0.97 }}
-                                                        onClick={() => setSelectedVariant(v)}
+                                                        onClick={() => handleVariantSelect(v)}
                                                         className={cn(
                                                             'px-4 py-2 font-[600] rounded-lg text-[13px] transition-all border-2',
                                                             selectedVariant?.sku === v.sku
@@ -1060,7 +1086,7 @@ const ProductDetailSheet = () => {
                                                         <motion.button
                                                             key={idx}
                                                             whileTap={{ scale: 0.95 }}
-                                                            onClick={() => setSelectedVariant(v)}
+                                                            onClick={() => handleVariantSelect(v)}
                                                             className={cn(
                                                                 "flex-shrink-0 px-4 py-2 font-bold rounded-xl text-xs transition-all relative border-2",
                                                                 selectedVariant?.sku === v.sku

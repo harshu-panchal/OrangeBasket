@@ -164,6 +164,7 @@ const productSchema = new mongoose.Schema(
                 salePrice: Number,
                 stock: Number,
                 sku: String,
+                images: [{ type: String }], // Array of Cloudinary URLs for variant specific images
             }
         ],
         isFeatured: {
