@@ -24,6 +24,7 @@ import Order from "../../models/order.js";
 import Setting from "../../models/setting.js";
 import User from "../../models/customer.js";
 import Seller from "../../models/seller.js";
+import Warehouse from "../../models/warehouse.js";
 import OrderOtp from "../../models/orderOtp.js";
 import Transaction from "../../models/transaction.js";
 import { orderMatchQueryFromRouteParam } from "../../utils/orderLookup.js";
@@ -264,9 +265,11 @@ export class OrderReturnService {
 
     const isOwnerSeller =
       role === "seller" && order.seller?.toString() === userId;
+    const isOwnerWarehouse =
+      role === "warehouse" && order.warehouseId?.toString() === userId;
     const isAdmin = role === "admin";
 
-    if (!isOwnerSeller && !isAdmin) {
+    if (!isOwnerSeller && !isOwnerWarehouse && !isAdmin) {
       throw err(
         "Access denied. You are not authorized to approve this return.",
         403,
@@ -287,7 +290,11 @@ export class OrderReturnService {
     );
 
     const settings = await Setting.findOne({});
-    const returnCommission = settings?.returnDeliveryCommission ?? 0;
+    const returnCommission =
+      settings?.returnDeliveryCommission ||
+      settings?.riderBasePayout ||
+      settings?.riderBaseEarning ||
+      25;
 
     order.returnItems = order.returnItems.map((item) => ({
       ...(item.toObject?.() ?? item),
@@ -314,9 +321,22 @@ export class OrderReturnService {
 
     let sellerInfo = null;
     try {
-      sellerInfo = await Seller.findById(order.seller)
-        .select("shopName address phone")
-        .lean();
+      if (order.seller) {
+        sellerInfo = await Seller.findById(order.seller)
+          .select("shopName address phone")
+          .lean();
+      } else if (order.warehouseId) {
+        const wh = await Warehouse.findById(order.warehouseId)
+          .select("name address phone")
+          .lean();
+        if (wh) {
+          sellerInfo = {
+            shopName: wh.name || "Warehouse",
+            address: wh.address || "",
+            phone: wh.phone || "",
+          };
+        }
+      }
     } catch {
       sellerInfo = null;
     }
@@ -330,28 +350,46 @@ export class OrderReturnService {
       customerInfo = null;
     }
 
+    const isWarehouse = Boolean(order.warehouseId && !order.seller);
+    const dropName = sellerInfo?.shopName || (isWarehouse ? "Warehouse" : "Store");
+    const dropAddress = sellerInfo?.address || "";
+    const deliverySearchExpiresAt = new Date(
+      Date.now() + parseInt(process.env.DELIVERY_TIMEOUT_MS || "300000", 10),
+    ).toISOString();
+
     const broadcastPayload = {
       orderId: order.orderId,
       type: "RETURN_PICKUP",
+      isReturnPickup: true,
       commission: returnCommission,
-      preview: {
-        pickup: order.address?.address || "Customer Address",
-        pickupPhone: order.address?.phone || customerInfo?.phone || "",
-        customerName: order.address?.name || customerInfo?.name || "Customer",
-        drop: sellerInfo?.shopName || "Seller Store",
-        dropAddress: sellerInfo?.address || "",
-        total: order.pricing?.total || 0,
-        returnReason: order.returnReason || "",
-        returnItems: Array.isArray(order.returnItems)
-          ? order.returnItems.map((i) => ({
+      earnings: returnCommission,
+      items: Array.isArray(order.returnItems)
+        ? order.returnItems.map((i) => ({
             name: i.name || "",
             quantity: i.quantity || 1,
             price: i.price || 0,
             image: i.image || "",
           }))
+        : [],
+      preview: {
+        pickup: order.address?.address || order.address?.fullAddress || "Customer Address",
+        pickupPhone: order.address?.phone || customerInfo?.phone || "",
+        customerName: order.address?.name || customerInfo?.name || "Customer",
+        drop: dropName,
+        dropAddress: dropAddress,
+        total: order.pricing?.total || 0,
+        earnings: returnCommission,
+        returnReason: order.returnReason || "",
+        returnItems: Array.isArray(order.returnItems)
+          ? order.returnItems.map((i) => ({
+              name: i.name || "",
+              quantity: i.quantity || 1,
+              price: i.price || 0,
+              image: i.image || "",
+            }))
           : [],
       },
-      deliverySearchExpiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
+      deliverySearchExpiresAt,
     };
 
     const customerLocation = order.address?.location;
@@ -387,9 +425,11 @@ export class OrderReturnService {
 
     const isOwnerSeller =
       role === "seller" && order.seller?.toString() === userId;
+    const isOwnerWarehouse =
+      role === "warehouse" && order.warehouseId?.toString() === userId;
     const isAdmin = role === "admin";
 
-    if (!isOwnerSeller && !isAdmin) {
+    if (!isOwnerSeller && !isOwnerWarehouse && !isAdmin) {
       throw err(
         "Access denied. You are not authorized to reject this return.",
         403,
@@ -515,8 +555,13 @@ export class OrderReturnService {
             );
           }
 
-          // 2. Seller adjustment.
-          if (order.seller && (refundAmount > 0 || commission > 0)) {
+          // 2. Seller/Warehouse adjustment.
+          const isWarehouse = Boolean(order.warehouseId && !order.seller);
+          const entityId = order.seller || order.warehouseId;
+          const entityOwnerType = isWarehouse ? OWNER_TYPE.WAREHOUSE : OWNER_TYPE.SELLER;
+          const entityUserModel = isWarehouse ? "Warehouse" : "Seller";
+
+          if (entityId && (refundAmount > 0 || commission > 0)) {
             const isHeld =
               order.settlementStatus?.sellerPayout === "HOLD" ||
               order.financeFlags?.sellerPayoutHeld;
@@ -525,7 +570,7 @@ export class OrderReturnService {
               try {
                 const cancelled = await cancelPendingPayoutForOrder(
                   order._id,
-                  "SELLER",
+                  entityOwnerType,
                   {
                     remarks: "Payout cancelled due to return QC passed.",
                     session,
@@ -546,9 +591,9 @@ export class OrderReturnService {
                 }
               } catch (error) {
                 // Inside withTransaction(): bubble up so the txn aborts.
-                logger.error("Payout cancellation failed for seller", {
+                logger.error("Payout cancellation failed for entity", {
                   scope: "ReturnFinance",
-                  sellerId: order.seller,
+                  entityId,
                   error: error.message,
                 });
                 throw error;
@@ -558,17 +603,17 @@ export class OrderReturnService {
               if (adjustment > 0) {
                 try {
                   await walletService.debitWallet({
-                    ownerType: OWNER_TYPE.SELLER,
-                    ownerId: order.seller,
+                    ownerType: entityOwnerType,
+                    ownerId: entityId,
                     amount: adjustment,
                     bucket: "available",
                     session,
                     ledgerType: LEDGER_TRANSACTION_TYPE.REFUND,
-                    ledgerReference: `REF-SELL-${order.orderId}`,
+                    ledgerReference: `REF-RET-${order.orderId}`,
                     ledgerDescription:
-                      "Seller wallet debited to recover refund + return commission",
+                      `${isWarehouse ? "Warehouse" : "Seller"} wallet debited to recover refund + return commission`,
                     orderId: order._id,
-                    idempotencyKey: `RET-SELL-DEBIT-${order._id}`,
+                    idempotencyKey: `RET-ADJ-DEBIT-${order._id}`,
                     correlationId,
                     metadata: { refundAmount, commission },
                   });
@@ -576,9 +621,9 @@ export class OrderReturnService {
                   // Insufficient balance is a legitimate business
                   // failure — must abort the whole refund flow so the
                   // customer is not silently over-credited.
-                  logger.error("Wallet debit failed for seller", {
+                  logger.error("Wallet debit failed for entity", {
                     scope: "ReturnFinance",
-                    sellerId: order.seller,
+                    entityId,
                     error: error.message,
                   });
                   throw error;
@@ -590,13 +635,13 @@ export class OrderReturnService {
             await Transaction.create(
               [
                 {
-                  user: order.seller,
-                  userModel: "Seller",
+                  user: entityId,
+                  userModel: entityUserModel,
                   order: order._id,
                   type: "Refund",
                   amount: -adjustment,
                   status: "Settled",
-                  reference: `REF-SELL-${order.orderId}`,
+                  reference: `REF-RET-${order.orderId}`,
                 },
               ],
               { session },

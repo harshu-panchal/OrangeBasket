@@ -272,18 +272,19 @@ const OrderDetails = () => {
       ];
     }
 
+    const isWarehouse = Boolean(order?.warehouseId && !order?.seller);
     return [
       {
         id: 1,
-        label: "Navigate to Store",
-        action: "ARRIVED AT STORE",
+        label: isWarehouse ? "Navigate to Warehouse" : "Navigate to Store",
+        action: isWarehouse ? "ARRIVED AT WAREHOUSE" : "ARRIVED AT STORE",
         color: "bg-black ",
         bg: "bg-brand-50",
         text: "text-brand-600",
       },
       {
         id: 2,
-        label: "At Store",
+        label: isWarehouse ? "At Warehouse" : "At Store",
         action: "PICKED UP ORDER",
         color: "bg-orange-500",
         bg: "bg-orange-50",
@@ -306,7 +307,7 @@ const OrderDetails = () => {
         text: "text-brand-700",
       },
     ];
-  }, [order?.returnStatus]);
+  }, [order?.returnStatus, order?.warehouseId, order?.seller]);
 
   // For return flow: 5 steps map to 3 public stages
   // Steps 1-2 = Stage 1 (Return Assigned)
@@ -458,20 +459,20 @@ const OrderDetails = () => {
   };
 
   const handleNavigate = () => {
-    const sellerCoords = order?.seller?.location?.coordinates;
-    const sellerLocation =
-      Array.isArray(sellerCoords) && sellerCoords.length >= 2
-        ? { lat: sellerCoords[1], lng: sellerCoords[0] }
+    const pickupCoords = order?.seller?.location?.coordinates || order?.warehouseId?.location?.coordinates;
+    const pickupLocation =
+      Array.isArray(pickupCoords) && pickupCoords.length >= 2
+        ? { lat: pickupCoords[1], lng: pickupCoords[0] }
         : null;
     const customerLocation = order?.address?.location;
 
     const dest = isReturn
       ? step <= 1
         ? customerLocation
-        : sellerLocation
+        : pickupLocation
       : step >= 3
         ? customerLocation
-        : sellerLocation;
+        : pickupLocation;
 
     if (
       dest &&
@@ -650,7 +651,7 @@ const OrderDetails = () => {
                     New Return Task
                   </h2>
                   <p className="text-brand-100 text-sm font-medium leading-relaxed">
-                    Pick up product from customer and deliver back to seller.
+                    Pick up product from customer and deliver back to {order?.warehouseId && !order?.seller ? "warehouse" : "seller"}.
                   </p>
                 </div>
 
@@ -718,7 +719,7 @@ const OrderDetails = () => {
                   <Button
                     loading={accepting}
                     onClick={handleAcceptReturn}
-                    className="w-full bg-white text-brand-700 hover:bg-slate-50 h-14 rounded-2xl font-black text-lg shadow-lg border-none"
+                    className="w-full bg-white text-gray-900 hover:bg-slate-100 h-14 rounded-2xl font-black text-lg shadow-lg border-none active:scale-95 transition-all"
                   >
                     ACCEPT TASK
                   </Button>
@@ -852,10 +853,10 @@ const OrderDetails = () => {
                     </div>
                     <div>
                       <h2 className="font-bold text-gray-800">
-                        {isReturn ? "Customer Pickup" : "Pickup Location"}
+                        {isReturn ? "Customer Pickup" : (order?.warehouseId && !order?.seller ? "Warehouse Pickup" : "Pickup Location")}
                       </h2>
                       <p className="text-xs text-orange-600 font-medium">
-                        {isReturn ? "Customer Address" : "Store Location"}
+                        {isReturn ? "Customer Address" : (order?.warehouseId && !order?.seller ? "Warehouse Location" : "Store Location")}
                       </p>
                     </div>
                   </div>
@@ -876,7 +877,7 @@ const OrderDetails = () => {
                   <h3 className="font-bold text-lg mb-1">
                     {isReturn
                       ? order.address?.name || "Customer"
-                      : order.seller?.shopName || order.warehouseId?.name || "Store Location"}
+                      : order.seller?.shopName || order.warehouseId?.name || (order?.warehouseId ? "Warehouse" : "Store Location")}
                   </h3>
                   <p className="text-gray-500 text-sm mb-4 leading-relaxed">
                     {isReturn
@@ -885,7 +886,7 @@ const OrderDetails = () => {
                   </p>
                   <Button onClick={handleNavigate} className="w-full" variant="outline">
                     <Navigation size={18} className="mr-2" />{" "}
-                    {isReturn ? "Navigate to Customer" : "Navigate to Store"}
+                    {isReturn ? "Navigate to Customer" : (order?.warehouseId && !order?.seller ? "Navigate to Warehouse" : "Navigate to Store")}
                   </Button>
                 </div>
               </Card>

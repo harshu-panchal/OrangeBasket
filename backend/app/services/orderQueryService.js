@@ -1,4 +1,5 @@
 import Order from "../models/order.js";
+import mongoose from "mongoose";
 import Delivery from "../models/delivery.js";
 import Seller from "../models/seller.js";
 import CheckoutGroup from "../models/checkoutGroup.js";
@@ -79,7 +80,7 @@ export function buildSellerOrdersQuery({
   startDate,
   endDate,
 }) {
-  const base = role === "admin" ? {} : role === "warehouse" ? { warehouseId: userId } : { seller: userId };
+  const base = role === "admin" ? {} : role === "warehouse" ? { warehouseId: new mongoose.Types.ObjectId(userId) } : { seller: new mongoose.Types.ObjectId(userId) };
   const withStatus = {
     ...base,
     ...normalizeSellerStatusFilter(statusParam),

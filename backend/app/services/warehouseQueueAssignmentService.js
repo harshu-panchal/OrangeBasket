@@ -55,7 +55,7 @@ export async function warehouseAcceptAtomic(warehouseId, orderId) {
   const updated = await Order.findOneAndUpdate(
     {
       orderId: canonicalOrderId,
-      warehouseId: warehouseId,
+      warehouseId: toObjectId(warehouseId),
       workflowVersion: { $gte: 2 },
       workflowStatus: WORKFLOW_STATUS.SELLER_PENDING,
       sellerPendingExpiresAt: { $gt: now },

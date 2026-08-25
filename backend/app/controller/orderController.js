@@ -744,9 +744,10 @@ export const assignReturnDelivery = async (req, res) => {
     }
 
     const isOwnerSeller = role === "seller" && order.seller?.toString() === userId;
+    const isOwnerWarehouse = role === "warehouse" && order.warehouseId?.toString() === userId;
     const isAdmin = role === "admin";
 
-    if (!isOwnerSeller && !isAdmin) {
+    if (!isOwnerSeller && !isOwnerWarehouse && !isAdmin) {
       return handleResponse(
         res,
         403,

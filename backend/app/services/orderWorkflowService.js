@@ -3,6 +3,7 @@ import Order from "../models/order.js";
 import DeliveryAssignment from "../models/deliveryAssignment.js";
 import OrderOtp from "../models/orderOtp.js";
 import Seller from "../models/seller.js";
+import Warehouse from "../models/warehouse.js";
 import Delivery from "../models/delivery.js";
 import {
   clearOrderTracking,
@@ -840,10 +841,17 @@ export async function markArrivedAtStoreAtomic(deliveryId, orderId, lat, lng) {
     throw err;
   }
 
-  const seller = await Seller.findById(order.seller).select("location").lean();
-  const coords = seller?.location?.coordinates;
+  // Support both seller orders and warehouse orders
+  let coords;
+  if (order.seller) {
+    const seller = await Seller.findById(order.seller).select("location").lean();
+    coords = seller?.location?.coordinates;
+  } else if (order.warehouseId) {
+    const warehouse = await Warehouse.findById(order.warehouseId).select("location").lean();
+    coords = warehouse?.location?.coordinates;
+  }
   if (!Array.isArray(coords) || coords.length < 2) {
-    const err = new Error("Seller location not configured");
+    const err = new Error("Pickup location not configured");
     err.statusCode = 400;
     throw err;
   }
@@ -930,10 +938,17 @@ export async function confirmPickupAtomic(deliveryId, orderId, lat, lng) {
     throw err;
   }
 
-  const seller = await Seller.findById(order.seller).select("location").lean();
-  const coords = seller?.location?.coordinates;
+  // Support both seller orders and warehouse orders
+  let coords;
+  if (order.seller) {
+    const seller = await Seller.findById(order.seller).select("location").lean();
+    coords = seller?.location?.coordinates;
+  } else if (order.warehouseId) {
+    const warehouse = await Warehouse.findById(order.warehouseId).select("location").lean();
+    coords = warehouse?.location?.coordinates;
+  }
   if (!Array.isArray(coords) || coords.length < 2) {
-    const err = new Error("Seller location not configured");
+    const err = new Error("Pickup location not configured");
     err.statusCode = 400;
     throw err;
   }

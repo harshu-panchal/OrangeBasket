@@ -60,6 +60,7 @@ function distanceMeters(from, to) {
 
 function destinationForPhase(order, phase) {
   const isReturn = order?.returnStatus && order.returnStatus !== "none";
+  const pickupCoords = order?.seller?.location?.coordinates || order?.warehouseId?.location?.coordinates;
   if (phase === "pickup") {
     if (isReturn) {
       const loc = order?.address?.location;
@@ -74,10 +75,10 @@ function destinationForPhase(order, phase) {
       }
       return null;
     }
-    return coordsToLatLng(order?.seller?.location?.coordinates);
+    return coordsToLatLng(pickupCoords);
   }
   if (isReturn) {
-    return coordsToLatLng(order?.seller?.location?.coordinates);
+    return coordsToLatLng(pickupCoords);
   }
   const loc = order?.address?.location;
   if (

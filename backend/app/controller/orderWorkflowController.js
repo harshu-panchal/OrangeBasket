@@ -18,7 +18,7 @@ import {
   generateReturnDropOtp,
   validateReturnDropOtp,
 } from "../services/deliveryOtpService.js";
-import { emitToCustomer, emitToSeller } from "../services/orderSocketEmitter.js";
+import { emitToCustomer, emitToSeller, emitToWarehouse, emitToOrder } from "../services/orderSocketEmitter.js";
 import { sendSmsIndiaHubOtp } from "../services/smsIndiaHubService.js";
 import { creditWallet } from "../services/finance/walletService.js";
 import { emitNotificationEvent } from "../modules/notifications/notification.emitter.js";
@@ -148,15 +148,18 @@ export const getOrderRoute = async (req, res) => {
       return handleResponse(res, 404, "Order not found");
     }
 
-    const order = await Order.findOne(orderKey).populate("seller").lean();
+    const order = await Order.findOne(orderKey)
+      .populate("seller")
+      .populate("warehouseId")
+      .lean();
 
     if (!order) {
       return handleResponse(res, 404, "Order not found");
     }
 
-    const seller = order.seller;
-    const coords = seller?.location?.coordinates;
-    const hasSellerLoc = Array.isArray(coords) && coords.length >= 2;
+    const pickupEntity = order.seller || order.warehouseId;
+    const coords = pickupEntity?.location?.coordinates;
+    const hasPickupLoc = Array.isArray(coords) && coords.length >= 2;
     const isReturn = Boolean(order.returnStatus && order.returnStatus !== "none");
 
     const origin = { lat: originLat, lng: originLng };
@@ -199,15 +202,15 @@ export const getOrderRoute = async (req, res) => {
           );
         }
       } else {
-        if (!hasSellerLoc) {
-          return handleResponse(res, 400, "Seller location missing or invalid in database");
+        if (!hasPickupLoc) {
+          return handleResponse(res, 400, "Pickup location missing or invalid in database");
         }
         dest = { lat: coords[1], lng: coords[0] };
       }
     } else {
       if (isReturn) {
-        if (!hasSellerLoc) {
-          return handleResponse(res, 400, "Seller location missing or invalid in database");
+        if (!hasPickupLoc) {
+          return handleResponse(res, 400, "Pickup location missing or invalid in database");
         }
         dest = { lat: coords[1], lng: coords[0] };
       } else {
@@ -359,6 +362,7 @@ export const verifyReturnPickupOtp = async (req, res) => {
     // POPULATE before response to ensure frontend consistency
     await order.populate([
       { path: "seller", select: "name shopName phone location" },
+      { path: "warehouseId", select: "name phone location" },
       { path: "address" },
       { path: "customer", select: "name phone" },
       { path: "returnDeliveryBoy", select: "name phone" }
@@ -414,7 +418,10 @@ export const requestReturnDropOtp = async (req, res) => {
     const { id: userId } = req.user;
 
     const orderKey = orderMatchQueryFromRouteParam(orderId);
-    const order = await Order.findOne(orderKey).populate("seller", "name phone").lean();
+    const order = await Order.findOne(orderKey)
+      .populate("seller", "name phone")
+      .populate("warehouseId", "name phone")
+      .lean();
     if (!order) return handleResponse(res, 404, "Order not found");
 
     if (order.returnDeliveryBoy?.toString() !== userId) {
@@ -435,42 +442,60 @@ export const requestReturnDropOtp = async (req, res) => {
     await Order.updateOne({ _id: order._id }, { $set: { returnStatus: "return_drop_pending" } });
 
     const sellerId = order.seller?._id?.toString() || order.seller?.toString();
+    const warehouseId = order.warehouseId?._id?.toString() || order.warehouseId?.toString();
+    const targetPhone = order.seller?.phone || order.warehouseId?.phone;
 
-    // ── Emit OTP to seller via Socket/SMS ─────────────────────────────────────────
+    // ── Emit OTP to seller / warehouse via Socket/SMS ─────────────────────────────────────────
     try {
+      const dropPayload = {
+        orderId,
+        otp: result.otp,
+        expiresAt: result.expiresAt,
+        message: `Return drop OTP for order #${orderId}: ${result.otp}. Share with delivery partner to confirm receipt.`,
+      };
+
       if (sellerId) {
         emitToSeller(sellerId, {
           event: "return:drop:otp",
-          payload: {
-            orderId,
-            otp: result.otp,
-            expiresAt: result.expiresAt,
-            message: `Return drop OTP for order #${orderId}: ${result.otp}. Share with delivery partner to confirm receipt.`,
-          },
-        });
-
-        // ── Send SMS to seller (BACKGROUND) ──
-        setImmediate(async () => {
-          try {
-            const sellerPhone = order.seller?.phone;
-            if (sellerPhone) {
-              await sendSmsIndiaHubOtp({
-                phone: sellerPhone,
-                otp: result.otp,
-              });
-            }
-          } catch (smsErr) {
-            console.warn("[requestReturnDropOtp] SMS failed:", smsErr.message);
-          }
+          payload: dropPayload,
         });
       }
+
+      if (warehouseId) {
+        emitToWarehouse(warehouseId, {
+          event: "return:drop:otp",
+          payload: dropPayload,
+        });
+      }
+
+      emitToOrder(orderId, {
+        event: "return:drop:otp",
+        payload: dropPayload,
+      });
+
+      // ── Send SMS to seller / warehouse (BACKGROUND) ──
+      setImmediate(async () => {
+        try {
+          if (targetPhone) {
+            await sendSmsIndiaHubOtp({
+              phone: targetPhone,
+              otp: result.otp,
+            });
+          }
+        } catch (smsErr) {
+          console.warn("[requestReturnDropOtp] SMS failed:", smsErr.message);
+        }
+      });
     } catch (socketErr) {
       console.warn("[requestReturnDropOtp] Socket emit failed:", socketErr.message);
     }
 
-
-    return handleResponse(res, 200, "Return drop OTP sent to seller via app and SMS", {
+    return handleResponse(res, 200, "Return drop OTP sent via app and SMS", {
       expiresAt: result.expiresAt,
+      // In development or test, include OTP in response for debugging/convenience
+      ...(process.env.NODE_ENV !== "production" || process.env.USE_MOCK_OTP === "true"
+        ? { otp: result.otp }
+        : {}),
     });
   } catch (e) {
     return handleResponse(res, e.statusCode || 500, e.message);
@@ -525,6 +550,7 @@ export const verifyReturnDropOtp = async (req, res) => {
     // POPULATE before response
     await order.populate([
       { path: "seller", select: "name shopName phone location" },
+      { path: "warehouseId", select: "name phone location" },
       { path: "customer", select: "name phone" },
       { path: "address" }
     ]);

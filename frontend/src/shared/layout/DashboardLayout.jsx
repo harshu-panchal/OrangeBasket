@@ -25,7 +25,7 @@ const POLL_INTERVAL_MS = 15000;
 function secondsLeftUntilSellerExpiry(order) {
     if (!order) return 0;
     const raw = order.sellerPendingExpiresAt ?? order.expiresAt;
-    if (!raw) return 60;
+    if (!raw) return 300;
     const ms = new Date(raw).getTime() - Date.now();
     return Math.max(0, Math.ceil(ms / 1000));
 }

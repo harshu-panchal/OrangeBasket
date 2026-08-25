@@ -122,7 +122,7 @@ const Dashboard = () => {
     const socket = getOrderSocket(getToken);
     if (!socket) return;
     const handleOffer = (offer) => {
-      toast.info(`📦 New order offered! ${offer.countdown}s to respond`);
+      toast.info(`📦 New order offered! You have 5 minutes to respond`);
       setPendingOffer(offer);
     };
     const handleExpired = () => {
@@ -134,14 +134,14 @@ const Dashboard = () => {
         toast.info(`📦 New Return Pickup available!`);
         setPendingOffer({
           ...payload,
-          countdown: 60,
+          countdown: 300,
           isReturn: true,
         });
       } else {
         toast.info(`📦 New delivery order available!`);
         setPendingOffer({
           ...payload,
-          countdown: 60,
+          countdown: 300,
           isReturn: false,
         });
       }

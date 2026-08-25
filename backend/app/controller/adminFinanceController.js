@@ -186,9 +186,11 @@ export const updateDeliverySettingsController = async (req, res) => {
 
 export const getSellerWalletSummaryController = async (req, res) => {
   try {
-    const sellerId = req.user?.id;
-    const wallet = await Wallet.findOne({ ownerType: "SELLER", ownerId: sellerId }).lean();
-    return handleResponse(res, 200, "Seller wallet summary fetched", {
+    const ownerId = req.user?.id;
+    const role = req.user?.role;
+    const ownerType = role === "warehouse" ? "WAREHOUSE" : "SELLER";
+    const wallet = await Wallet.findOne({ ownerType, ownerId }).lean();
+    return handleResponse(res, 200, "Wallet summary fetched", {
       availableBalance: wallet?.availableBalance || 0,
       pendingBalance: wallet?.pendingBalance || 0,
       totalCredited: wallet?.totalCredited || 0,
