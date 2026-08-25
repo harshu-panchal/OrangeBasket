@@ -21,7 +21,10 @@ import {
   HiOutlineFolderOpen,
   HiOutlineSwatch,
   HiOutlineSquaresPlus,
+  HiOutlineSparkles,
 } from "react-icons/hi2";
+import { HiOutlinePhotograph } from "react-icons/hi";
+import { PRESET_HIGHLIGHT_ICONS } from "./AddProduct";
 import Modal from "@shared/components/ui/Modal";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -124,6 +127,7 @@ const ProductManagement = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [viewingVariants, setViewingVariants] = useState(null);
   const [isVariantsViewModalOpen, setIsVariantsViewModalOpen] = useState(false);
+  const [variantImageFiles, setVariantImageFiles] = useState({});
   const [editingItem, setEditingItem] = useState(null);
   const [modalTab, setModalTab] = useState("general");
 
@@ -207,6 +211,12 @@ const ProductManagement = () => {
     fssaiLicense: "",
     mainImage: null,
     galleryImages: [],
+    highlights: [
+      { icon: "leaf", label: "100% Natural" },
+      { icon: "avocado", label: "Farm Fresh" },
+      { icon: "zap", label: "High Protein" },
+      { icon: "sprout", label: "Source of Fiber" },
+    ],
     variants: [
       { id: Date.now(), name: "", price: "", salePrice: "", stock: "", sku: "" },
     ],
@@ -244,31 +254,28 @@ const ProductManagement = () => {
       let matchesStatus = filterStatus === "All";
       if (filterStatus === "Active") matchesStatus = p.status === "active";
       if (filterStatus === "Low Stock")
-        matchesStatus = p.stock > 0 && p.stock <= resolveLowStockThreshold(p);
-      if (filterStatus === "Out of Stock") matchesStatus = p.stock === 0;
+        matchesStatus =
+          (p.stock ?? 0) > 0 &&
+          (p.stock ?? 0) <= resolveLowStockThreshold(p);
+      if (filterStatus === "Out of Stock") matchesStatus = (p.stock ?? 0) === 0;
 
-      let matchesPrice = true;
-      const effectivePrice = Number(p.salePrice ?? p.price ?? 0);
-      if (min !== null && !Number.isNaN(min)) {
-        matchesPrice = matchesPrice && effectivePrice >= min;
-      }
-      if (max !== null && !Number.isNaN(max)) {
-        matchesPrice = matchesPrice && effectivePrice <= max;
-      }
+      let matchesApproval = filterApproval === "all";
+      const productApproval = String(p.approvalStatus || "approved").toLowerCase();
+      if (filterApproval === "approved") matchesApproval = productApproval === "approved";
+      if (filterApproval === "pending") matchesApproval = productApproval === "pending";
+      if (filterApproval === "rejected") matchesApproval = productApproval === "rejected";
 
-      const rawApproval = String(p.approvalStatus || "").trim().toLowerCase();
-      const normalizedApproval = rawApproval || "approved"; // legacy products without moderation fields are treated as approved
-      let matchesApproval = true;
-      if (filterApproval !== "all") {
-        matchesApproval = normalizedApproval === filterApproval;
-      }
+      const price = Number(p.price || 0);
+      const matchesPriceMin = min === null || price >= min;
+      const matchesPriceMax = max === null || price <= max;
 
       return (
         matchesSearch &&
         matchesCategory &&
         matchesStatus &&
         matchesApproval &&
-        matchesPrice
+        matchesPriceMin &&
+        matchesPriceMax
       );
     });
   }, [
@@ -283,15 +290,17 @@ const ProductManagement = () => {
 
   const stats = useMemo(
     () => ({
-      total:
-        summaryStats?.total ??
-        (typeof total === "number" ? total : safeProducts.length),
+      total: summaryStats?.total ?? total,
       lowStock:
         summaryStats?.lowStock ??
-        safeProducts.filter((p) => p.stock > 0 && p.stock <= resolveLowStockThreshold(p)).length,
+        safeProducts.filter(
+          (p) =>
+            (p.stock ?? 0) > 0 &&
+            (p.stock ?? 0) <= resolveLowStockThreshold(p),
+        ).length,
       outOfStock:
         summaryStats?.outOfStock ??
-        safeProducts.filter((p) => p.stock === 0).length,
+        safeProducts.filter((p) => (p.stock ?? 0) === 0).length,
       active:
         summaryStats?.active ??
         safeProducts.filter((p) => p.status === "active").length,
@@ -312,13 +321,14 @@ const ProductManagement = () => {
 
   const handleSave = async () => {
     try {
-      if (!formData.name || !formData.price || !formData.stock || !formData.header || !formData.category || !formData.subcategory) {
+      if (!formData.name || !formData.header || !formData.category || !formData.subcategory) {
         toast.error("Please fill all required fields, including categories");
         return;
       }
 
-      if (formData.salePrice && Number(formData.salePrice) > Number(formData.price)) {
-        toast.error("Sale Price cannot be greater than Price");
+      const firstVariant = formData.variants[0] || {};
+      if (!firstVariant.price || !firstVariant.stock) {
+        toast.error("Main variant must have price and stock");
         return;
       }
 
@@ -333,9 +343,11 @@ const ProductManagement = () => {
       data.append("slug", formData.slug);
       data.append("sku", formData.sku);
       data.append("description", formData.description);
-      data.append("price", Number(formData.price));
-      data.append("salePrice", Number(formData.salePrice) || 0);
-      data.append("stock", Number(formData.stock));
+      
+      // Map top-level price/stock from first variant
+      data.append("price", firstVariant.price);
+      data.append("salePrice", firstVariant.salePrice || 0);
+      data.append("stock", firstVariant.stock);
       data.append("headerId", formData.header);
       data.append("categoryId", formData.category);
       data.append("subcategoryId", formData.subcategory);
@@ -347,13 +359,19 @@ const ProductManagement = () => {
       data.append("countryOfOrigin", formData.countryOfOrigin);
       data.append("fssaiLicense", formData.fssaiLicense);
       data.append("variants", JSON.stringify(formData.variants));
+      data.append("highlights", JSON.stringify(formData.highlights || []));
 
-      if (formData.mainImageFile) {
-        data.append("mainImage", formData.mainImageFile);
-      }
-      if (formData.galleryFiles && formData.galleryFiles.length > 0) {
-        formData.galleryFiles.forEach((file) => data.append("galleryImages", file));
-      }
+      // Append variant image files
+      Object.keys(variantImageFiles).forEach((vIndex) => {
+        const filesArray = variantImageFiles[vIndex];
+        if (Array.isArray(filesArray)) {
+           filesArray.forEach((file, imgIndex) => {
+              if (file) {
+                 data.append(`variantImage_${vIndex}_${imgIndex}`, file);
+              }
+           });
+        }
+      });
 
       if (editingItem) {
         const response = await warehouseApi.updateProduct(editingItem._id || editingItem.id, data);
@@ -445,6 +463,14 @@ const ProductManagement = () => {
         fssaiLicense: item.fssaiLicense || "",
         mainImage: item.mainImage || null,
         galleryImages: item.galleryImages || [],
+        highlights: (Array.isArray(item.highlights) && item.highlights.length > 0)
+          ? item.highlights
+          : [
+              { icon: "leaf", label: "100% Natural" },
+              { icon: "avocado", label: "Farm Fresh" },
+              { icon: "zap", label: "High Protein" },
+              { icon: "sprout", label: "Source of Fiber" },
+            ],
         variants: (item.variants && item.variants.length > 0) ? item.variants.map(v => ({ ...v, id: v._id || Date.now() })) : [
           {
             id: Date.now(),
@@ -457,6 +483,7 @@ const ProductManagement = () => {
         ],
       });
       setEditingItem(item);
+      setVariantImageFiles({});
     } else {
       setFormData({
         name: "",
@@ -469,12 +496,22 @@ const ProductManagement = () => {
         lowStockAlert: 5,
         category: "",
         header: "",
+        subcategory: "",
         status: "active",
         tags: "",
         weight: "",
         brand: "",
+        shelfLife: "",
+        countryOfOrigin: "",
+        fssaiLicense: "",
         mainImage: null,
         galleryImages: [],
+        highlights: [
+          { icon: "leaf", label: "100% Natural" },
+          { icon: "avocado", label: "Farm Fresh" },
+          { icon: "zap", label: "High Protein" },
+          { icon: "sprout", label: "Source of Fiber" },
+        ],
         variants: [
           {
             id: Date.now(),
@@ -487,6 +524,7 @@ const ProductManagement = () => {
         ],
       });
       setEditingItem(null);
+      setVariantImageFiles({});
     }
     setModalTab("general");
     setIsProductModalOpen(true);
@@ -497,104 +535,100 @@ const ProductManagement = () => {
 
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            Product List
-            <Badge
-              variant="primary"
-              className="text-[9px] px-1.5 py-0 font-bold tracking-wider uppercase">
-              Live
-            </Badge>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Warehouse Products
           </h1>
-          <p className="text-gray-500 mt-1">
-            Track your items, prices, and how many are left in stock.
+          <p className="text-xs font-semibold text-slate-600 mt-1">
+            Manage your inventory, prices, variants and product approvals.
           </p>
         </div>
-        <button
-          onClick={() => navigate("/warehouse/products/add")}
-          className="flex items-center gap-2 bg-black  text-primary-foreground px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors">
-          <HiOutlinePlus className="h-5 w-5" />
-          Add New Product
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/warehouse/products/add")}
+            className="flex items-center space-x-2 bg-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary-600 transition-all active:scale-95 cursor-pointer">
+            <HiOutlinePlus className="h-4 w-4" />
+            <span>ADD NEW PRODUCT</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            label: "All Items",
-            val: stats.total,
+            label: "Total Items",
+            value: stats.total,
             icon: HiOutlineCube,
-            color: "text-brand-600",
-            bg: "bg-brand-50",
-            status: "All",
+            color: "text-blue-500",
+            bg: "bg-blue-50",
           },
           {
-            label: "Active Items",
-            val: stats.active,
+            label: "Active Listings",
+            value: stats.active,
             icon: HiOutlineCheckCircle,
-            color: "text-brand-600",
-            bg: "bg-brand-50",
-            status: "Active",
+            color: "text-emerald-500",
+            bg: "bg-emerald-50",
           },
           {
-            label: "Low Stock",
-            val: stats.lowStock,
+            label: "Low Stock Alert",
+            value: stats.lowStock,
             icon: HiOutlineExclamationCircle,
-            color: "text-amber-600",
+            color: "text-amber-500",
             bg: "bg-amber-50",
-            status: "Low Stock",
           },
           {
             label: "Out of Stock",
-            val: stats.outOfStock,
+            value: stats.outOfStock,
             icon: HiOutlineArchiveBox,
-            color: "text-rose-600",
+            color: "text-rose-500",
             bg: "bg-rose-50",
-            status: "Out of Stock",
           },
-        ].map((stat, i) => (
+        ].map((item, idx) => (
           <Card
-            key={i}
-            className={cn(
-              "border-none shadow-sm ring-1 ring-slate-100 p-4 relative overflow-hidden group cursor-pointer",
-              filterStatus === stat.status && "ring-2 ring-brand-500",
-            )}
-            onClick={() => setFilterStatus(stat.status)}
-          >
-            <div className="flex items-center gap-3">
-              <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300", stat.bg, stat.color)}>
-                <stat.icon className="h-5 w-5" />
+            key={idx}
+            className="p-5 border-none shadow-xl ring-1 ring-slate-100 rounded-xl relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  {item.label}
+                </p>
+                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  {item.value}
+                </h3>
               </div>
-              <div>
-                <p className="ds-label">{stat.label}</p>
-                <h4 className="ds-stat-medium">{stat.val}</h4>
+              <div
+                className={cn(
+                  "p-3 rounded-2xl transition-transform group-hover:scale-110",
+                  item.bg,
+                  item.color,
+                )}>
+                <item.icon className="h-6 w-6" />
               </div>
+            </div>
+            <div className="mt-4 flex items-center text-[10px] font-bold text-slate-600">
+              <span className="text-emerald-600 flex items-center mr-1">
+                Live Data
+              </span>
+              <span>Updated recently</span>
             </div>
           </Card>
         ))}
       </div>
 
-      {/* Toolbox */}
-
-      <Card className="border-none shadow-sm ring-1 ring-slate-100 p-3 bg-white/60 backdrop-blur-xl">
-        <div className="flex flex-col lg:flex-row gap-3 items-center">
-          <div className="relative flex-1 group w-full">
-            <HiOutlineMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-all" />
+      {/* Search & Filters */}
+      <Card className="p-4 border-none shadow-xl ring-1 ring-slate-100 rounded-xl">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between">
+          <div className="flex-1 relative">
+            <HiOutlineMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
+              placeholder="Search products by title, SKU..."
               value={searchTerm}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSearchTerm(value);
-                const next = new URLSearchParams(searchParams);
-                if (value) next.set("q", value);
-                else next.delete("q");
-                setSearchParams(next);
-              }}
-              placeholder="Search by name, SKU or slug..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-100/50 border-none rounded-xl text-xs font-semibold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-primary/5 transition-all outline-none"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary/5 outline-none transition-all placeholder:text-slate-400"
             />
           </div>
-          <div className="flex gap-2 shrink-0 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-3">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
@@ -649,62 +683,9 @@ const ProductManagement = () => {
         </div>
       </Card>
 
-
       {/* Product Table */}
-
       <Card className="border-none shadow-xl ring-1 ring-slate-100 overflow-hidden rounded-xl">
-        {/* Mobile View */}
-        <div className="md:hidden p-4 space-y-4">
-          {filteredProducts.length === 0 ? (
-            <div className="text-center text-slate-500 text-sm py-8">No products found.</div>
-          ) : (
-            filteredProducts.map((p) => (
-              <div key={p._id || p.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                <div className="flex gap-4">
-                  <div className="h-16 w-16 rounded-lg overflow-hidden bg-slate-100 shrink-0">
-                    <img
-                      src={p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400"}
-                      alt={p.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{p.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">Code: <span className="font-medium text-slate-900">{displaySku(p)}</span></p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <ApprovalBadge approvalStatus={p.approvalStatus} />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <button onClick={() => openEditModal(p)} className="p-2 bg-slate-50 rounded-lg text-slate-500 hover:text-brand-600 transition-colors">
-                      <HiOutlinePencilSquare className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => handleDeleteClick(p)} className="p-2 bg-slate-50 rounded-lg text-slate-500 hover:text-rose-600 transition-colors">
-                      <HiOutlineTrash className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-50 pt-2">
-                   <div><span className="text-slate-500">Header:</span> <span className="font-medium text-slate-900">{p.headerId?.name || "N/A"}</span></div>
-                   <div><span className="text-slate-500">Category:</span> <span className="font-medium text-slate-900">{p.categoryId?.name || "N/A"}</span></div>
-                   <div><span className="text-slate-500">Sub:</span> <span className="font-medium text-slate-900">{p.subcategoryId?.name || "N/A"}</span></div>
-                   <div>
-                     <span className="text-slate-500">Variants:</span>{" "}
-                     {p.variants?.length > 0 ? (
-                        <span onClick={() => { setViewingVariants(p); setIsVariantsViewModalOpen(true); }} className="font-medium text-brand-600 underline cursor-pointer">{p.variants.length}</span>
-                     ) : (
-                        <span className="text-slate-400 italic">None</span>
-                     )}
-                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Desktop View */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -746,6 +727,7 @@ const ProductManagement = () => {
                           src={
                             p.mainImage ||
                             p.image ||
+                            p.variants?.[0]?.images?.[0] ||
                             "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400"
                           }
                           alt={p.name}
@@ -781,62 +763,54 @@ const ProductManagement = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-slate-900">
-                      {p.categoryId?.name || "N/A"}
-                    </span>
+                  <td className="px-6 py-4 text-left">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-slate-900 uppercase tracking-tight bg-slate-100 px-3 py-0.5 rounded-full w-fit">
+                        {p.categoryId?.name || "N/A"}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-slate-900">
-                      {p.subcategoryId?.name || "N/A"}
-                    </span>
+                  <td className="px-6 py-4 text-left">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-slate-900 uppercase tracking-tight bg-slate-100 px-3 py-0.5 rounded-full w-fit">
+                        {p.subcategoryId?.name || "N/A"}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-center">
                     {p.variants?.length > 0 ? (
-                      <div
+                      <button
+                        type="button"
                         onClick={() => {
                           setViewingVariants(p);
                           setIsVariantsViewModalOpen(true);
                         }}
-                        className="flex flex-col items-center cursor-pointer hover:bg-slate-50 p-1.5 rounded-xl transition-all active:scale-95 group"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                        title="View variant details"
                       >
-                        <Badge
-                          variant="indigo"
-                          className="text-xs font-medium px-3 py-0.5 group-hover:shadow-sm transition-all"
-                        >
+                        <span className="font-semibold text-brand-600">
                           {p.variants.length} VARIANTS
-                        </Badge>
-                      </div>
+                        </span>
+                      </button>
                     ) : (
-                      <span className="text-xs font-medium text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded italic">
-                        None
-                      </span>
+                      <span className="text-xs text-slate-600 font-medium">1 Variant</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <ApprovalBadge approvalStatus={p.approvalStatus} />
-                      {p.approvalReviewedAt ? (
-                        <span className="text-[10px] text-slate-400">
-                          Reviewed
-                        </span>
-                      ) : p.approvalRequestedAt ? (
-                        <span className="text-[10px] text-slate-400">
-                          Submitted
-                        </span>
-                      ) : null}
-                    </div>
+                    <ApprovalBadge approvalStatus={p.approvalStatus} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end space-x-2">
+                    <div className="flex items-center justify-end space-x-1">
                       <button
                         onClick={() => openEditModal(p)}
-                        className="p-1 hover:text-brand-600 rounded-lg transition-all text-slate-500">
+                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-md transition-colors"
+                        title="Edit">
                         <HiOutlinePencilSquare className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(p)}
-                        className="p-1 hover:text-rose-600 rounded-lg transition-all text-slate-500">
+                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        title="Delete">
                         <HiOutlineTrash className="h-4 w-4" />
                       </button>
                     </div>
@@ -846,146 +820,58 @@ const ProductManagement = () => {
             </tbody>
           </table>
         </div>
+        <div className="p-4 border-t border-slate-100">
+          <Pagination
+            currentPage={page}
+            totalItems={total}
+            pageSize={pageSize}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              fetchProducts(newPage);
+            }}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setPage(1);
+              fetchProducts(1);
+            }}
+          />
+        </div>
       </Card>
 
-
-      {isFilterOpen && (
-        <div
-          ref={filterDropdownRef}
-          className="absolute z-[9999] right-36 top-[350px] w-64 rounded-xl border border-slate-200 bg-white shadow-xl p-4 space-y-3"
-        >
-          <div>
-            <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-[0.18em] mb-1">
-              Status
-            </p>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary/10 outline-none bg-white"
-            >
-              <option value="All">All</option>
-              <option value="Active">Active</option>
-              <option value="Low Stock">Low Stock</option>
-              <option value="Out of Stock">Out of Stock</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-[0.18em] mb-1">
-                Min Price
-              </p>
-              <input
-                type="number"
-                value={priceMin}
-                onChange={(e) => setPriceMin(e.target.value)}
-                placeholder="e.g. 100"
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary/10 outline-none bg-white"
-              />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-[0.18em] mb-1">
-                Max Price
-              </p>
-              <input
-                type="number"
-                value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value)}
-                placeholder="e.g. 1000"
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary/10 outline-none bg-white"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                setFilterCategory("all");
-                setFilterStatus("All");
-                setFilterApproval("all");
-                setPriceMin("");
-                setPriceMax("");
-                setSearchTerm("");
-                setSearchParams({});
-              }}
-              className="text-[11px] font-bold text-slate-600 hover:text-slate-700"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(false)}
-              className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-4">
-        <Pagination
-          page={page}
-          totalPages={Math.ceil(total / pageSize) || 1}
-          total={total}
-          pageSize={pageSize}
-          onPageChange={(p) => fetchProducts(p)}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize);
-            setPage(1);
-            fetchProducts(1);
-          }}
-          loading={isLoading}
-        />
-      </div>
-
-      {/* Edit Modal (Copy from Admin) */}
+      {/* Add / Edit Product Modal */}
       <AnimatePresence>
         {isProductModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
-              onClick={() => setIsProductModalOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-5xl relative z-10 bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
-                    <HiOutlineCube className="h-5 w-5" />
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                    <HiOutlineCube className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Edit Product
+                    <h3 className="text-base font-bold text-slate-900">
+                      {editingItem ? "Edit Product Details" : "Create New Product"}
                     </h3>
-                    <div className="flex items-center space-x-2 mt-0.5">
-                      <Badge
-                        variant="primary"
-                        className="text-[7px] font-bold uppercase tracking-widest px-1 bg-brand-100 text-brand-700">
-                        Warehouse
-                      </Badge>
-                      <HiOutlineChevronRight className="h-2.5 w-2.5 text-slate-300" />
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">
-                        {formData.sku || "PENDING SKU"}
-                      </span>
-                    </div>
+                    <p className="text-xs text-slate-600 font-medium">
+                      Fill in the attributes and variants below.
+                    </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsProductModalOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all">
                   <HiOutlineXMark className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-                {/* Modal Sidebar Tabs */}
+              {/* Modal Body with Sidebar Tabs */}
+              <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+                {/* Tabs */}
                 <div
                   className="lg:w-1/4 bg-slate-50/50 border-r border-slate-100 p-4 space-y-1 overflow-y-auto min-h-0"
                   onWheel={handleModalScrollWheel}>
@@ -1005,7 +891,11 @@ const ProductManagement = () => {
                       label: "Groups",
                       icon: HiOutlineFolderOpen,
                     },
-                    { id: "media", label: "Photos", icon: HiOutlinePhoto },
+                    {
+                      id: "highlights",
+                      label: "Highlights",
+                      icon: HiOutlineSparkles,
+                    },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1078,24 +968,19 @@ const ProductManagement = () => {
                         </div>
                         <div className="space-y-1.5 flex flex-col">
                           <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                            Web Address
+                            Brand Name
                           </label>
-                          <div className="flex items-center bg-slate-50 rounded-xl px-4 py-2.5">
-                            <span className="text-[10px] text-slate-600 font-bold mr-1">
-                              /product/
-                            </span>
-                            <input
-                              value={formData.slug}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  slug: e.target.value,
-                                })
-                              }
-                              className="flex-1 bg-transparent border-none text-sm text-slate-600 font-semibold outline-none"
-                              placeholder="premium-basmati-rice"
-                            />
-                          </div>
+                          <input
+                            value={formData.brand}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                brand: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
+                            placeholder="e.g. Amul"
+                          />
                         </div>
                       </div>
                       <div className="space-y-1.5 flex flex-col">
@@ -1112,25 +997,25 @@ const ProductManagement = () => {
                           }
                           onWheel={(e) => e.stopPropagation()}
                           onTouchMove={(e) => e.stopPropagation()}
-                          className="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-semibold min-h-[160px] max-h-[260px] outline-none resize-none overflow-y-auto custom-scrollbar"
-                          placeholder="Describe the item here..."
+                          className="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-semibold min-h-[120px] max-h-[220px] outline-none transition-all focus:ring-2 focus:ring-primary/5 resize-none overflow-y-auto custom-scrollbar"
+                          placeholder="Describe the product details, ingredients, usage..."
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1.5 flex flex-col">
                           <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                            Brand Name
+                            Search Tags
                           </label>
                           <input
-                            value={formData.brand}
+                            value={formData.tags}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                brand: e.target.value,
+                                tags: e.target.value,
                               })
                             }
                             className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
-                            placeholder="e.g. Amul"
+                            placeholder="rice, basmati, grocery"
                           />
                         </div>
                         <div className="space-y-1.5 flex flex-col">
@@ -1184,7 +1069,7 @@ const ProductManagement = () => {
                       </div>
                     </div>
                   )}
-                  {/* Additional tabs populated as needed */}
+
                   {modalTab === "category" && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1253,66 +1138,6 @@ const ProductManagement = () => {
                     </div>
                   )}
 
-                  {modalTab === "media" && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                          Main Cover Photo
-                        </label>
-                        <div className="flex flex-col md:flex-row items-start gap-6">
-                          <div className="w-48 aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                            <input
-                              type="file"
-                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                              onChange={(e) => handleImageUpload(e, "main")}
-                            />
-                            {formData.mainImage ? (
-                              <img src={formData.mainImage} alt="Main Preview" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="flex flex-col items-center">
-                                <HiOutlinePhoto className="h-10 w-10 text-slate-200" />
-                                <p className="text-[10px] text-slate-600 font-bold mt-2">UPLOAD</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                          Gallery Photos
-                        </label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {(formData.galleryImages || []).slice(0, 4).map((img, idx) => (
-                            <div
-                              key={`${img}-${idx}`}
-                              className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden relative">
-                              <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                          {Array.from({ length: Math.max(0, 4 - (formData.galleryImages || []).length) }).map((_, idx) => (
-                            <div
-                              key={`upload-${idx}`}
-                              className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center group hover:border-primary hover:bg-primary/5 transition-all cursor-pointer overflow-hidden relative">
-                              <input
-                                type="file"
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                onChange={(e) => handleImageUpload(e, "gallery")}
-                              />
-                              <div className="flex flex-col items-center">
-                                <HiOutlinePhoto className="h-8 w-8 text-slate-200" />
-                                <p className="text-[10px] text-slate-600 font-bold mt-2">UPLOAD</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <p className="text-[10px] text-slate-500 font-medium">
-                          Existing gallery images are shown here. Uploading new images will append them to the gallery.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   {modalTab === "variants" && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                       <div className="flex items-center justify-between">
@@ -1339,8 +1164,8 @@ const ProductManagement = () => {
                       </div>
                       <div className="space-y-3">
                         {formData.variants.map((v, i) => (
-                          <div key={v.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                            <div className="md:col-span-2 space-y-1">
+                          <div key={v.id} className="grid grid-cols-12 gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 relative group">
+                            <div className="col-span-12 md:col-span-3 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Variant Name</label>
                               <input value={v.name} onChange={e => {
                                 const news = [...formData.variants];
@@ -1348,7 +1173,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="e.g. 1kg, 1 pack, 1 liter..." className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Price</label>
                               <input type="number" min="0" value={v.price} onChange={e => {
                                 const val = e.target.value;
@@ -1364,7 +1189,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Price" className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-brand-400 uppercase tracking-widest ml-1">Sale Price</label>
                               <input type="number" min="0" value={v.salePrice} onChange={e => {
                                 const val = e.target.value;
@@ -1380,7 +1205,7 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Sale" className="w-full bg-brand-50/50 px-3 py-2 rounded-xl text-xs ring-1 ring-brand-100 text-brand-700 outline-none" />
                             </div>
-                            <div className="space-y-1">
+                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Stock</label>
                               <input type="number" min="0" value={v.stock} onChange={e => {
                                 const val = e.target.value;
@@ -1390,16 +1215,31 @@ const ProductManagement = () => {
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="Stock" className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 space-y-1">
-                                <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">SKU</label>
-                                <input value={v.sku} onChange={e => {
-                                  const news = [...formData.variants];
-                                  news[i].sku = e.target.value;
-                                  setFormData({ ...formData, variants: news });
-                                }} placeholder="SKU" className="w-full bg-white px-3 py-2 rounded-xl text-[10px] ring-1 ring-slate-100 outline-none" />
-                              </div>
+                            <div className="col-span-5 md:col-span-2 space-y-1 flex flex-col justify-end">
+                              <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">SKU</label>
+                              <input value={v.sku} onChange={e => {
+                                const news = [...formData.variants];
+                                news[i].sku = e.target.value;
+                                setFormData({ ...formData, variants: news });
+                              }} placeholder="SKU" className="w-full bg-white px-3 py-2 rounded-xl text-[10px] ring-1 ring-slate-100 outline-none" />
+                            </div>
+                            <div className="col-span-1 flex justify-end flex-col pb-2">
                               <button type="button" onClick={() => {
+                                const newImageFiles = { ...variantImageFiles };
+                                delete newImageFiles[i];
+                                
+                                // Re-index variant images
+                                const reindexedFiles = {};
+                                Object.keys(newImageFiles).forEach(key => {
+                                   const numKey = Number(key);
+                                   if (numKey > i) {
+                                      reindexedFiles[numKey - 1] = newImageFiles[key];
+                                   } else {
+                                      reindexedFiles[numKey] = newImageFiles[key];
+                                   }
+                                });
+                                setVariantImageFiles(reindexedFiles);
+
                                 setFormData((prev) => {
                                   const remaining = prev.variants
                                     .map((variant, idx) => ({ variant, oldIndex: idx + 1 }))
@@ -1408,18 +1248,127 @@ const ProductManagement = () => {
                                       const shouldAuto =
                                         !item.variant.sku ||
                                         isAutoSku(item.variant.sku, prev.name, item.oldIndex);
-                                      return shouldAuto
-                                        ? { ...item.variant, sku: makeSku(prev.name, newIdx + 1) }
-                                        : item.variant;
+                                      return {
+                                        ...item.variant,
+                                        sku: shouldAuto ? makeSku(prev.name, newIdx + 1) : item.variant.sku,
+                                      };
                                     });
                                   return { ...prev, variants: remaining };
                                 });
-                              }} className="text-rose-500 p-2 hover:bg-rose-50 rounded-lg shrink-0 mb-0.5">
-                                <HiOutlineTrash className="h-4 w-4" />
+                              }} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-all">
+                                <HiOutlineTrash className="w-4 h-4" />
                               </button>
+                            </div>
+
+                            {/* Variant Images Row */}
+                            <div className="col-span-12 mt-2 pt-3 border-t border-slate-200">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block ml-1">Variant Images (Max 5)</label>
+                                <div className="flex gap-3 w-full overflow-x-auto pb-2 custom-scrollbar">
+                                   {[0, 1, 2, 3, 4].map(imgIdx => (
+                                      <div key={imgIdx} className="relative h-16 w-16 shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
+                                         {variantImageFiles[i]?.[imgIdx] ? (
+                                             <img src={URL.createObjectURL(variantImageFiles[i][imgIdx])} alt="" className="h-full w-full object-cover" />
+                                         ) : v.images?.[imgIdx] ? (
+                                             <img src={v.images[imgIdx]} alt="" className="h-full w-full object-cover" />
+                                         ) : (
+                                             <HiOutlinePhotograph className="h-5 w-5 text-slate-300" />
+                                         )}
+                                         <input
+                                             type="file"
+                                             accept="image/*"
+                                             className="absolute inset-0 opacity-0 cursor-pointer"
+                                             onChange={e => {
+                                                 if (e.target.files?.[0]) {
+                                                     const newFiles = [...(variantImageFiles[i] || [])];
+                                                     newFiles[imgIdx] = e.target.files[0];
+                                                     setVariantImageFiles({ ...variantImageFiles, [i]: newFiles });
+                                                 }
+                                             }}
+                                         />
+                                      </div>
+                                   ))}
+                                </div>
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {modalTab === "highlights" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">
+                          Product Highlight Badges (4 Slots)
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Select icons and enter custom text labels to display product highlights on the product page.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[0, 1, 2, 3].map((slotIdx) => {
+                          const currentHighlight = formData.highlights?.[slotIdx] || { icon: "leaf", label: "" };
+                          return (
+                            <div key={slotIdx} className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                  Highlight #{slotIdx + 1}
+                                </span>
+                                <span className="text-xl">
+                                  {PRESET_HIGHLIGHT_ICONS.find((i) => i.id === currentHighlight.icon)?.emoji || "🌿"}
+                                </span>
+                              </div>
+
+                              {/* Icon Selector Grid */}
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                                  Select Icon
+                                </label>
+                                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200">
+                                  {PRESET_HIGHLIGHT_ICONS.map((ic) => (
+                                    <button
+                                      key={ic.id}
+                                      type="button"
+                                      onClick={() => {
+                                        const nextHL = [...(formData.highlights || [])];
+                                        nextHL[slotIdx] = { ...currentHighlight, icon: ic.id };
+                                        setFormData({ ...formData, highlights: nextHL });
+                                      }}
+                                      className={cn(
+                                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border",
+                                        currentHighlight.icon === ic.id
+                                          ? "bg-brand-50 border-primary text-primary shadow-xs"
+                                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
+                                      )}
+                                    >
+                                      <span>{ic.emoji}</span>
+                                      <span className="text-[10px]">{ic.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Title Input */}
+                              <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                  Heading / Title Text
+                                </label>
+                                <input
+                                  type="text"
+                                  value={currentHighlight.label}
+                                  onChange={(e) => {
+                                    const nextHL = [...(formData.highlights || [])];
+                                    nextHL[slotIdx] = { ...currentHighlight, label: e.target.value };
+                                    setFormData({ ...formData, highlights: nextHL });
+                                  }}
+                                  placeholder="e.g. 100% Natural"
+                                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-primary/10"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1493,8 +1442,8 @@ const ProductManagement = () => {
         <div className="py-2">
           <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <div className="h-16 w-16 bg-white rounded-xl shadow-sm overflow-hidden flex items-center justify-center border border-slate-100">
-              {viewingVariants?.mainImage || viewingVariants?.galleryImages?.[0] || viewingVariants?.image ? (
-                <img src={viewingVariants.mainImage || viewingVariants.galleryImages?.[0] || viewingVariants.image} alt="" className="h-full w-full object-cover" />
+              {viewingVariants?.mainImage || viewingVariants?.galleryImages?.[0] || viewingVariants?.image || viewingVariants?.variants?.[0]?.images?.[0] ? (
+                <img src={viewingVariants.mainImage || viewingVariants.galleryImages?.[0] || viewingVariants.image || viewingVariants?.variants?.[0]?.images?.[0]} alt="" className="h-full w-full object-cover" />
               ) : (
                 <HiOutlineCube className="h-8 w-8 text-slate-200" />
               )}
@@ -1522,9 +1471,14 @@ const ProductManagement = () => {
                 {viewingVariants?.variants?.map((v, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/30 transition-all cursor-default">
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-700 group-hover:text-primary transition-colors">{v.name}</span>
-                        <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Variation {idx + 1}</span>
+                      <div className="flex items-center gap-3">
+                        {v.images?.[0] && (
+                          <img src={v.images[0]} alt="" className="h-10 w-10 rounded-lg object-cover border border-slate-200" />
+                        )}
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-slate-700 group-hover:text-primary transition-colors">{v.name}</span>
+                          <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Variation {idx + 1}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -1559,9 +1513,8 @@ const ProductManagement = () => {
           </div>
         </div>
       </Modal>
-    </div >
+    </div>
   );
 };
 
 export default ProductManagement;
-

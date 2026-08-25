@@ -50,6 +50,7 @@ const DeliveryRoutes = () => {
         <Route path="profile/settings" element={<Settings />} />
         <Route path="profile/help-support" element={<HelpSupport />} />
         <Route path="profile/withdrawals" element={<Withdrawals />} />
+        <Route path="profile/cod-cash" element={<CodCash />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="warehouse-checkin" element={<WarehouseCheckin />} />
         <Route path="/" element={<Navigate to="dashboard" replace />} />

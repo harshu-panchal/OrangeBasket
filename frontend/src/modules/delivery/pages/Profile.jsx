@@ -13,6 +13,7 @@ import {
   Bell,
   Settings,
   Wallet,
+  Banknote,
   ChevronDown,
   ChevronUp,
   AlertTriangle,
@@ -146,6 +147,13 @@ const Profile = () => {
                     sub="Withdraw your earnings"
                     path="/delivery/profile/withdrawals"
                     badgeBg="bg-teal-50/80 border-teal-100/70 text-teal-700"
+                />
+                <MenuItem
+                    icon={Banknote}
+                    label="COD Cash & Payments"
+                    sub="Cash in hand, collected payments & deposits"
+                    path="/delivery/cod-cash"
+                    badgeBg="bg-emerald-50/80 border-emerald-100/70 text-emerald-700"
                 />
                 <MenuItem
                     icon={ShieldCheck}

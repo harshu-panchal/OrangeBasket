@@ -1,6 +1,7 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { IndianRupee, RotateCw } from "lucide-react";
+import { IndianRupee, RotateCw, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import Card from "@/shared/components/ui/Card";
 import Button from "@/shared/components/ui/Button";
@@ -14,6 +15,7 @@ function safeMoney(value) {
 }
 
 const CodCash = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
   const [paying, setPaying] = React.useState(false);
   const [payAmount, setPayAmount] = React.useState("");
@@ -104,19 +106,31 @@ const CodCash = () => {
 
   return (
     <div className="bg-gray-50/50 min-h-screen pb-24">
-      <div className="bg-white shadow-sm p-6 sticky top-0 z-30">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="ds-h2 text-gray-900">COD Cash</h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Simple view of what you should collect and what you should submit.
-            </p>
+      <div className="bg-white shadow-sm p-4 sticky top-0 z-30">
+        <div className="flex justify-between items-center max-w-lg mx-auto">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-10 w-10 rounded-full hover:bg-slate-100"
+              aria-label="Back"
+            >
+              <ChevronLeft size={22} className="text-slate-800" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">COD Cash & Payments</h1>
+              <p className="text-[11px] text-gray-500">
+                Cash in hand & payment submission
+              </p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             disabled={loading}
             onClick={fetchSummary}
+            className="h-10 w-10 rounded-full hover:bg-slate-100"
             aria-label="Refresh"
           >
             <RotateCw size={18} className={loading ? "animate-spin text-gray-400" : "text-gray-600"} />

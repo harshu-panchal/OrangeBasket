@@ -473,18 +473,17 @@ export async function handleCodOrderFinance(
       session,
     });
 
-    order.paymentBreakdown = {
-      ...(order.paymentBreakdown || {}),
-      codCollectedAmount: roundCurrency(
-        (order.paymentBreakdown?.codCollectedAmount || 0) + codAmountNet,
-      ),
-      codRemittedAmount: roundCurrency(order.paymentBreakdown?.codRemittedAmount || 0),
-      codPendingAmount: roundCurrency(
-        (order.paymentBreakdown?.codCollectedAmount || 0) +
-          codAmountNet -
-          (order.paymentBreakdown?.codRemittedAmount || 0),
-      ),
-    };
+    if (!order.paymentBreakdown) order.paymentBreakdown = {};
+    order.paymentBreakdown.codCollectedAmount = roundCurrency(
+      (order.paymentBreakdown.codCollectedAmount || 0) + codAmountNet,
+    );
+    order.paymentBreakdown.codRemittedAmount = roundCurrency(
+      order.paymentBreakdown.codRemittedAmount || 0,
+    );
+    order.paymentBreakdown.codPendingAmount = roundCurrency(
+      order.paymentBreakdown.codCollectedAmount - order.paymentBreakdown.codRemittedAmount,
+    );
+    order.markModified("paymentBreakdown");
 
     order.paymentStatus = ORDER_PAYMENT_STATUS.CASH_COLLECTED;
     order.payment = {
@@ -705,12 +704,11 @@ export async function reconcileCodCash(
     const nextRemitted = addMoney(codRemitted, requested);
     const nextPending = roundCurrency(codCollected - nextRemitted);
 
-    order.paymentBreakdown = {
-      ...(order.paymentBreakdown || {}),
-      codCollectedAmount: codCollected,
-      codRemittedAmount: nextRemitted,
-      codPendingAmount: nextPending,
-    };
+    if (!order.paymentBreakdown) order.paymentBreakdown = {};
+    order.paymentBreakdown.codCollectedAmount = codCollected;
+    order.paymentBreakdown.codRemittedAmount = nextRemitted;
+    order.paymentBreakdown.codPendingAmount = nextPending;
+    order.markModified("paymentBreakdown");
 
     order.paymentStatus =
       nextPending <= 0

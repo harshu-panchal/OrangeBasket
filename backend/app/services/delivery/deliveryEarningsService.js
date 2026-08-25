@@ -54,23 +54,24 @@ export async function getDeliveryStats(rawId) {
 }
 
 async function computeDeliveryStats(deliveryBoyId) {
-  const orders = await Order.find({
-    deliveryBoy: deliveryBoyId,
-    status: "delivered",
-  })
-    .select("_id")
-    .lean();
-  const totalDeliveries = orders.length;
-
-  const pendingOrders = await Order.countDocuments({
-    deliveryBoy: deliveryBoyId,
-    status: { $nin: ["delivered", "cancelled"] },
-  });
-
-  const cancelledOrders = await Order.countDocuments({
-    deliveryBoy: deliveryBoyId,
-    status: "cancelled",
-  });
+  const [totalDeliveries, pendingOrders, cancelledOrders] = await Promise.all([
+    Order.countDocuments({
+      $or: [
+        { deliveryBoy: deliveryBoyId, status: "delivered" },
+        { returnDeliveryBoy: deliveryBoyId, returnStatus: { $in: ["returned", "refund_completed"] } },
+      ],
+    }),
+    Order.countDocuments({
+      $or: [
+        { deliveryBoy: deliveryBoyId, status: { $nin: ["delivered", "cancelled"] } },
+        { returnDeliveryBoy: deliveryBoyId, returnStatus: { $in: ["return_assigned", "return_in_transit", "return_drop_pending"] } },
+      ],
+    }),
+    Order.countDocuments({
+      deliveryBoy: deliveryBoyId,
+      status: "cancelled",
+    }),
+  ]);
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -78,7 +79,10 @@ async function computeDeliveryStats(deliveryBoyId) {
   const allTransactions = await Transaction.find({
     user: deliveryBoyId,
     userModel: "Delivery",
-    createdAt: { $gte: startOfToday },
+    $or: [
+      { createdAt: { $gte: startOfToday } },
+      { updatedAt: { $gte: startOfToday } },
+    ],
   })
     .populate("order", "pricing paymentBreakdown")
     .lean();
@@ -183,7 +187,11 @@ async function computeDeliveryEarnings(deliveryBoyId, timeframe = "weekly", targ
   const transactions = await Transaction.find({
     user: deliveryBoyId,
     userModel: "Delivery",
-    createdAt: { $gte: startBound, $lte: endBound }
+    $or: [
+      { createdAt: { $gte: startBound, $lte: endBound } },
+      { updatedAt: { $gte: startBound, $lte: endBound } },
+      { date: { $gte: startBound, $lte: endBound } },
+    ],
   })
     .sort({ createdAt: -1 })
     .limit(200)
