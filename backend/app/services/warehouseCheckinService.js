@@ -33,6 +33,29 @@ function toObjectId(id) {
   }
 }
 
+/**
+ * Releases a rider from their current order so they can accept a new one.
+ * Called when an order is delivered, cancelled, or returned.
+ */
+export async function releaseRiderFromOrder(deliveryId) {
+  try {
+    const checkin = await WarehouseCheckin.findOneAndUpdate(
+      { deliveryId: toObjectId(deliveryId), status: "active" },
+      { $set: { currentOrderId: null, lastActivityAt: new Date() } }
+    ).lean();
+
+    if (checkin) {
+      await Delivery.findByIdAndUpdate(deliveryId, { $set: { queueStatus: "waiting" } });
+      broadcastQueueUpdate(checkin.warehouseId).catch(() => {});
+    } else {
+      // If they were not checked in, just ensure their queueStatus is reset
+      await Delivery.findByIdAndUpdate(deliveryId, { $set: { queueStatus: "waiting" } });
+    }
+  } catch (err) {
+    logger.error("[WarehouseCheckin] releaseRiderFromOrder failed", { deliveryId, error: err.message });
+  }
+}
+
 /* ─── Check-in ────────────────────────────────────────────────────────────── */
 
 /**

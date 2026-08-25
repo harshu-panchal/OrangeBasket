@@ -278,12 +278,22 @@ async function fallbackToBroadcast(orderId) {
     const { emitDeliveryBroadcastForSeller } = await import("./orderSocketEmitter.js");
     const order = await Order.findOne({ orderId })
       .populate("seller", "shopName location serviceRadius")
+      .populate("warehouseId", "name location serviceRadius")
       .lean();
     if (order?.seller) {
       await emitDeliveryBroadcastForSeller(order.seller, {
         orderId: order.orderId,
         preview: {
           pickup: order.seller.shopName || "Seller",
+          drop: order.address?.address || "Customer",
+          total: order.pricing?.total ?? 0,
+        },
+      });
+    } else if (order?.warehouseId) {
+      await emitDeliveryBroadcastForSeller(order.warehouseId, {
+        orderId: order.orderId,
+        preview: {
+          pickup: order.warehouseId.name || "Warehouse",
           drop: order.address?.address || "Customer",
           total: order.pricing?.total ?? 0,
         },

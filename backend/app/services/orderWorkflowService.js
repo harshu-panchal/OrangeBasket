@@ -1465,6 +1465,14 @@ export async function verifyHandoffOtpAndDeliver(deliveryId, orderId, code) {
     updated.customer,
   );
 
+  // Release the rider from their current order checkin slot so they can receive new warehouse orders
+  try {
+    const { releaseRiderFromOrder } = await import("./warehouseCheckinService.js");
+    await releaseRiderFromOrder(deliveryId);
+  } catch (err) {
+    logger.error("Failed to release rider from queue", { orderId, deliveryId, error: err.message });
+  }
+
   // Frontend-compat: customers + observers listen for "delivery:otp:validated"
   // to flip their UI to "Delivered". Emit to both the customer room and the
   // order room so any open client picks it up.

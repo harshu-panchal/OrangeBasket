@@ -137,6 +137,13 @@ const Dashboard = () => {
           countdown: 60,
           isReturn: true,
         });
+      } else {
+        toast.info(`📦 New delivery order available!`);
+        setPendingOffer({
+          ...payload,
+          countdown: 60,
+          isReturn: false,
+        });
       }
     };
     
@@ -154,13 +161,19 @@ const Dashboard = () => {
     if (pendingOffer?.isReturn) {
       await handleAcceptReturn(orderId);
       setPendingOffer(null);
-    } else {
-      const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
-      const socket = getOrderSocket(getToken);
-      socket?.emit("queue:offer_response", { orderId, accepted: true });
-      setPendingOffer(null);
-      toast.success("Order accepted! Preparing for pickup...");
-      navigate(`/delivery/order-details/${orderId}`);
+    } else if (pendingOffer?.countdown) {
+      if (pendingOffer.warehouseId) {
+        // Queue assignment response
+        const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
+        const socket = getOrderSocket(getToken);
+        socket?.emit("queue:offer_response", { orderId, accepted: true });
+        setPendingOffer(null);
+        toast.success("Order accepted! Preparing for pickup...");
+        navigate(`/delivery/order-details/${orderId}`);
+      } else {
+        // Broadcast fallback accept
+        acceptOrder(orderId);
+      }
     }
   };
 
