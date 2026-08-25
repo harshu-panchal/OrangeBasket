@@ -237,6 +237,70 @@ const Earnings = () => {
         </Card>
       </BlurFade>
 
+      <BlurFade delay={0.5}>
+        <Card className="p-6 border-none shadow-md bg-white">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Banknote className="h-5 w-5 text-brand-500" />
+              Recent Per-Order Earnings
+            </h3>
+            <Button variant="ghost" onClick={() => navigate("/seller/transactions")} className="text-sm font-bold text-brand-600">
+              View All
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-4">Order ID</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Earning</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(Array.isArray(data?.ledger) ? data.ledger : [])
+                  .filter(txn => txn.type === "Order Payment" || (txn.amount > 0 && txn.type !== "Withdrawal"))
+                  .slice(0, 5)
+                  .map((txn, i) => (
+                    <tr key={txn.id || i} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3 px-4 text-sm font-bold text-slate-900">
+                        {txn.ref || txn.id || "N/A"}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-medium text-slate-500">
+                        {txn.date || (txn.createdAt ? new Date(txn.createdAt).toLocaleDateString() : "-")}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase",
+                            txn.status === "Settled"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          )}
+                        >
+                          {txn.status || "Pending"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-sm font-black text-slate-900 text-right">
+                        ₹{Number(txn.amount || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                {(Array.isArray(data?.ledger) ? data.ledger : []).filter(txn => txn.type === "Order Payment" || (txn.amount > 0 && txn.type !== "Withdrawal")).length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-sm font-medium text-slate-500">
+                      No order earnings found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </BlurFade>
+
       {/* Withdrawal Modal */}
       <AnimatePresence>
         {isWithdrawModalOpen && (

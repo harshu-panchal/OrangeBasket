@@ -20,22 +20,22 @@ export const getWarehouseStats = async (req, res) => {
 
         const [overview, recentOrders, categoryMix] = await Promise.all([
             Order.aggregate([
-                { $match: { seller: warehouseId, status: { $ne: "cancelled" } } },
+                { $match: { warehouseId: warehouseId, status: { $ne: "cancelled" } } },
                 {
                     $group: {
                         _id: null,
-                        totalSales: { $sum: { $ifNull: ["$pricing.total", 0] } },
+                        totalSales: { $sum: { $ifNull: ["$paymentBreakdown.sellerPayoutTotal", 0] } },
                         totalOrders: { $sum: 1 },
-                        avgOrderValue: { $avg: { $ifNull: ["$pricing.total", 0] } },
+                        avgOrderValue: { $avg: { $ifNull: ["$paymentBreakdown.sellerPayoutTotal", 0] } },
                     },
                 },
             ]),
-            Order.find({ seller: warehouseId, createdAt: { $gte: startDate } })
+            Order.find({ warehouseId: warehouseId, createdAt: { $gte: startDate } })
                 .sort({ createdAt: -1 })
                 .limit(100)
                 .lean(),
             Order.aggregate([
-                { $match: { seller: warehouseId, status: { $ne: "cancelled" } } },
+                { $match: { warehouseId: warehouseId, status: { $ne: "cancelled" } } },
                 { $group: { _id: "$category", count: { $sum: 1 } } },
                 { $sort: { count: -1 } },
                 { $limit: 5 },
@@ -54,7 +54,7 @@ export const getWarehouseStats = async (req, res) => {
             );
             return {
                 name: dayNames[d.getDay()],
-                sales: dayOrders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0),
+                sales: dayOrders.reduce((sum, o) => sum + (o.paymentBreakdown?.sellerPayoutTotal || 0), 0),
             };
         });
 
@@ -85,7 +85,7 @@ export const getWarehouseEarnings = async (req, res) => {
 
         const transactions = await Transaction.find({ user: warehouseId, userModel: "Warehouse" })
             .sort({ createdAt: -1 })
-            .populate("order", "orderId");
+            .populate("order", "orderId paymentBreakdown");
 
         const settledBalance = transactions
             .filter((t) => t.status === "Settled")
@@ -100,8 +100,8 @@ export const getWarehouseEarnings = async (req, res) => {
         const liveAvailableBalance = wallet ? wallet.availableBalance : settledBalance;
 
         const [orderRevenueAgg] = await Order.aggregate([
-            { $match: { seller: warehouseOid, status: { $ne: "cancelled" } } },
-            { $group: { _id: null, totalRevenue: { $sum: { $ifNull: ["$pricing.total", 0] } } } },
+            { $match: { warehouseId: warehouseOid, status: { $ne: "cancelled" } } },
+            { $group: { _id: null, totalRevenue: { $sum: { $ifNull: ["$paymentBreakdown.sellerPayoutTotal", 0] } } } },
         ]);
         const totalRevenue = Number(orderRevenueAgg?.totalRevenue || 0);
 
@@ -148,7 +148,7 @@ export const getWarehouseEarnings = async (req, res) => {
             ledger: transactions.map((t) => ({
                 id: (t.reference || t._id).toString(),
                 type: t.type,
-                amount: t.amount,
+                amount: t.order?.paymentBreakdown?.sellerPayoutTotal || t.amount,
                 status: t.status,
                 date: t.createdAt.toISOString().split("T")[0],
                 time: t.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),

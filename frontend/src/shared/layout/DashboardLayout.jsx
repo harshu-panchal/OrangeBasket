@@ -316,7 +316,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
 
     // Single earnings fetch when seller is on earnings/withdrawals/transactions – no duplicate calls
     useEffect(() => {
-        if (role !== 'seller' || !isEarningsRoute(location.pathname)) {
+        if ((role !== 'seller' && role !== 'warehouse') || !isEarningsRoute(location.pathname)) {
             if (!isEarningsRoute(location.pathname)) earningsFetchedRef.current = false;
             return;
         }
@@ -324,8 +324,8 @@ const DashboardLayout = ({ children, navItems, title }) => {
         earningsFetchedRef.current = true;
         setEarningsLoading(true);
 
-        sellerApi
-            .getEarnings()
+        const api = role === 'warehouse' ? warehouseApi : sellerApi;
+        api.getEarnings()
             .then((response) => {
                 const raw = response?.data?.result ?? response?.data?.data;
                 if (response?.data?.success && raw && typeof raw === 'object') {
@@ -346,8 +346,8 @@ const DashboardLayout = ({ children, navItems, title }) => {
     const refreshEarnings = () => {
         earningsFetchedRef.current = false;
         setEarningsLoading(true);
-        sellerApi
-            .getEarnings()
+        const api = role === 'warehouse' ? warehouseApi : sellerApi;
+        api.getEarnings()
             .then((response) => {
                 const raw = response?.data?.result ?? response?.data?.data;
                 if (response?.data?.success && raw && typeof raw === 'object') {
@@ -465,8 +465,8 @@ const DashboardLayout = ({ children, navItems, title }) => {
                                 }}>
                                 <SellerEarningsContext.Provider
                                     value={{
-                                        earningsData: role === 'seller' ? sellerEarningsData : defaultEarnings,
-                                        earningsLoading: role === 'seller' ? earningsLoading : false,
+                                        earningsData: (role === 'seller' || role === 'warehouse') ? sellerEarningsData : defaultEarnings,
+                                        earningsLoading: (role === 'seller' || role === 'warehouse') ? earningsLoading : false,
                                         refreshEarnings,
                                     }}>
                                     {children}

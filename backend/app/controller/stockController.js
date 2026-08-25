@@ -14,9 +14,11 @@ import {
 export const adjustStock = async (req, res) => {
     try {
         const { productId, type, quantity, note } = req.body;
-        const sellerId = req.user.id;
+        const userId = req.user.id;
+        const role = String(req.user?.role || "").toLowerCase();
 
-        const product = await Product.findOne({ _id: productId, sellerId });
+        const baseQuery = role === "warehouse" ? { _id: productId, warehouseId: userId } : { _id: productId, sellerId: userId };
+        const product = await Product.findOne(baseQuery);
         if (!product) {
             return handleResponse(res, 404, "Product not found or unauthorized");
         }
@@ -36,7 +38,7 @@ export const adjustStock = async (req, res) => {
         // 2. Create History Entry
         const historyEntry = new StockHistory({
             product: productId,
-            seller: sellerId,
+            ...(role === "warehouse" ? { warehouseId: userId } : { seller: userId }),
             type, // Restock, Correction
             quantity: type === 'Restock' ? qtyChange : -qtyChange,
             note: note || `Manual ${type} adjustment`

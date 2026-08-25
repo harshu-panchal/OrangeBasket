@@ -31,7 +31,7 @@ export const getSellerEarnings = async (req, res) => {
 
         const transactions = await Transaction.find({ user: sellerId, userModel: 'Seller' })
             .sort({ createdAt: -1 })
-            .populate("order", "orderId");
+            .populate("order", "orderId paymentBreakdown");
 
         const settledBalance = transactions
             .filter(t => t.status === 'Settled')
@@ -58,7 +58,7 @@ export const getSellerEarnings = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    totalRevenue: { $sum: { $ifNull: ["$pricing.total", 0] } },
+                    totalRevenue: { $sum: { $ifNull: ["$paymentBreakdown.sellerPayoutTotal", 0] } },
                 },
             },
         ]);
@@ -116,7 +116,7 @@ export const getSellerEarnings = async (req, res) => {
             ledger: transactions.map(t => ({
                 id: (t.reference || t._id).toString(),
                 type: t.type,
-                amount: t.amount,
+                amount: t.order?.paymentBreakdown?.sellerPayoutTotal || t.amount,
                 status: t.status,
                 date: t.createdAt.toISOString().split('T')[0],
                 time: t.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

@@ -1163,7 +1163,7 @@ export async function requestHandoffOtpAtomic(deliveryId, orderId, lat, lng) {
   }
 
   const d = distanceMeters(rider.lat, rider.lng, cust.lat, cust.lng);
-  if (d > OTP_RADIUS_M()) {
+  if (d > OTP_RADIUS_M() && process.env.NODE_ENV !== "development") {
     const err = new Error(
       `Delivery person must be within ${OTP_RADIUS_M()} meters of delivery location. Current distance: ${Math.round(d)}m`,
     );

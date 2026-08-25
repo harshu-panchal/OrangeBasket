@@ -627,7 +627,9 @@ export async function getSellerReturns({
   const { page, limit, skip } = pagination;
 
   const query = {};
-  if (role !== "admin") {
+  if (role === "warehouse") {
+    query.warehouseId = userId;
+  } else if (role !== "admin") {
     query.seller = userId;
   }
   query.returnStatus = { $ne: "none" };
