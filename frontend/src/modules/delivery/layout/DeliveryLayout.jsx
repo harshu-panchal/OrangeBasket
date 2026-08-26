@@ -912,7 +912,9 @@ const DeliveryLayout = () => {
         )}
 
       <main
-        className={`flex-1 min-h-0 overflow-y-auto ${shouldShowBottomNav ? "pb-24" : ""} no-scrollbar`}>
+        className="flex-1 min-h-0 overflow-y-auto no-scrollbar"
+        style={{ paddingBottom: shouldShowBottomNav ? "calc(5.5rem + env(safe-area-inset-bottom, 0px))" : undefined }}
+      >
         <Outlet />
       </main>
 

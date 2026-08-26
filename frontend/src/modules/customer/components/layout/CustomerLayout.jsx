@@ -134,7 +134,11 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
 
             {/* Spacer to push content above the fixed BottomNav */}
             {finalShowBottomNavMobile && (
-                <div className="h-32 md:hidden w-full shrink-0" aria-hidden="true" />
+                <div 
+                    className="md:hidden w-full shrink-0" 
+                    style={{ height: "calc(6.5rem + env(safe-area-inset-bottom, 0px))" }} 
+                    aria-hidden="true" 
+                />
             )}
 
             {/* Bottom Nav logic */}

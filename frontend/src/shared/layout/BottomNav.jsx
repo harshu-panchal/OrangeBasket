@@ -32,7 +32,13 @@ const BottomNav = ({ navItems }) => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#0a0c10] border-t border-white/5 z-[60] md:hidden px-2 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.4)]">
+        <div 
+            className="fixed bottom-0 left-0 right-0 bg-[#0a0c10] border-t border-white/5 z-[60] md:hidden px-2 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.4)]"
+            style={{
+                height: "calc(4rem + env(safe-area-inset-bottom, 0px))",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)"
+            }}
+        >
             {primaryItems.map((item) => (
                 <NavLink
                     key={item.path}

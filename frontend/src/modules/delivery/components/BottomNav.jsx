@@ -12,7 +12,10 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 px-4 flex justify-between items-center z-40 max-w-md mx-auto">
+    <div 
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 pt-3 px-4 flex justify-between items-center z-40 max-w-md mx-auto"
+      style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       {navItems.map(({ path, label, icon: Icon, hasNotification }) => (
         <NavLink
           key={label}

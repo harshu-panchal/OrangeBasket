@@ -51,7 +51,10 @@ const BottomNav = () => {
     ];
 
     return (
-        <div className="fixed bottom-3 left-1.5 right-1.5 z-[500] max-w-lg mx-auto md:hidden pointer-events-auto">
+        <div 
+            className="fixed left-1.5 right-1.5 z-[500] max-w-lg mx-auto md:hidden pointer-events-auto"
+            style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        >
             <div className="bg-white/95 backdrop-blur-md rounded-full border border-slate-100 shadow-[0_12px_36px_rgba(15,23,42,0.12)] px-1.5 py-1 flex items-center justify-between relative">
 
                 {/* Center Elevated Floating Cart Button */}
