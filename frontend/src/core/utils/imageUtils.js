@@ -2,11 +2,32 @@ const CLOUDINARY_REGEX = /res\.cloudinary\.com/i;
 const CLOUDINARY_UPLOAD_SEGMENT_REGEX = /\/upload\/([^/]+)\//i;
 
 /**
+ * Resolves relative or localhost media URLs to current production domain automatically.
+ */
+export function resolveMediaUrl(url) {
+  if (!url || typeof url !== "string") return url || "";
+  
+  // If relative path: /uploads/...
+  if (url.startsWith("/uploads/")) {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://orangebasket.in";
+    return `${origin}${url}`;
+  }
+  
+  // If it has localhost:5000 but user is on production domain (orangebasket.in), map it to current domain
+  if (url.includes("localhost:5000/uploads/") && typeof window !== "undefined" && !window.location.hostname.includes("localhost")) {
+    return url.replace(/https?:\/\/localhost:5000/i, window.location.origin);
+  }
+  
+  return url;
+}
+
+/**
  * Appends Cloudinary optimisation transforms to a URL.
  * Safe to call on any URL — non-Cloudinary URLs are returned unchanged.
  */
-export function applyCloudinaryTransform(url, params = "f_auto,q_auto,w_400,dpr_auto") {
-  if (!url) return null;
+export function applyCloudinaryTransform(rawUrl, params = "f_auto,q_auto,w_400,dpr_auto") {
+  if (!rawUrl) return null;
+  const url = resolveMediaUrl(rawUrl);
   if (!CLOUDINARY_REGEX.test(url)) return url;
   const match = url.match(CLOUDINARY_UPLOAD_SEGMENT_REGEX);
   if (!match) return url;

@@ -534,9 +534,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen pt-[210px] md:pt-[220px] bg-white">
-      <div className={cn("contents", isProductDetailOpen && "hidden md:contents")}>
-        <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
-      </div>
+      <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
 
       <>
         {(() => {

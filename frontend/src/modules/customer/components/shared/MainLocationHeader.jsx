@@ -356,11 +356,7 @@ const MainLocationHeader = ({
 
   return (
     <>
-      <div
-        className={cn(
-          "fixed top-0 left-0 right-0 z-[200]",
-          isProductDetailOpen && "hidden md:block",
-        )}>
+      <div className="fixed top-0 left-0 right-0 z-[200]">
         <motion.div
           initial={false}
           style={{
