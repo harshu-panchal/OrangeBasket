@@ -365,6 +365,8 @@ const ProductManagement = () => {
                  data.append(`variantImage_${vIndex}_${imgIndex}`, file);
               }
            });
+        } else if (filesArray instanceof File || (filesArray && typeof filesArray === 'object' && filesArray.name)) {
+           data.append(`variantImage_${vIndex}_0`, filesArray);
         }
       });
 
@@ -711,16 +713,21 @@ const ProductManagement = () => {
                   className="hover:bg-gray-50/50 transition-colors group border-b border-gray-100 last:border-b-0">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-lg overflow-hidden bg-slate-100 ring-1 ring-slate-200">
-                        <img
-                          src={
-                            p.mainImage ||
-                            p.image ||
-                            "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400"
-                          }
-                          alt={p.name}
-                          className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
+                      <div className="h-14 w-14 rounded-lg overflow-hidden bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center">
+                        {p.mainImage || p.variants?.[0]?.images?.[0] || p.image ? (
+                          <img
+                            src={
+                              p.mainImage ||
+                              p.variants?.[0]?.images?.[0] ||
+                              p.image
+                            }
+                            alt={p.name}
+                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <HiOutlineCube className="h-6 w-6 text-slate-400" />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-medium text-slate-900">

@@ -753,14 +753,17 @@ export const createProduct = async (req, res) => {
       productData.sellerId = req.user.id;
     }
 
-    // Handle multipart files (mainImage and galleryImages)
+    // Handle multipart files (mainImage, image, galleryImages, and variantImage_*)
     const files = req.files || [];
     const variantImagesMap = {};
+    let uploadedMainImage = null;
+    const uploadedGalleryImages = [];
+
     if (files.length > 0) {
       for (const file of files) {
         try {
           if (file.fieldname.startsWith("variantImage_")) {
-            // expected format: variantImage_{variantIndex}_{imageIndex}
+            // expected format: variantImage_{variantIndex}_{imageIndex} or variantImage_{variantIndex}
             const parts = file.fieldname.split("_");
             const vIndex = parts[1];
             
@@ -773,6 +776,17 @@ export const createProduct = async (req, res) => {
               variantImagesMap[vIndex] = [];
             }
             variantImagesMap[vIndex].push(url);
+          } else if (file.fieldname === "mainImage" || file.fieldname === "image") {
+            uploadedMainImage = await uploadToCloudinary(file.buffer, "products", {
+              mimeType: file.mimetype,
+              resourceType: "image",
+            });
+          } else if (file.fieldname === "galleryImages" || file.fieldname.startsWith("galleryImage_")) {
+            const url = await uploadToCloudinary(file.buffer, "products/gallery", {
+              mimeType: file.mimetype,
+              resourceType: "image",
+            });
+            uploadedGalleryImages.push(url);
           }
         } catch (err) {
           logger.error("Cloudinary upload failed", {
@@ -783,35 +797,50 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    if (uploadedMainImage) {
+      productData.mainImage = uploadedMainImage;
+    }
+    if (uploadedGalleryImages.length > 0) {
+      productData.galleryImages = [
+        ...(Array.isArray(productData.galleryImages) ? productData.galleryImages : []),
+        ...uploadedGalleryImages,
+      ];
+    }
+
     // Parse JSON fields if they come as strings from FormData
     if (typeof productData.variants === "string") {
       try {
         productData.variants = JSON.parse(productData.variants);
-        
-        // Map uploaded variant images to parsed variants
-        if (Array.isArray(productData.variants)) {
-          productData.variants = productData.variants.map((v, idx) => {
-            if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
-              v.images = variantImagesMap[idx];
-              
-              // Auto-populate product-level mainImage and galleryImages from the first variant
-              if (idx === 0) {
-                productData.mainImage = v.images[0];
-                productData.galleryImages = v.images.slice(1);
-              }
-            } else {
-               v.images = [];
-            }
-            return v;
-          });
-        }
       } catch (e) {
         logger.error("Failed to parse variants JSON", {
           scope: "createProduct",
           error: e,
         });
+        productData.variants = [];
       }
     }
+
+    if (Array.isArray(productData.variants)) {
+      productData.variants = productData.variants.map((v, idx) => {
+        if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
+          v.images = variantImagesMap[idx];
+        } else if (typeof v.image === "string" && v.image && (!v.images || v.images.length === 0)) {
+          v.images = [v.image];
+        } else if (!Array.isArray(v.images)) {
+          v.images = [];
+        }
+
+        // Auto-populate product-level mainImage and galleryImages from the first variant if not explicitly uploaded
+        if (idx === 0 && v.images.length > 0 && !productData.mainImage) {
+          productData.mainImage = v.images[0];
+          if (v.images.length > 1 && (!productData.galleryImages || productData.galleryImages.length === 0)) {
+            productData.galleryImages = v.images.slice(1);
+          }
+        }
+        return v;
+      });
+    }
+
     if (typeof productData.tags === "string" && productData.tags.startsWith("[")) {
       try {
         productData.tags = JSON.parse(productData.tags);
@@ -853,15 +882,6 @@ export const createProduct = async (req, res) => {
     // Handle tags if string
     if (typeof productData.tags === "string") {
       productData.tags = productData.tags.split(",").map((tag) => tag.trim());
-    }
-
-    // Handle variants if string (multipart/form-data sends as string)
-    if (typeof productData.variants === "string") {
-      try {
-        productData.variants = JSON.parse(productData.variants);
-      } catch (e) {
-        productData.variants = [];
-      }
     }
 
     if (Array.isArray(productData.variants)) {
@@ -938,14 +958,25 @@ export const updateProduct = async (req, res) => {
       delete productData.sellerId;
     }
 
-    // Handle multipart files (mainImage and galleryImages)
+    // Admin bypasses sellerId check
+    const query = role === "admin" ? { _id: id } : role === "warehouse" ? { _id: id, warehouseId: sellerId } : { _id: id, sellerId };
+    const product = await Product.findOne(query);
+
+    if (!product) {
+      return handleResponse(res, 404, "Product not found or unauthorized");
+    }
+
+    // Handle multipart files (mainImage, image, galleryImages, and variantImage_*)
     const files = req.files || [];
     const variantImagesMap = {};
+    let uploadedMainImage = null;
+    const uploadedGalleryImages = [];
+
     if (files.length > 0) {
       for (const file of files) {
         try {
           if (file.fieldname.startsWith("variantImage_")) {
-            // expected format: variantImage_{variantIndex}_{imageIndex}
+            // expected format: variantImage_{variantIndex}_{imageIndex} or variantImage_{variantIndex}
             const parts = file.fieldname.split("_");
             const vIndex = parts[1];
             
@@ -958,6 +989,17 @@ export const updateProduct = async (req, res) => {
               variantImagesMap[vIndex] = [];
             }
             variantImagesMap[vIndex].push(url);
+          } else if (file.fieldname === "mainImage" || file.fieldname === "image") {
+            uploadedMainImage = await uploadToCloudinary(file.buffer, "products", {
+              mimeType: file.mimetype,
+              resourceType: "image",
+            });
+          } else if (file.fieldname === "galleryImages" || file.fieldname.startsWith("galleryImage_")) {
+            const url = await uploadToCloudinary(file.buffer, "products/gallery", {
+              mimeType: file.mimetype,
+              resourceType: "image",
+            });
+            uploadedGalleryImages.push(url);
           }
         } catch (err) {
           logger.error("Cloudinary upload failed during update", {
@@ -968,36 +1010,53 @@ export const updateProduct = async (req, res) => {
       }
     }
 
+    if (uploadedMainImage) {
+      productData.mainImage = uploadedMainImage;
+    }
+    if (uploadedGalleryImages.length > 0) {
+      productData.galleryImages = [
+        ...(Array.isArray(productData.galleryImages) ? productData.galleryImages : (product.galleryImages || [])),
+        ...uploadedGalleryImages,
+      ];
+    }
+
     // Parse JSON fields
     if (typeof productData.variants === "string") {
       try {
         productData.variants = JSON.parse(productData.variants);
-        
-        // Map uploaded variant images to parsed variants
-        if (Array.isArray(productData.variants)) {
-          productData.variants = productData.variants.map((v, idx) => {
-            // If new images were uploaded for this variant, append them
-            if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
-              if (!Array.isArray(v.images)) v.images = [];
-              v.images = [...v.images, ...variantImagesMap[idx]];
-            }
-            
-            // Auto-populate product-level mainImage and galleryImages from the first variant
-            if (idx === 0 && Array.isArray(v.images) && v.images.length > 0) {
-              productData.mainImage = v.images[0];
-              productData.galleryImages = v.images.slice(1);
-            }
-            
-            return v;
-          });
-        }
       } catch (e) {
         logger.error("Failed to parse variants JSON during update", {
           scope: "updateProduct",
           error: e,
         });
+        productData.variants = product.variants || [];
       }
     }
+
+    if (Array.isArray(productData.variants)) {
+      productData.variants = productData.variants.map((v, idx) => {
+        // If new images were uploaded for this variant, update them
+        if (variantImagesMap[idx] && variantImagesMap[idx].length > 0) {
+          v.images = variantImagesMap[idx];
+        } else if (typeof v.image === "string" && v.image && (!v.images || v.images.length === 0)) {
+          v.images = [v.image];
+        } else if (!Array.isArray(v.images)) {
+          // preserve existing variant images if available
+          v.images = product.variants?.[idx]?.images || [];
+        }
+        
+        // Auto-populate product-level mainImage and galleryImages from first variant if not already present
+        if (idx === 0 && Array.isArray(v.images) && v.images.length > 0 && !productData.mainImage) {
+          productData.mainImage = v.images[0];
+          if (v.images.length > 1 && (!productData.galleryImages || productData.galleryImages.length === 0)) {
+            productData.galleryImages = v.images.slice(1);
+          }
+        }
+        
+        return v;
+      });
+    }
+
     if (typeof productData.tags === "string" && productData.tags.startsWith("[")) {
       try {
         productData.tags = JSON.parse(productData.tags);
@@ -1011,28 +1070,6 @@ export const updateProduct = async (req, res) => {
       } catch (e) {
         // Not JSON
       }
-    }
-
-    // Admin bypasses sellerId check
-    const query = role === "admin" ? { _id: id } : role === "warehouse" ? { _id: id, warehouseId: sellerId } : { _id: id, sellerId };
-    const product = await Product.findOne(query);
-
-    if (!product) {
-      return handleResponse(res, 404, "Product not found or unauthorized");
-    }
-
-    if (galleryUrls.length > 0) {
-      let existingGallery = [];
-      if (productData.galleryImages !== undefined) {
-        existingGallery = Array.isArray(productData.galleryImages)
-          ? productData.galleryImages
-          : (typeof productData.galleryImages === "string"
-            ? productData.galleryImages.split(",")
-            : [productData.galleryImages]);
-      } else {
-        existingGallery = product.galleryImages || [];
-      }
-      productData.galleryImages = [...existingGallery, ...galleryUrls];
     }
 
     if (productData.name) {

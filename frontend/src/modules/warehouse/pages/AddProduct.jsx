@@ -205,6 +205,8 @@ const AddProduct = () => {
                  data.append(`variantImage_${vIndex}_${imgIndex}`, file);
               }
            });
+        } else if (filesArray instanceof File || (filesArray && typeof filesArray === 'object' && filesArray.name)) {
+           data.append(`variantImage_${vIndex}_0`, filesArray);
         }
       });
 

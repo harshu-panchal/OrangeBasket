@@ -199,6 +199,8 @@ const ProductManagement = () => {
                             data.append(`variantImage_${vIndex}_${imgIndex}`, file);
                         }
                     });
+                } else if (filesArray instanceof File || (filesArray && typeof filesArray === 'object' && filesArray.name)) {
+                    data.append(`variantImage_${vIndex}_0`, filesArray);
                 }
             });
 
@@ -530,8 +532,17 @@ const ProductManagement = () => {
                                     {/* Product Column */}
                                     <td className="px-6 py-5 align-middle">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="h-11 w-11 shrink-0 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 shadow-sm">
-                                                <img src={p.mainImage || p.images?.[0]} alt={p.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <div className="h-11 w-11 shrink-0 rounded-xl overflow-hidden bg-slate-100 ring-1 ring-slate-200 shadow-sm flex items-center justify-center">
+                                                {p.mainImage || p.variants?.[0]?.images?.[0] || p.images?.[0] ? (
+                                                    <img 
+                                                        src={p.mainImage || p.variants?.[0]?.images?.[0] || p.images?.[0]} 
+                                                        alt={p.name} 
+                                                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                    />
+                                                ) : (
+                                                    <HiOutlineCube className="h-5 w-5 text-slate-400" />
+                                                )}
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="truncate text-[13px] font-semibold leading-5 text-slate-900" title={p.name}>{p.name}</p>
@@ -920,8 +931,8 @@ const ProductManagement = () => {
                                                                 <div className="relative h-11 w-full max-w-[4rem] shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
                                                                     {variantImageFiles[i] ? (
                                                                         <img src={URL.createObjectURL(variantImageFiles[i])} alt="" className="h-full w-full object-cover" />
-                                                                    ) : v.image ? (
-                                                                        <img src={v.image} alt="" className="h-full w-full object-cover" />
+                                                                    ) : (v.images && v.images[0]) || v.image ? (
+                                                                        <img src={(v.images && v.images[0]) || v.image} alt="" className="h-full w-full object-cover" />
                                                                     ) : (
                                                                         <HiOutlinePhotograph className="h-4 w-4 text-slate-300" />
                                                                     )}

@@ -231,7 +231,7 @@ const ProductCard = React.memo(
           {/* Product Image */}
           <img
             ref={imageRef}
-            src={applyCloudinaryTransform(product.mainImage || product.image)}
+            src={applyCloudinaryTransform(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "")}
             alt={product.name}
             loading="lazy"
             className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
