@@ -5,3 +5,7 @@ logs/
 *.log
 
 coverage/
+
+# Server-Side Local Uploads
+public/uploads/*
+!public/uploads/.gitkeep

@@ -162,9 +162,28 @@ function createApp() {
       return compression.filter(req, res);
     },
   }));
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use(cors(corsOptions));
   app.use(globalApiRateLimiter);
+
+  // Static uploads directory for server-side local media storage
+  const uploadsDir = path.join(__dirname, "public", "uploads");
+  app.use(
+    "/uploads",
+    express.static(uploadsDir, {
+      maxAge: "30d",
+      immutable: true,
+      setHeaders: (res) => {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      },
+    }),
+  );
 
   // Razorpay webhook needs raw body for signature verification
   app.use(

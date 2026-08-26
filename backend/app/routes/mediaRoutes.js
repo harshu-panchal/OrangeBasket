@@ -132,6 +132,7 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
     const url = await uploadToCloudinary(req.file.buffer, folder, {
       mimeType,
       resourceType,
+      originalName: req.file.originalname,
     });
 
     return handleResponse(res, 200, "Media uploaded successfully", {

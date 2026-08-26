@@ -770,6 +770,7 @@ export const createProduct = async (req, res) => {
             const url = await uploadToCloudinary(file.buffer, "products/variants", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
             
             if (!variantImagesMap[vIndex]) {
@@ -780,11 +781,13 @@ export const createProduct = async (req, res) => {
             uploadedMainImage = await uploadToCloudinary(file.buffer, "products", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
           } else if (file.fieldname === "galleryImages" || file.fieldname.startsWith("galleryImage_")) {
             const url = await uploadToCloudinary(file.buffer, "products/gallery", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
             uploadedGalleryImages.push(url);
           }
@@ -983,6 +986,7 @@ export const updateProduct = async (req, res) => {
             const url = await uploadToCloudinary(file.buffer, "products/variants", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
             
             if (!variantImagesMap[vIndex]) {
@@ -993,11 +997,13 @@ export const updateProduct = async (req, res) => {
             uploadedMainImage = await uploadToCloudinary(file.buffer, "products", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
           } else if (file.fieldname === "galleryImages" || file.fieldname.startsWith("galleryImage_")) {
             const url = await uploadToCloudinary(file.buffer, "products/gallery", {
               mimeType: file.mimetype,
               resourceType: "image",
+              originalName: file.originalname,
             });
             uploadedGalleryImages.push(url);
           }

@@ -76,13 +76,30 @@ function isSignedUploadsEnabled() {
   return enabled === undefined || enabled === "true" || enabled === "1";
 }
 
+import fs from "fs/promises";
+import path from "path";
+
+function getBackendPublicUrl() {
+  const configuredUrl = process.env.BACKEND_PUBLIC_URL || process.env.API_BASE_URL;
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, "");
+  }
+  const port = process.env.PORT || 5000;
+  const host = process.env.HOSTNAME || "localhost";
+  return `http://${host}:${port}`;
+}
+
 function storageProvider() {
-  return String(process.env.STORAGE_PROVIDER || "cloudinary").trim().toLowerCase();
+  return String(process.env.STORAGE_PROVIDER || "local").trim().toLowerCase();
 }
 
 function validateStorageConfig() {
-  if (storageProvider() !== "cloudinary") {
-    const err = new Error("Unsupported storage provider configuration");
+  const provider = storageProvider();
+  if (provider === "local") {
+    return true;
+  }
+  if (provider !== "cloudinary") {
+    const err = new Error(`Unsupported storage provider configuration: ${provider}`);
     err.statusCode = 500;
     throw err;
   }
@@ -92,7 +109,7 @@ function validateStorageConfig() {
     !process.env.CLOUDINARY_API_SECRET
   ) {
     const err = new Error(
-      "Cloudinary configuration is missing. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET.",
+      "Cloudinary configuration is missing. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET or use STORAGE_PROVIDER=local.",
     );
     err.statusCode = 503;
     throw err;
@@ -100,11 +117,13 @@ function validateStorageConfig() {
 }
 
 function configureCloudinary() {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
+  if (storageProvider() === "cloudinary") {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
 }
 
 function normalizeExtension(rawExtension = "") {
@@ -489,7 +508,57 @@ async function deleteMedia(publicId, userId, userModel) {
   await media.softDelete();
 }
 
-async function uploadToCloudinary(fileBuffer, folder = "categories", options = {}) {
+async function saveMediaLocally(fileBuffer, folder = "categories", options = {}) {
+  const mimeType = String(options.mimeType || "").trim().toLowerCase();
+  let ext = path.extname(options.originalName || options.originalname || "").toLowerCase();
+  
+  if (!ext || ext === ".") {
+    if (mimeType.includes("jpeg") || mimeType.includes("jpg")) ext = ".jpg";
+    else if (mimeType.includes("png")) ext = ".png";
+    else if (mimeType.includes("webp")) ext = ".webp";
+    else if (mimeType.includes("gif")) ext = ".gif";
+    else if (mimeType.includes("mp4")) ext = ".mp4";
+    else if (mimeType.includes("webm")) ext = ".webm";
+    else if (mimeType.includes("pdf")) ext = ".pdf";
+    else ext = ".jpg";
+  }
+  
+  // Normalize folder to avoid path traversal
+  const cleanFolder = folder.replace(/[^a-zA-Z0-9_\-\/]/g, "").replace(/^\/+|\/+$/g, "");
+  const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+  
+  const targetDir = path.join(process.cwd(), "public", "uploads", cleanFolder);
+  await fs.mkdir(targetDir, { recursive: true });
+  
+  const targetFilePath = path.join(targetDir, uniqueName);
+  await fs.writeFile(targetFilePath, fileBuffer);
+  
+  const publicBase = getBackendPublicUrl();
+  return `${publicBase}/uploads/${cleanFolder}/${uniqueName}`;
+}
+
+async function deleteMediaLocally(mediaUrl) {
+  try {
+    if (!mediaUrl || typeof mediaUrl !== "string") return false;
+    const urlObj = new URL(mediaUrl, "http://localhost");
+    const pathname = urlObj.pathname;
+    if (!pathname.startsWith("/uploads/")) return false;
+    
+    const relativePath = pathname.replace(/^\/uploads\//, "");
+    const targetFilePath = path.join(process.cwd(), "public", "uploads", relativePath);
+    
+    const uploadsRoot = path.join(process.cwd(), "public", "uploads");
+    if (!targetFilePath.startsWith(uploadsRoot)) return false;
+    
+    await fs.unlink(targetFilePath);
+    return true;
+  } catch (err) {
+    logger.warn("Failed to delete local media file", { error: err.message, mediaUrl });
+    return false;
+  }
+}
+
+async function uploadToCloudinaryDirect(fileBuffer, folder = "categories", options = {}) {
   validateStorageConfig();
   configureCloudinary();
   const mimeType = String(options.mimeType || "").trim().toLowerCase();
@@ -518,6 +587,21 @@ async function uploadToCloudinary(fileBuffer, folder = "categories", options = {
     uploadStream.end(fileBuffer);
   });
 }
+
+/**
+ * Universal media upload function:
+ * Automatically uses Local Server Storage or Cloudinary based on STORAGE_PROVIDER.
+ */
+async function uploadMedia(fileBuffer, folder = "categories", options = {}) {
+  const provider = storageProvider();
+  if (provider === "local") {
+    return saveMediaLocally(fileBuffer, folder, options);
+  }
+  return uploadToCloudinaryDirect(fileBuffer, folder, options);
+}
+
+// Alias for seamless backward compatibility with existing controllers
+const uploadToCloudinary = uploadMedia;
 
 async function generateSignedUploadURL(options) {
   const {
@@ -551,8 +635,12 @@ export {
   confirmUpload,
   getMediaURL,
   deleteMedia,
+  deleteMediaLocally,
+  saveMediaLocally,
+  uploadMedia,
   uploadToCloudinary,
   isSignedUploadsEnabled,
+  getBackendPublicUrl,
 };
 
 export default {
@@ -561,6 +649,10 @@ export default {
   confirmUpload,
   getMediaURL,
   deleteMedia,
+  deleteMediaLocally,
+  saveMediaLocally,
+  uploadMedia,
   uploadToCloudinary,
   isSignedUploadsEnabled,
+  getBackendPublicUrl,
 };
