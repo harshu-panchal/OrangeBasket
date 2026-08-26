@@ -52,30 +52,30 @@ const BottomNav = () => {
 
     return (
         <div 
-            className="fixed left-1.5 right-1.5 z-[500] max-w-lg mx-auto md:hidden pointer-events-auto"
-            style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+            className="fixed bottom-0 left-0 right-0 z-[500] bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden pointer-events-auto"
+            style={{ paddingBottom: "calc(0.4rem + env(safe-area-inset-bottom, 0px))" }}
         >
-            <div className="bg-white/95 backdrop-blur-md rounded-full border border-slate-100 shadow-[0_12px_36px_rgba(15,23,42,0.12)] px-1.5 py-1 flex items-center justify-between relative">
+            <div className="max-w-lg mx-auto px-2 pt-1.5 pb-1 flex items-center justify-between relative">
 
-                {/* Center Elevated Floating Cart Button */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3.5 z-20">
+                {/* Center Elevated Cart Button */}
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-20">
                     <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => navigate(cartCount > 0 ? '/checkout' : '/orders')}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center border-[3px] border-white shadow-[0_12px_24px_rgba(255,85,0,0.55)] transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center border-[3.5px] border-white shadow-[0_10px_25px_rgba(255,85,0,0.5)] transition-all cursor-pointer hover:scale-105 active:scale-95"
                         title="View Cart"
                     >
-                        <ShoppingCart size={18} className="text-white" strokeWidth={2.3} />
+                        <ShoppingCart size={19} className="text-white" strokeWidth={2.3} />
                     </motion.button>
                     {cartCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[9px] w-4.5 h-4.5 rounded-full border border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
                             {cartCount > 99 ? '99+' : cartCount}
                         </div>
                     )}
                 </div>
 
                 {/* 5 Icons */}
-                <div className="flex items-center justify-between w-full px-2">
+                <div className="flex items-center justify-between w-full">
                     {[...leftNavItems, ...rightNavItems].map((item) => {
                         const isActive = isRouteActive(item.path, location.pathname);
 
@@ -84,24 +84,27 @@ const BottomNav = () => {
                                 key={item.path}
                                 to={item.path}
                                 className={cn(
-                                    "flex flex-col items-center justify-center gap-1 px-2 py-1 rounded-xl transition-all duration-300 flex-1 min-w-0",
+                                    "flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-200 flex-1 min-w-0",
                                     isActive
-                                        ? "bg-[#fff0e6] text-[#ff5500] font-extrabold shadow-2xs"
+                                        ? "text-[#ff5500] font-extrabold"
                                         : "text-slate-500 hover:text-slate-700 font-medium"
                                 )}
                             >
                                 <motion.div
-                                    animate={{ scale: isActive ? 1.25 : 1 }}
+                                    animate={{ scale: isActive ? 1.15 : 1, y: isActive ? -1 : 0 }}
                                     transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                                    className="flex items-center justify-center"
+                                    className={cn(
+                                        "flex items-center justify-center p-1 rounded-xl transition-colors",
+                                        isActive ? "bg-[#fff0e6]" : ""
+                                    )}
                                 >
                                     <item.icon
-                                        size={17}
+                                        size={18}
                                         strokeWidth={isActive ? 2.5 : 2}
                                         className={cn("transition-colors shrink-0", isActive ? "text-[#ff5500]" : "text-slate-500")}
                                     />
                                 </motion.div>
-                                <span className={cn("text-[10.5px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-extrabold mt-1" : "text-slate-600 font-semibold")}>
+                                <span className={cn("text-[10px] whitespace-nowrap leading-none", isActive ? "text-[#ff5500] font-black" : "text-slate-500 font-medium")}>
                                     {item.label}
                                 </span>
                             </Link>

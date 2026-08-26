@@ -211,6 +211,22 @@ async function connectMongoDB(maxRetries = 5) {
         );
       }
       
+      // If SRV lookup failed, cycle DNS servers
+      if (error?.message?.includes('querySrv')) {
+        try {
+          const dnsModule = await import('node:dns');
+          if (attempt === 1) {
+            dnsModule.default.setServers(['1.1.1.1', '1.0.0.1']);
+          } else if (attempt === 2) {
+            dnsModule.default.setServers(['8.8.8.8', '8.8.4.4']);
+          } else if (attempt === 3) {
+            dnsModule.default.setServers(['9.9.9.9', '149.112.112.112']);
+          }
+        } catch {
+          // ignore dns change errors
+        }
+      }
+
       const delay = Math.min(1000 * attempt, 5000);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
