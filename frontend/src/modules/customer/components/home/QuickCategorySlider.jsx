@@ -32,7 +32,7 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
         <div
           ref={scrollRef}
           className="relative z-10 flex items-start gap-4 md:gap-5 overflow-x-auto no-scrollbar px-4 pb-3 pt-2 snap-x scroll-smooth">
-          {categories.map((cat) => {
+          {categories.map((cat, index) => {
             return (
               <div
                 key={cat.id}
@@ -44,7 +44,8 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
                   <img
                     src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_300,dpr_auto")}
                     alt={cat.name}
-                    loading="lazy"
+                    loading={index < 5 ? "eager" : "lazy"}
+                    fetchPriority={index < 5 ? "high" : "auto"}
                     className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
                   />
                 </div>

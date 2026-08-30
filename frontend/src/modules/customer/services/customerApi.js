@@ -138,6 +138,9 @@ export const customerApi = {
   // Bestsellers Config
   getBestsellerConfig: (headerId) => getWithDedupe(`/bestsellers/customer/${headerId}`),
 
+  // Festival Deals
+  getFestivalDeals: () => getWithDedupe("/festival-deals"),
+
   // Coupons
   validateCoupon: (data) => axiosInstance.post("/coupons/validate", data),
   getActiveCoupons: () => getWithDedupe("/coupons", { status: "active" }),

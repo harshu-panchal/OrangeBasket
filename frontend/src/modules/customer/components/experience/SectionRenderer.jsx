@@ -139,9 +139,6 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                   <h3 className="text-base font-black text-[#1A1A1A]">
                     {heading}
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {items.length} banners
-                  </span>
                 </div>
               )}
               <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-4 px-[12vw] sm:px-[15vw] md:px-8 lg:px-[50px] pb-4 no-scrollbar snap-x snap-mandatory">

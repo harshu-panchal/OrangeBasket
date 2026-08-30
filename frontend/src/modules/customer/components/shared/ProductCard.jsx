@@ -13,10 +13,10 @@ import ParticleBurst from "./ParticleBurst";
 import { useVariantSelection } from "../../context/VariantSelectionContext";
 
 /**
- * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string }} props
+ * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string, priority?: boolean }} props
  */
 const ProductCard = React.memo(
-  ({ product, badge, className, compact = false, neutralBg = false, layout = "grid" }) => {
+  ({ product, badge, className, compact = false, neutralBg = false, layout = "grid", priority = false }) => {
     const { toggleWishlist: toggleWishlistGlobal, isInWishlist } =
       useWishlist();
     const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
@@ -233,7 +233,8 @@ const ProductCard = React.memo(
             ref={imageRef}
             src={applyCloudinaryTransform(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "")}
             alt={product.name}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
           />
         </div>
@@ -247,7 +248,7 @@ const ProductCard = React.memo(
             </h4>
             <div className="flex items-center gap-1.5 mt-0.5">
               <p className="text-[11px] font-semibold text-slate-400">
-                {product.weight || "1 unit"}
+                {defaultVariant?.name || product.weight || "1 unit"}
               </p>
               {Array.isArray(product?.variants) && product.variants.length > 1 && (
                 <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">
@@ -268,9 +269,9 @@ const ProductCard = React.memo(
           </div>
 
           {/* Bottom Price Row & Plus/Quantity Selector */}
-          <div className="flex items-center justify-between gap-1.5 mt-1.5 pt-0.5">
-            <div className="flex flex-col min-w-0 flex-1 text-left justify-center">
-              <span className="font-black text-slate-900 text-sm sm:text-[15px] tracking-tight leading-none">
+          <div className="flex flex-wrap items-end justify-between gap-x-1 gap-y-1.5 mt-1.5 pt-0.5">
+            <div className="flex flex-col text-left justify-center shrink-0">
+              <span className="font-black text-slate-900 text-[13px] sm:text-[15px] tracking-tight leading-none">
                 ₹{product.price}
               </span>
               {product.originalPrice > product.price && (
@@ -281,7 +282,7 @@ const ProductCard = React.memo(
             </div>
 
             {/* ADD / Quantity Selector Button */}
-            <div className="shrink-0 ml-2">
+            <div className="shrink-0 ml-auto">
               {quantity > 0 ? (
                 <div 
                   className="h-8 min-w-[68px] flex items-center justify-between rounded-sm bg-[#FF8200] text-white shadow-sm"

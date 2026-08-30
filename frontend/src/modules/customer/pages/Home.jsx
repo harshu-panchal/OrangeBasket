@@ -45,6 +45,7 @@ import OfferSections from "../components/home/OfferSections";
 import BestsellersSection from "../components/home/BestsellersSection";
 import MonthlyBasketSection from "../components/home/MonthlyBasketSection";
 import CategoryShowcase from "../components/home/CategoryShowcase";
+import FestivalDealsSection from "../components/home/FestivalDealsSection";
 
 const DEFAULT_CATEGORY_THEME = {
   gradient: "linear-gradient(to bottom, var(--primary), var(--brand-400))",
@@ -563,6 +564,10 @@ const Home = () => {
           );
         })()}
 
+        <div className="mt-4 md:mt-6">
+          <FestivalDealsSection />
+        </div>
+
         <div className="w-full z-[60] bg-transparent pt-1 pb-2 mb-2">
           <div className="relative mt-2 md:mt-8 z-30">
             <QuickCategorySlider
@@ -638,9 +643,9 @@ const Home = () => {
                       </h4>
                     </div>
                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
-                      {categoryProducts.slice(0, 10).map((product) => (
+                      {categoryProducts.slice(0, 10).map((product, index) => (
                         <div key={product.id || product._id} className="min-w-[140px] max-w-[140px] snap-start">
-                          <ProductCard product={product} compact={true} />
+                          <ProductCard product={product} compact={true} priority={index < 4} />
                         </div>
                       ))}
                     </div>
@@ -650,15 +655,23 @@ const Home = () => {
             </div>
           </div>
         )}
+        
         <LowestPriceSection products={displayProducts} onSeeAll={() => navigate("/category/all")} />
         <MonthlyBasketSection />
         <CategoryShowcase categoryMap={displayCategoryMap} subcategoryMap={displaySubcategoryMap} />
+        
+        {sectionsForRenderer.filter(s => s.displayType === "multiple_banners").length > 0 && (
+          <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-2 md:py-4">
+            <SectionRenderer sections={sectionsForRenderer.filter(s => s.displayType === "multiple_banners")} productsById={productsById} categoriesById={displayCategoryMap} subcategoriesById={displaySubcategoryMap} />
+          </div>
+        )}
+
         <OfferSections sections={displayOfferSections} noServiceData={noServiceData} />
         <BestsellersSection config={bestsellerConfig} categoryMap={displayCategoryMap} subcategoryMap={displaySubcategoryMap} />
 
-        {sectionsForRenderer.length > 0 && (
+        {sectionsForRenderer.filter(s => s.displayType !== "multiple_banners").length > 0 && (
           <div className="container mx-auto px-4 md:px-8 lg:px-[50px] py-4 md:py-8">
-            <SectionRenderer sections={sectionsForRenderer} productsById={productsById} categoriesById={displayCategoryMap} subcategoriesById={displaySubcategoryMap} />
+            <SectionRenderer sections={sectionsForRenderer.filter(s => s.displayType !== "multiple_banners")} productsById={productsById} categoriesById={displayCategoryMap} subcategoriesById={displaySubcategoryMap} />
           </div>
         )}
       </>

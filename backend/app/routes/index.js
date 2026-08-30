@@ -28,6 +28,7 @@ import authOtpRoute from "../modules/otp/otp.routes.js";
 import employeeRoute from "./employeeRoutes.js";
 import translationRoute from "./translationRoutes.js";
 import legalPageRoute from "./legalPageRoutes.js";
+import festivalDealsRoute from "./festivalDealsRoutes.js";
 
 import express from "express";
 
@@ -81,6 +82,7 @@ const setupRoutes = (app) => {
     router.use("/employees", employeeRoute);
     router.use("/translate", translationRoute);
     router.use("/legal", legalPageRoute);
+    router.use("/festival-deals", festivalDealsRoute);
 
     app.use("/api", router);
 }

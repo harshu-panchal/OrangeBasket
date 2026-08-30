@@ -365,9 +365,9 @@ const MainLocationHeader = ({
             borderBottomLeftRadius: headerRoundness,
             borderBottomRightRadius: headerRoundness,
             opacity: bgOpacity,
-            backgroundColor: "#ffffff",
+            background: "linear-gradient(to bottom, color-mix(in srgb, var(--primary) 8%, white) 0%, white 60%, white 100%)",
           }}
-          className="px-4 overflow-visible transform-gpu will-change-transform bg-white border-b border-slate-100/60 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
+          className="px-4 overflow-visible transform-gpu will-change-transform border-b border-slate-100/60 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
           {/* Subtle Glow Overlay */}
           <div className="absolute inset-0 bg-white/8 pointer-events-none" />
 
@@ -431,8 +431,8 @@ const MainLocationHeader = ({
                 onClick={handleSearchClick}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                className="bg-slate-50/80 rounded-full px-4 h-11 border border-slate-200/50 flex items-center transition-all duration-200 focus-within:ring-2 focus-within:ring-brand-400/60 focus-within:bg-white cursor-pointer shadow-3xs hover:shadow-2xs">
-                <SearchIcon sx={{ color: "#64748b", fontSize: 20 }} />
+                className="bg-white rounded-full px-4 h-11 border border-[#FF8200]/70 shadow-[0_0_10px_rgba(255,130,0,0.2)] flex items-center transition-all duration-200 focus-within:ring-2 focus-within:ring-[#FF8200]/40 cursor-pointer hover:shadow-[0_0_14px_rgba(255,130,0,0.3)]">
+                <SearchIcon sx={{ color: "#FF8200", fontSize: 20 }} />
                 <input
                   type="text"
                   placeholder={searchPlaceholder || "Search Products..."}
@@ -642,9 +642,9 @@ const MainLocationHeader = ({
             {/* Bottom row: Unified Search Bar with Mic and Scanner SVG */}
             <div
               onClick={handleSearchClick}
-              className="w-full bg-white border border-slate-100 rounded-full px-4 h-9 flex items-center shadow-3xs cursor-pointer hover:border-slate-200 transition-all"
+              className="w-full bg-white border border-[#FF8200]/70 rounded-full px-4 h-10 flex items-center shadow-[0_0_10px_rgba(255,130,0,0.2)] cursor-pointer hover:shadow-[0_0_14px_rgba(255,130,0,0.3)] transition-all"
             >
-              <SearchIcon sx={{ color: "#78909c", fontSize: 20 }} className="shrink-0" />
+              <SearchIcon sx={{ color: "#FF8200", fontSize: 20 }} className="shrink-0" />
               <input
                 type="text"
                 placeholder='Search "Atta, Rice, Oil, Maggi..."'

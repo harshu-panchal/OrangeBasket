@@ -99,6 +99,7 @@ const MonthlyBasketBanners = React.lazy(() => import("../pages/MonthlyBasketBann
 const MonthlyBasketApprovals = React.lazy(() => import("../pages/MonthlyBasketApprovals"));
 const EditMonthlyKit = React.lazy(() => import("../pages/EditMonthlyKit"));
 const BestsellerManagement = React.lazy(() => import("../pages/BestsellerManagement"));
+const FestivalDealsAdmin = React.lazy(() => import("../pages/FestivalDealsAdmin"));
 
 const SOSAlerts = React.lazy(() => import("../pages/SOSAlerts"));
 
@@ -218,6 +219,7 @@ const navItems = [
     color: "purple",
     children: [
       { label: "Bestsellers", path: "/admin/content/bestsellers" },
+      { label: "Festival Deals", path: "/admin/content/festival-deals" },
     ],
   },
   {
@@ -299,6 +301,7 @@ const AdminRoutes = () => {
         <Route path="/monthly-baskets/approvals" element={<MonthlyBasketApprovals />} />
         <Route path="/monthly-baskets/edit/:id" element={<EditMonthlyKit />} />
         <Route path="content/bestsellers" element={<BestsellerManagement />} />
+        <Route path="content/festival-deals" element={<FestivalDealsAdmin />} />
         
         <Route path="/experience-studio" element={<ContentManager />} />
         <Route path="/hero-categories" element={<HeroCategoriesPerPage />} />
