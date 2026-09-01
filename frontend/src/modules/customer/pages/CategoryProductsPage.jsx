@@ -181,7 +181,7 @@ const CategoryProductsPage = () => {
                                         className={cn(
                                             "flex items-center px-5 py-2 rounded-xl whitespace-nowrap font-bold text-sm transition-all duration-200",
                                             selectedSubCategory === cat.id
-                                                ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]"
+                                                ? "bg-slate-800 text-white shadow-md shadow-slate-200 scale-[1.02]"
                                                 : "bg-gray-100/80 text-gray-600 hover:bg-gray-200"
                                         )}
                                     >
@@ -191,9 +191,9 @@ const CategoryProductsPage = () => {
                             </div>
 
                     {/* Products Grid */}
-                    <div className="px-3 pt-2 w-full">
+                    <div className="px-3 pt-4 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {filteredProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} layout="list" />
+                            <ProductCard key={product.id} product={product} layout="grid" />
                         ))}
                     </div>
                 </div>
