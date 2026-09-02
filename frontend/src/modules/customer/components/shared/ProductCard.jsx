@@ -15,8 +15,7 @@ import { useVariantSelection } from "../../context/VariantSelectionContext";
 /**
  * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string, priority?: boolean }} props
  */
-const ProductCard = React.memo(
-  ({ product, badge, className, compact = false, neutralBg = false, layout = "grid", priority = false }) => {
+const ProductCard = ({ product, badge, className, compact = false, neutralBg = false, layout = "grid", priority = false }) => {
     const { toggleWishlist: toggleWishlistGlobal, isInWishlist } =
       useWishlist();
     const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
@@ -318,7 +317,6 @@ const ProductCard = React.memo(
         </div>
       </div>
     );
-  }
-);
+  };
 
-export default ProductCard;
+export default React.memo(ProductCard);
