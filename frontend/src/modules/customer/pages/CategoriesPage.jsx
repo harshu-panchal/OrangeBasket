@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search, ChevronRight, ChevronDown, ShoppingBasket, Leaf, Milk, Wheat, CookingPot, Cookie, CupSoda, UtensilsCrossed, Droplets, SprayCan, Baby, Snowflake, Sparkles, Dog, Activity, Home, Shirt, Luggage, Gift, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, Search, ChevronRight, ChevronDown, ShoppingBasket, Leaf, Milk, Wheat, CookingPot, Cookie, CupSoda, UtensilsCrossed, Droplets, SprayCan, Baby, Snowflake, Sparkles, Dog, Activity, Home, Shirt, Luggage, Gift, LayoutGrid } from 'lucide-react';
 import { customerApi } from '../services/customerApi';
 import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
 import { useSettings } from '@core/context/SettingsContext';
@@ -211,15 +212,27 @@ const CategoriesPage = () => {
                 <div className="flex flex-col items-center">
                     <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">All Categories</h1>
                     <span className="text-[11px] text-gray-500 font-medium">Find everything you need</span>
+            <div className="sticky top-0 z-30 bg-white px-5 py-3 flex items-center justify-between border-b border-gray-100">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="p-1 -ml-1 hover:bg-slate-50 rounded-full transition-all"
+                >
+                    <ChevronLeft size={24} className="text-gray-900" />
+                </button>
+                <div className="flex flex-col items-center">
+                    <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">All Categories</h1>
+                    <span className="text-[11px] text-gray-500 font-medium">Find everything you need</span>
                 </div>
                 <button
                     onClick={() => navigate('/search')}
+                    className="p-1.5 -mr-1 hover:bg-slate-50 rounded-full transition-all"
                     className="p-1.5 -mr-1 hover:bg-slate-50 rounded-full transition-all"
                 >
                     <Search size={22} className="text-gray-900" strokeWidth={2.5} />
                 </button>
             </div>
 
+            <div className="max-w-[600px] mx-auto px-2 pt-4">
             <div className="max-w-[600px] mx-auto px-2 pt-4">
                 {/* Promotional Banner - Hidden on Desktop (md:hidden), Visible only on Mobile */}
                 {banner?.isVisible && (banner?.image || (banner?.banners && banner.banners.length > 0)) && (
@@ -230,6 +243,7 @@ const CategoriesPage = () => {
                 )}
 
                 {/* Categories List */}
+                <div className="mt-2">
                 <div className="mt-2">
                     {isLoading && (
                         <div className="space-y-4 py-4">
@@ -262,8 +276,15 @@ const CategoriesPage = () => {
                                 const theme = getCategoryTheme(index);
                                 const IconComponent = theme.icon;
                                 return (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 pb-8">
+                            {categories.map((category, index) => {
+                                const theme = getCategoryTheme(index);
+                                const IconComponent = theme.icon;
+                                return (
                                     <Link
                                         to={`/category/${category.id}`}
+                                        key={category.id}
+                                        className={`flex flex-col items-center p-2 rounded-[40px] border ${theme.border} ${theme.bg} shadow-sm transition-transform active:scale-95 h-full`}
                                         key={category.id}
                                         className={`flex flex-col items-center p-2 rounded-[40px] border ${theme.border} ${theme.bg} shadow-sm transition-transform active:scale-95 h-full`}
                                     >
@@ -293,6 +314,8 @@ const CategoriesPage = () => {
                                             <ChevronDown size={14} className={theme.arrowColor} strokeWidth={3} />
                                         </div>
                                     </Link>
+                                );
+                            })}
                                 );
                             })}
                         </div>
