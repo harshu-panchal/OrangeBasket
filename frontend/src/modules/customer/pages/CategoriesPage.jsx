@@ -5,6 +5,89 @@ import { customerApi } from '../services/customerApi';
 import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
 import { useSettings } from '@core/context/SettingsContext';
 
+const CategoriesBannerCarousel = ({ banners, fallbackImage }) => {
+    const scrollContainerRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!banners || banners.length <= 1) return;
+
+        const interval = setInterval(() => {
+            if (scrollContainerRef.current) {
+                const container = scrollContainerRef.current;
+                const scrollLeft = container.scrollLeft;
+                const clientWidth = container.clientWidth;
+                const scrollWidth = container.scrollWidth;
+
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    // Reach end, reset to 0
+                    container.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    // Scroll to next
+                    container.scrollBy({ left: clientWidth, behavior: 'smooth' });
+                }
+            }
+        }, 3500);
+
+        return () => clearInterval(interval);
+    }, [banners]);
+
+    const activeBanners = banners && banners.length > 0 
+        ? banners 
+        : fallbackImage ? [{ image: fallbackImage, buttonLink: '/' }] : [];
+
+    if (activeBanners.length === 0) return null;
+
+    return (
+        <div className="block md:hidden w-full overflow-hidden rounded-2xl relative group">
+            <div 
+                ref={scrollContainerRef}
+                className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar smooth-scroll w-full"
+            >
+                {activeBanners.map((b, i) => (
+                    <div 
+                        key={i} 
+                        className="flex-shrink-0 w-full snap-start"
+                        onClick={() => {
+                            if (b.buttonLink && b.buttonLink !== '/') {
+                                // Redirect or navigate logic if necessary.
+                                // For now, we will just use Link or handle it inline.
+                                if (b.buttonLink.startsWith('http')) {
+                                    window.location.href = b.buttonLink;
+                                } else {
+                                    // Use React Router navigate if needed.
+                                }
+                            }
+                        }}
+                    >
+                        {b.buttonLink && b.buttonLink !== '/' ? (
+                            <Link to={b.buttonLink} className="block w-full cursor-pointer">
+                                <img
+                                    src={b.image}
+                                    alt={b.title || "Promotional Banner"}
+                                    className="w-full h-auto object-contain block"
+                                />
+                            </Link>
+                        ) : (
+                            <img
+                                src={b.image}
+                                alt={b.title || "Promotional Banner"}
+                                className="w-full h-auto object-contain block"
+                            />
+                        )}
+                    </div>
+                ))}
+            </div>
+            {activeBanners.length > 1 && (
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                    {activeBanners.map((_, i) => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50 backdrop-blur-sm shadow-sm" />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const CATEGORY_THEMES = [
     { bg: 'bg-orange-50/70', border: 'border-orange-100', iconBg: 'bg-orange-500', iconColor: 'text-white', arrowColor: 'text-orange-500', icon: ShoppingBasket },
     { bg: 'bg-green-50/70', border: 'border-green-100', iconBg: 'bg-green-500', iconColor: 'text-white', arrowColor: 'text-green-500', icon: Leaf },
@@ -139,14 +222,11 @@ const CategoriesPage = () => {
 
             <div className="max-w-[600px] mx-auto px-2 pt-4">
                 {/* Promotional Banner - Hidden on Desktop (md:hidden), Visible only on Mobile */}
-                {banner?.isVisible && banner?.image && (
-                    <div className="block md:hidden w-full overflow-hidden rounded-2xl">
-                        <img
-                            src={banner.image}
-                            alt="Categories Banner"
-                            className="w-full h-auto object-contain block"
-                        />
-                    </div>
+                {banner?.isVisible && (banner?.image || (banner?.banners && banner.banners.length > 0)) && (
+                    <CategoriesBannerCarousel 
+                        banners={banner?.banners} 
+                        fallbackImage={banner?.image} 
+                    />
                 )}
 
                 {/* Categories List */}
@@ -196,7 +276,7 @@ const CategoriesPage = () => {
                                                 src={applyCloudinaryTransform(category.image)}
                                                 alt={category.name}
                                                 loading="lazy"
-                                                className="w-full h-full object-contain mix-blend-multiply"
+                                                className="w-full h-full object-contain mix-blend-multiply scale-[1.35]"
                                             />
                                         </div>
                                         

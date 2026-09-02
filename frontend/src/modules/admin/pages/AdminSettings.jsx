@@ -19,7 +19,13 @@ import {
     Linkedin,
     Youtube,
     Loader2,
-    X
+    X,
+    CloudRain,
+    Sun,
+    Snowflake,
+    Cloud,
+    CloudLightning,
+    Wind
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
@@ -89,6 +95,11 @@ const AdminSettings = () => {
             videoUrl: '',
             isVisible: false,
         },
+        weather: {
+            isEnabled: true,
+            condition: 'Rain',
+            icon: 'CloudRain',
+        },
     };
     const [settings, setSettings] = useState(defaultSettings);
 
@@ -111,6 +122,10 @@ const AdminSettings = () => {
                         homeVideoBanner: {
                             ...prev.homeVideoBanner,
                             ...(data.homeVideoBanner || {}),
+                        },
+                        weather: {
+                            ...prev.weather,
+                            ...(data.weather || {}),
                         },
                     }));
                 }
@@ -217,8 +232,9 @@ const AdminSettings = () => {
         }
     };
 
-    const [bannerUploading, setBannerUploading] = useState(false);
+    const [bannerUploadingIndex, setBannerUploadingIndex] = useState(null);
     const bannerInputRef = useRef(null);
+    const currentUploadIndexRef = useRef(null);
 
     const handleBannerChange = (field, value) => {
         setSettings(prev => ({
@@ -230,6 +246,56 @@ const AdminSettings = () => {
         }));
     };
 
+    const handleBannerItemChange = (index, field, value) => {
+        setSettings(prev => {
+            const currentBanners = prev.categoriesBanner?.banners || [];
+            const newBanners = [...currentBanners];
+            newBanners[index] = { ...newBanners[index], [field]: value };
+            return {
+                ...prev,
+                categoriesBanner: {
+                    ...(prev.categoriesBanner || {}),
+                    banners: newBanners
+                }
+            };
+        });
+    };
+
+    const addBanner = () => {
+        setSettings(prev => {
+            const currentBanners = prev.categoriesBanner?.banners || [];
+            return {
+                ...prev,
+                categoriesBanner: {
+                    ...(prev.categoriesBanner || {}),
+                    banners: [
+                        ...currentBanners,
+                        { image: '', badgeText: 'KIRANA STORE', title: '', buttonText: 'Shop Now', buttonLink: '/' }
+                    ]
+                }
+            };
+        });
+    };
+
+    const removeBanner = (index) => {
+        setSettings(prev => {
+            const currentBanners = prev.categoriesBanner?.banners || [];
+            const newBanners = currentBanners.filter((_, i) => i !== index);
+            return {
+                ...prev,
+                categoriesBanner: {
+                    ...(prev.categoriesBanner || {}),
+                    banners: newBanners
+                }
+            };
+        });
+    };
+
+    const triggerBannerUpload = (index) => {
+        currentUploadIndexRef.current = index;
+        bannerInputRef.current?.click();
+    };
+
     const handleBannerUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -237,21 +303,25 @@ const AdminSettings = () => {
             showToast('Please select an image file (PNG, JPG, etc.)', 'error');
             return;
         }
-        setBannerUploading(true);
+        const index = currentUploadIndexRef.current;
+        if (index === null || index === undefined) return;
+
+        setBannerUploadingIndex(index);
         try {
             const fd = new FormData();
             fd.append('image', file);
             const res = await adminApi.uploadSettingsImage(fd, 'categoriesBanner');
             const url = res.data?.result?.url || res.data?.url;
             if (url) {
-                handleBannerChange('image', url);
+                handleBannerItemChange(index, 'image', url);
                 showToast('Banner image uploaded. Click Save Changes to apply.', 'success');
             } else throw new Error('No URL returned');
         } catch (err) {
             console.error(err);
             showToast(err.response?.data?.message || 'Failed to upload banner image', 'error');
         } finally {
-            setBannerUploading(false);
+            setBannerUploadingIndex(null);
+            currentUploadIndexRef.current = null;
             e.target.value = '';
         }
     };
@@ -307,7 +377,18 @@ const AdminSettings = () => {
         { id: 'seo', label: 'SEO & Meta', icon: Search },
         { id: 'categoriesBanner', label: 'Categories Banner', icon: Smartphone },
         { id: 'homeVideoBanner', label: 'Video Banner', icon: Youtube },
+        { id: 'weather', label: 'Weather Widget', icon: CloudRain },
     ];
+
+    const handleWeatherChange = (field, value) => {
+        setSettings(prev => ({
+            ...prev,
+            weather: {
+                ...(prev.weather || {}),
+                [field]: value
+            }
+        }));
+    };
 
     return (
         <div className="ds-section-spacing animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -825,50 +906,79 @@ const AdminSettings = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-8">
-                                <div className="max-w-md mx-auto space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Banner Image</label>
-                                    <input
-                                        type="file"
-                                        ref={bannerInputRef}
-                                        onChange={handleBannerUpload}
-                                        className="hidden"
-                                        accept="image/*"
-                                    />
-                                    <div
-                                        onClick={() => bannerInputRef.current?.click()}
-                                        className={cn(
-                                            "border-2 border-dashed border-slate-200 rounded-3xl p-6 text-center cursor-pointer hover:border-brand-500 hover:bg-slate-50/50 transition-all relative flex flex-col items-center justify-center min-h-[200px]",
-                                            bannerUploading && "pointer-events-none opacity-60"
-                                        )}
-                                    >
-                                        {bannerUploading ? (
-                                            <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-                                        ) : settings.categoriesBanner?.image ? (
-                                            <div className="relative w-full h-[150px] rounded-xl overflow-hidden bg-slate-100">
-                                                <img
-                                                    src={settings.categoriesBanner.image}
-                                                    alt="Categories Banner"
-                                                    className="w-full h-full object-contain"
-                                                />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
-                                                    Change Image
+                            <div className="p-8 space-y-6">
+                                {/* Hidden Input for uploads */}
+                                <input
+                                    type="file"
+                                    ref={bannerInputRef}
+                                    onChange={handleBannerUpload}
+                                    className="hidden"
+                                    accept="image/*"
+                                />
+
+                                {(settings.categoriesBanner?.banners || []).map((banner, index) => (
+                                    <div key={index} className="p-4 border border-slate-200 rounded-2xl relative bg-slate-50/50">
+                                        <button 
+                                            onClick={() => removeBanner(index)}
+                                            className="absolute -top-3 -right-3 h-8 w-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 shadow-sm transition-colors z-10"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Banner Image {index + 1}</label>
+                                                <div
+                                                    onClick={() => triggerBannerUpload(index)}
+                                                    className={cn(
+                                                        "border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-brand-500 hover:bg-slate-50/50 transition-all relative flex flex-col items-center justify-center min-h-[150px]",
+                                                        bannerUploadingIndex === index && "pointer-events-none opacity-60"
+                                                    )}
+                                                >
+                                                    {bannerUploadingIndex === index ? (
+                                                        <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+                                                    ) : banner.image ? (
+                                                        <div className="relative w-full h-[120px] rounded-lg overflow-hidden bg-slate-100">
+                                                            <img
+                                                                src={banner.image}
+                                                                alt={`Banner ${index + 1}`}
+                                                                className="w-full h-full object-contain"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                                                Change Image
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            <Upload className="h-6 w-6 text-slate-400 mx-auto" />
+                                                            <p className="text-xs font-bold text-slate-500">Upload Banner</p>
+                                                            <p className="text-[10px] text-slate-400 font-semibold uppercase">600 x 250 px</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                <Upload className="h-8 w-8 text-slate-400 mx-auto" />
-                                                <p className="text-xs font-bold text-slate-500">Upload Banner Image</p>
-                                                <p className="text-[10px] text-slate-400 font-semibold uppercase">Recommended size: 600 x 250 pixels</p>
+                                            <div className="space-y-4 pt-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Link URL</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={banner.buttonLink} 
+                                                        onChange={(e) => handleBannerItemChange(index, 'buttonLink', e.target.value)}
+                                                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20"
+                                                        placeholder="/category/some-id or /"
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
-                                    {settings.categoriesBanner?.image && (
-                                        <p className="text-[10px] text-slate-400 font-semibold uppercase text-center">
-                                            Recommended size: 600 x 250 pixels
-                                        </p>
-                                    )}
-                                </div>
+                                ))}
+
+                                <button 
+                                    onClick={addBanner}
+                                    className="w-full py-4 border-2 border-dashed border-brand-200 rounded-2xl flex items-center justify-center gap-2 text-brand-600 font-bold hover:bg-brand-50 transition-colors"
+                                >
+                                    <Upload className="h-5 w-5" />
+                                    Add New Banner
+                                </button>
                             </div>
                         </Card>
                     )}
@@ -946,6 +1056,74 @@ const AdminSettings = () => {
                                             Video successfully uploaded
                                         </p>
                                     )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Weather Widget Settings */}
+                    {activeTab === 'weather' && (
+                        <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-xl overflow-hidden animate-in fade-in duration-300">
+                            <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                        Weather Widget
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-semibold mt-1">Configure the weather widget shown in the home page header.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-500">Enable Widget</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleWeatherChange('isEnabled', !settings.weather?.isEnabled)}
+                                        className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative flex items-center p-0.5",
+                                            settings.weather?.isEnabled ? "bg-emerald-500 justify-end" : "bg-slate-300 justify-start"
+                                        )}
+                                    >
+                                        <div className="w-5 h-5 bg-white rounded-full shadow-md" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-8">
+                                <div className="max-w-md mx-auto space-y-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weather Condition Text</label>
+                                        <input
+                                            type="text"
+                                            value={settings.weather?.condition || ''}
+                                            onChange={(e) => handleWeatherChange('condition', e.target.value)}
+                                            placeholder="e.g. Rain, Summer, Winter"
+                                            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Weather Icon</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {[
+                                                { id: 'CloudRain', icon: CloudRain, label: 'Rain' },
+                                                { id: 'Sun', icon: Sun, label: 'Sun' },
+                                                { id: 'Snowflake', icon: Snowflake, label: 'Snow' },
+                                                { id: 'Cloud', icon: Cloud, label: 'Cloud' },
+                                                { id: 'CloudLightning', icon: CloudLightning, label: 'Lightning' },
+                                                { id: 'Wind', icon: Wind, label: 'Wind' },
+                                            ].map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => handleWeatherChange('icon', item.id)}
+                                                    className={cn(
+                                                        "cursor-pointer flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
+                                                        settings.weather?.icon === item.id 
+                                                            ? "border-brand-500 bg-brand-50 text-brand-700"
+                                                            : "border-slate-100 bg-white text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                                                    )}
+                                                >
+                                                    <item.icon className="h-6 w-6 mb-2" />
+                                                    <span className="text-[10px] font-bold uppercase">{item.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </Card>

@@ -89,18 +89,18 @@ const FestivalDealsSection = () => {
           >
             {/* Card Heading */}
             <h3 
-              className="text-center font-bold text-[13px] leading-tight mb-1"
+              className="text-center font-bold text-[13px] leading-tight mb-1 relative z-10"
               style={{ color: card.textColor || '#B45309' }}
             >
               {card.title}
             </h3>
 
             {/* Image */}
-            <div className="h-24 flex items-center justify-center my-1.5">
+            <div className="h-[104px] flex items-center justify-center my-0.5 relative z-0">
               <img 
                 src={card.image} 
                 alt={card.title} 
-                className="max-h-full max-w-full object-contain drop-shadow-md"
+                className="w-full h-full object-contain drop-shadow-md scale-110"
               />
             </div>
 

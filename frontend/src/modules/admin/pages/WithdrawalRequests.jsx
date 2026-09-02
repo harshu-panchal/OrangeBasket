@@ -20,7 +20,8 @@ import {
     CheckCircle,
     FileText,
     AlertCircle,
-    RotateCw
+    RotateCw,
+    Warehouse
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,22 +38,26 @@ const WithdrawalRequests = () => {
     const [actionModal, setActionModal] = useState({ isOpen: false, type: null, request: null });
 
     const [sellerRequests, setSellerRequests] = useState([]);
+    const [warehouseRequests, setWarehouseRequests] = useState([]);
     const [deliveryRequests, setDeliveryRequests] = useState([]);
     const [sellerPage, setSellerPage] = useState(1);
+    const [warehousePage, setWarehousePage] = useState(1);
     const [deliveryPage, setDeliveryPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
     const [sellerTotal, setSellerTotal] = useState(0);
+    const [warehouseTotal, setWarehouseTotal] = useState(0);
     const [deliveryTotal, setDeliveryTotal] = useState(0);
 
-    const fetchData = async (sellerPageNum = 1, deliveryPageNum = 1) => {
+    const fetchData = async (sellerPageNum = 1, warehousePageNum = 1, deliveryPageNum = 1) => {
         try {
             setLoading(true);
             const commonParams = { page: 1, limit: pageSize };
             if (searchTerm.trim()) commonParams.search = searchTerm.trim();
             if (filterStatus !== 'all') commonParams.status = filterStatus;
 
-            const [sellerRes, deliveryRes] = await Promise.all([
+            const [sellerRes, warehouseRes, deliveryRes] = await Promise.all([
                 adminApi.getSellerWithdrawals({ ...commonParams, page: sellerPageNum }).catch(err => ({ data: { success: false, result: {} } })),
+                adminApi.getWarehouseWithdrawals({ ...commonParams, page: warehousePageNum }).catch(err => ({ data: { success: false, result: {} } })),
                 adminApi.getDeliveryWithdrawals({ ...commonParams, page: deliveryPageNum }).catch(err => ({ data: { success: false, result: {} } }))
             ]);
 
@@ -62,6 +67,13 @@ const WithdrawalRequests = () => {
                 setSellerRequests(items);
                 setSellerTotal(typeof payload.total === 'number' ? payload.total : items.length);
                 setSellerPage(typeof payload.page === 'number' ? payload.page : sellerPageNum);
+            }
+            if (warehouseRes.data.success) {
+                const payload = warehouseRes.data.result || {};
+                const items = Array.isArray(payload.items) ? payload.items : (warehouseRes.data.results || []);
+                setWarehouseRequests(items);
+                setWarehouseTotal(typeof payload.total === 'number' ? payload.total : items.length);
+                setWarehousePage(typeof payload.page === 'number' ? payload.page : warehousePageNum);
             }
             if (deliveryRes.data.success) {
                 const payload = deliveryRes.data.result || {};
@@ -80,23 +92,28 @@ const WithdrawalRequests = () => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchData(1, 1);
+            fetchData(1, 1, 1);
         }, 500);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pageSize, searchTerm, filterStatus]);
 
     const fetchSellerPage = (p) => {
-        fetchData(p, deliveryPage);
+        fetchData(p, warehousePage, deliveryPage);
         setSellerPage(p);
     };
+    const fetchWarehousePage = (p) => {
+        fetchData(sellerPage, p, deliveryPage);
+        setWarehousePage(p);
+    };
     const fetchDeliveryPage = (p) => {
-        fetchData(sellerPage, p);
+        fetchData(sellerPage, warehousePage, p);
         setDeliveryPage(p);
     };
 
     const stats = useMemo(() => {
         const sData = Array.isArray(sellerRequests) ? sellerRequests : [];
+        const wData = Array.isArray(warehouseRequests) ? warehouseRequests : [];
         const dData = Array.isArray(deliveryRequests) ? deliveryRequests : [];
 
         return {
@@ -105,24 +122,33 @@ const WithdrawalRequests = () => {
                 amount: Math.abs(sData.filter(r => r.status === 'Pending' || r.status === 'Processing').reduce((acc, r) => acc + (Number(r.amount) || 0), 0)),
                 processed: sData.filter(r => r.status === 'Settled').length
             },
+            warehouses: {
+                pending: wData.filter(r => r.status === 'Pending' || r.status === 'Processing').length,
+                amount: Math.abs(wData.filter(r => r.status === 'Pending' || r.status === 'Processing').reduce((acc, r) => acc + (Number(r.amount) || 0), 0)),
+                processed: wData.filter(r => r.status === 'Settled').length
+            },
             delivery: {
                 pending: dData.filter(r => r.status === 'Pending' || r.status === 'Processing').length,
                 amount: Math.abs(dData.filter(r => r.status === 'Pending' || r.status === 'Processing').reduce((acc, r) => acc + (Number(r.amount) || 0), 0)),
                 processed: dData.filter(r => r.status === 'Settled').length
             }
         };
-    }, [sellerRequests, deliveryRequests]);
+    }, [sellerRequests, warehouseRequests, deliveryRequests]);
 
     const currentData = useMemo(() => {
-        const data = activeTab === 'sellers' ? (sellerRequests || []) : (deliveryRequests || []);
+        let data = [];
+        if (activeTab === 'sellers') data = sellerRequests || [];
+        else if (activeTab === 'warehouses') data = warehouseRequests || [];
+        else data = deliveryRequests || [];
+        
         return data.filter(r => {
-            const name = r.user?.shopName || r.user?.name || "";
+            const name = r.user?.warehouseName || r.user?.shopName || r.user?.name || "";
             const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 r._id?.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesStatus = filterStatus === 'all' || r.status?.toLowerCase() === filterStatus.toLowerCase();
             return matchesSearch && matchesStatus;
         });
-    }, [activeTab, sellerRequests, deliveryRequests, searchTerm, filterStatus]);
+    }, [activeTab, sellerRequests, warehouseRequests, deliveryRequests, searchTerm, filterStatus]);
 
     const handleAction = (type, request) => {
         setActionModal({ isOpen: true, type, request });
@@ -135,7 +161,7 @@ const WithdrawalRequests = () => {
             const res = await adminApi.updateWithdrawalStatus(actionModal.request._id, { status });
             if (res.data.success) {
                 toast.success(`Request ${status} successfully`);
-                fetchData(sellerPage, deliveryPage);
+                fetchData(sellerPage, warehousePage, deliveryPage);
                 setActionModal({ isOpen: false, type: null, request: null });
             }
         } catch (error) {
@@ -158,7 +184,7 @@ const WithdrawalRequests = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => fetchData(sellerPage, deliveryPage)}
+                        onClick={() => fetchData(sellerPage, warehousePage, deliveryPage)}
                         className="p-2.5 bg-white ring-1 ring-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
                     >
                         <RotateCw className={cn("h-4 w-4", loading && "animate-spin")} />
@@ -173,9 +199,9 @@ const WithdrawalRequests = () => {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: 'Total Pending', value: stats.sellers.pending + stats.delivery.pending, icon: Clock, color: 'amber', bg: 'bg-amber-50', iconColor: 'text-amber-500' },
-                    { label: 'Pending Volume', value: `₹${(stats.sellers.amount + stats.delivery.amount).toLocaleString()}`, icon: Banknote, color: 'blue', bg: 'bg-brand-50', iconColor: 'text-brand-500' },
-                    { label: 'Settled Today', value: stats.sellers.processed + stats.delivery.processed, icon: CheckCircle2, color: 'emerald', bg: 'bg-brand-50', iconColor: 'text-brand-500' },
+                    { label: 'Total Pending', value: stats.sellers.pending + stats.warehouses.pending + stats.delivery.pending, icon: Clock, color: 'amber', bg: 'bg-amber-50', iconColor: 'text-amber-500' },
+                    { label: 'Pending Volume', value: `₹${(stats.sellers.amount + stats.warehouses.amount + stats.delivery.amount).toLocaleString()}`, icon: Banknote, color: 'blue', bg: 'bg-brand-50', iconColor: 'text-brand-500' },
+                    { label: 'Settled Today', value: stats.sellers.processed + stats.warehouses.processed + stats.delivery.processed, icon: CheckCircle2, color: 'emerald', bg: 'bg-brand-50', iconColor: 'text-brand-500' },
                 ].map((stat, i) => (
                     <Card key={i} className="p-6 border-none shadow-sm ring-1 ring-slate-100 bg-white">
                         <div className="flex items-center gap-4">
@@ -203,11 +229,25 @@ const WithdrawalRequests = () => {
                             )}
                         >
                             <Building2 className="h-4 w-4" />
-                            SELLERS & WAREHOUSES
+                            SELLERS
                             <span className={cn(
                                 "ml-1 px-2 py-0.5 rounded-full text-[10px]",
                                 activeTab === 'sellers' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-600"
                             )}>{sellerRequests.length}</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('warehouses')}
+                            className={cn(
+                                "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all",
+                                activeTab === 'warehouses' ? "bg-white text-slate-900 shadow-md" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            <Warehouse className="h-4 w-4" />
+                            WAREHOUSES
+                            <span className={cn(
+                                "ml-1 px-2 py-0.5 rounded-full text-[10px]",
+                                activeTab === 'warehouses' ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-600"
+                            )}>{warehouseRequests.length}</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('delivery')}
@@ -273,13 +313,13 @@ const WithdrawalRequests = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className={cn(
                                                     "h-12 w-12 rounded-2xl flex items-center justify-center shadow-inner",
-                                                    activeTab === 'sellers' ? "bg-brand-50 text-brand-600" : "bg-brand-50 text-brand-600"
+                                                    activeTab === 'sellers' ? "bg-brand-50 text-brand-600" : activeTab === 'warehouses' ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
                                                 )}>
-                                                    {activeTab === 'sellers' ? <Building2 className="h-6 w-6" /> : <Truck className="h-6 w-6" />}
+                                                    {activeTab === 'sellers' ? <Building2 className="h-6 w-6" /> : activeTab === 'warehouses' ? <Warehouse className="h-6 w-6" /> : <Truck className="h-6 w-6" />}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors cursor-pointer" onClick={() => setSelectedRequest(req)}>
-                                                        {req.user?.shopName || req.user?.name || "Unknown"}
+                                                        {req.user?.warehouseName || req.user?.shopName || req.user?.name || "Unknown"}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{req.user?.phone}</span>
@@ -348,14 +388,15 @@ const WithdrawalRequests = () => {
                     </div>
                     <div className="px-6 py-3 border-t border-slate-100">
                         <Pagination
-                            page={activeTab === 'sellers' ? sellerPage : deliveryPage}
-                            totalPages={Math.ceil((activeTab === 'sellers' ? sellerTotal : deliveryTotal) / pageSize) || 1}
-                            total={activeTab === 'sellers' ? sellerTotal : deliveryTotal}
+                            page={activeTab === 'sellers' ? sellerPage : activeTab === 'warehouses' ? warehousePage : deliveryPage}
+                            totalPages={Math.ceil((activeTab === 'sellers' ? sellerTotal : activeTab === 'warehouses' ? warehouseTotal : deliveryTotal) / pageSize) || 1}
+                            total={activeTab === 'sellers' ? sellerTotal : activeTab === 'warehouses' ? warehouseTotal : deliveryTotal}
                             pageSize={pageSize}
-                            onPageChange={activeTab === 'sellers' ? fetchSellerPage : fetchDeliveryPage}
+                            onPageChange={activeTab === 'sellers' ? fetchSellerPage : activeTab === 'warehouses' ? fetchWarehousePage : fetchDeliveryPage}
                             onPageSizeChange={(newSize) => {
                                 setPageSize(newSize);
                                 setSellerPage(1);
+                                setWarehousePage(1);
                                 setDeliveryPage(1);
                             }}
                             loading={loading}
@@ -376,12 +417,12 @@ const WithdrawalRequests = () => {
                         <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-xl border border-slate-100">
                             <div className={cn(
                                 "h-20 w-20 rounded-xl flex items-center justify-center shadow-xl",
-                                activeTab === 'sellers' ? "bg-black  text-primary-foreground" : "bg-black  text-primary-foreground"
+                                "bg-black text-primary-foreground"
                             )}>
-                                {activeTab === 'sellers' ? <Building2 className="h-10 w-10" /> : <Truck className="h-10 w-10" />}
+                                {activeTab === 'sellers' ? <Building2 className="h-10 w-10" /> : activeTab === 'warehouses' ? <Warehouse className="h-10 w-10" /> : <Truck className="h-10 w-10" />}
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedRequest.user?.shopName || selectedRequest.user?.name || "Unknown"}</h3>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedRequest.user?.warehouseName || selectedRequest.user?.shopName || selectedRequest.user?.name || "Unknown"}</h3>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">{selectedRequest._id}</p>
                                 <div className="flex items-center gap-2 mt-3">
                                     <Badge variant={selectedRequest.status === 'Pending' ? 'warning' : 'success'}>

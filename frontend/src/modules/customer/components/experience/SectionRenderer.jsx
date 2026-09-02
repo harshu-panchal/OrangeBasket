@@ -92,7 +92,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
 
           const handleBannerClick = (banner) => {
             if (!banner.linkType || banner.linkType === 'none') return;
-            
+
             if (banner.linkType === 'url' && banner.linkValue) {
               window.open(banner.linkValue, '_blank');
             } else if (banner.linkType === 'category' && banner.linkValue) {
@@ -103,7 +103,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                 try {
                   const urlObj = new URL(route);
                   route = urlObj.pathname + urlObj.search;
-                } catch(e) {}
+                } catch (e) { }
               }
               if (route.startsWith('/') || route.startsWith('?')) {
                 navigate(route);
@@ -116,7 +116,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                 try {
                   const urlObj = new URL(route);
                   route = urlObj.pathname + urlObj.search;
-                } catch(e) {}
+                } catch (e) { }
               }
               if (route.startsWith('/') || route.startsWith('?')) {
                 navigate(route);
@@ -135,17 +135,17 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
               className="-mx-4 md:-mx-8 lg:-mx-[50px] mt-6 mb-2"
             >
               {heading && (
-                <div className="flex items-center justify-between mb-3 px-4 md:px-8 lg:px-[50px]">
+                <div className="flex items-center justify-between mb-1 px-4 md:px-8 lg:px-[50px]">
                   <h3 className="text-base font-black text-[#1A1A1A]">
                     {heading}
                   </h3>
                 </div>
               )}
-              <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-4 px-[12vw] sm:px-[15vw] md:px-8 lg:px-[50px] pb-4 no-scrollbar snap-x snap-mandatory">
+              <div className="relative z-10 flex overflow-x-auto gap-3 md:gap-4 px-4 sm:px-6 md:px-8 lg:px-[50px] pb-4 no-scrollbar snap-x snap-mandatory">
                 {items.map((banner, idx) => (
                   <div
                     key={idx}
-                    className="shrink-0 w-[76vw] sm:w-[70vw] md:w-[30%] lg:w-[28%] snap-center md:snap-start"
+                    className="shrink-0 w-[85vw] sm:w-[75vw] md:w-[30%] lg:w-[28%] snap-center md:snap-start"
                   >
                     <div
                       onClick={() => handleBannerClick(banner)}
@@ -365,11 +365,11 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
             const hasMore = items.length < allProducts.length;
 
             return (
-            <div
-              key={section._id || sectionKey}
-              id={`section-${section._id}`}
-              className="-mx-4 md:-mx-8 lg:-mx-[50px] px-1 sm:px-2 md:px-3 mt-6 mb-2"
-            >
+              <div
+                key={section._id || sectionKey}
+                id={`section-${section._id}`}
+                className="-mx-4 md:-mx-8 lg:-mx-[50px] px-1 sm:px-2 md:px-3 mt-6 mb-2"
+              >
                 <div className="flex items-center justify-between mb-3 px-3 md:px-5">
                   {heading && (
                     <h3 className="text-base font-black text-[#1A1A1A]">
@@ -441,10 +441,10 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                   columns === 1
                     ? "grid-cols-1"
                     : columns === 2
-                    ? "grid-cols-2"
-                    : columns === 3
-                    ? "grid-cols-3"
-                    : "grid-cols-2"
+                      ? "grid-cols-2"
+                      : columns === 3
+                        ? "grid-cols-3"
+                        : "grid-cols-2"
                 )}
               >
                 {items.map((product) => (

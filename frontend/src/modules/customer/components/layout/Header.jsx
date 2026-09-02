@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, Heart, User, Menu, MapPin } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, MapPin, CloudRain, Sun, Snowflake, Cloud, CloudLightning, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { useLocation as useAppLocation } from "../../context/LocationContext";
 import { useSettings } from '@core/context/SettingsContext';
 import LocationDrawer from '../shared/LocationDrawer';
+const WeatherIconMap = {
+    CloudRain,
+    Sun,
+    Snowflake,
+    Cloud,
+    CloudLightning,
+    Wind
+};
 
 const Header = () => {
     const { settings } = useSettings();
@@ -69,6 +77,9 @@ const Header = () => {
         return () => clearTimeout(timeout);
     }, [typingState]);
 
+    const weatherEnabled = settings?.weather?.isEnabled !== false; // Default true
+    const ActiveWeatherIcon = settings?.weather?.icon ? WeatherIconMap[settings.weather.icon] : CloudRain;
+
     return (
         <header className="absolute top-4 md:top-8 left-0 right-0 z-[200] px-4">
             <div className="container mx-auto max-w-6xl">
@@ -106,6 +117,14 @@ const Header = () => {
                         <Link to="/" className="flex items-center gap-1">
                             <span className="text-2xl md:text-3xl font-black tracking-tight" style={{ color: settings?.primaryColor || 'var(--primary)' }}>{settings?.appName || 'App'}</span>
                         </Link>
+
+                        {/* Weather Widget */}
+                        {weatherEnabled && (
+                            <div className="hidden md:flex items-center gap-1.5 bg-blue-50/80 border border-blue-100/50 px-3 py-1.5 rounded-full text-blue-700 font-bold text-sm shadow-sm">
+                                {ActiveWeatherIcon && <ActiveWeatherIcon size={16} className="fill-current text-blue-500" />}
+                                <span>{settings?.weather?.condition || 'Rain'}</span>
+                            </div>
+                        )}
 
                         {/* Location Selector (Desktop ONLY) */}
                         <button

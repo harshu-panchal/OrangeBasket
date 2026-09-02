@@ -89,7 +89,7 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
     const showBottomNav = showBottomNavProp !== undefined ? showBottomNavProp : !hideBottomNavRoutes.includes(path);
     const showCart = showCartProp !== undefined ? showCartProp : (!hideCartRoutes.includes(path) && !path.startsWith('/orders'));
 
-    // Condition to hide the MobileFooterMessage ("India's last minute app") on specific pages
+    // Condition to hide the MobileFooterMessage ("Sab kuchh ek basket mein") on specific pages
     const hideFooterMessageRoutes = ['/profile', '/profile/edit'];
     const showFooterMessage = showBottomNav && !hideFooterMessageRoutes.includes(path) && !path.startsWith('/category');
 

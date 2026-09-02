@@ -221,6 +221,15 @@ const settingSchema = new mongoose.Schema(
                 type: Boolean,
                 default: true,
             },
+            banners: [
+                {
+                    image: { type: String, default: "" },
+                    badgeText: { type: String, default: "KIRANA STORE" },
+                    title: { type: String, default: "Everything you need, in one place" },
+                    buttonText: { type: String, default: "Shop Now" },
+                    buttonLink: { type: String, default: "/" },
+                }
+            ]
         },
         homeVideoBanner: {
             videoUrl: {
@@ -231,6 +240,20 @@ const settingSchema = new mongoose.Schema(
                 type: Boolean,
                 default: false,
             },
+        },
+        weather: {
+            isEnabled: {
+                type: Boolean,
+                default: true,
+            },
+            condition: {
+                type: String,
+                default: "Rain",
+            },
+            icon: {
+                type: String,
+                default: "CloudRain",
+            }
         },
     },
     {

@@ -16,6 +16,16 @@ import {
   buildSearchBarBackgroundColor,
   shiftHex,
 } from "../../utils/headerTheme";
+import { CloudRain, Sun, Snowflake, Cloud, CloudLightning, Wind } from 'lucide-react';
+
+const WeatherIconMap = {
+    CloudRain,
+    Sun,
+    Snowflake,
+    Cloud,
+    CloudLightning,
+    Wind
+};
 
 
 // MUI Icons
@@ -354,6 +364,9 @@ const MainLocationHeader = ({
     };
   }, [baseHeaderColor]);
 
+  const weatherEnabled = settings?.weather?.isEnabled !== false;
+  const ActiveWeatherIcon = settings?.weather?.icon ? WeatherIconMap[settings.weather.icon] : CloudRain;
+
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-[200]">
@@ -389,6 +402,14 @@ const MainLocationHeader = ({
                   />
                 </div>
               </div>
+
+              {/* Weather Widget (Desktop) */}
+              {weatherEnabled && (
+                <div className="flex items-center gap-1.5 bg-blue-50/80 border border-blue-100/50 px-3 py-1.5 rounded-full text-blue-700 font-bold text-sm shadow-sm">
+                    {ActiveWeatherIcon && <ActiveWeatherIcon size={16} className="fill-current text-blue-500" />}
+                    <span>{settings?.weather?.condition || 'Rain'}</span>
+                </div>
+              )}
 
               {/* Location Block (Desktop inline row) */}
               <div className="flex flex-col border-l border-black/10 pl-4 lg:pl-8 h-10 justify-center">
@@ -563,7 +584,15 @@ const MainLocationHeader = ({
                 />
                 <div className="flex flex-col justify-center text-left">
                   <span className="text-[18px] font-black text-[#FF8200] leading-none tracking-tight">Orange</span>
-                  <span className="text-[18px] font-black text-[#2E7D32] leading-none tracking-tight mt-[1px]">Basket</span>
+                  <div className="flex items-center gap-2 mt-[1px]">
+                    <span className="text-[18px] font-black text-[#2E7D32] leading-none tracking-tight">Basket</span>
+                    {weatherEnabled && (
+                      <div className="flex items-center gap-1 bg-blue-50/80 border border-blue-100/50 px-1.5 py-0.5 rounded-full shadow-3xs">
+                        {ActiveWeatherIcon && <ActiveWeatherIcon size={12} className="text-blue-500" />}
+                        <span className="text-[9px] font-bold text-blue-700 leading-none">{settings?.weather?.condition || 'Rain'}</span>
+                      </div>
+                    )}
+                  </div>
                   <span className="text-[11px] font-black text-[#5D7E68] tracking-wide mt-1 leading-none">
                     Fresh. Fast. Reliable.
                   </span>

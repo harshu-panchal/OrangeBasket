@@ -7,6 +7,7 @@ import {
   getDeliveryWithdrawalsData,
   getSellerTransactionsData,
   getSellerWithdrawalsData,
+  getWarehouseWithdrawalsData,
   settleDeliveryTransactionById,
   updateWithdrawalStatusById,
 } from "../../services/admin/walletAdminService.js";
@@ -51,6 +52,20 @@ export const getSellerWithdrawals = async (req, res) => {
 
     const data = await getSellerWithdrawalsData({ page, limit, skip });
     return handleResponse(res, 200, "Seller withdrawals fetched", data);
+  } catch (error) {
+    return handleResponse(res, 500, error.message);
+  }
+};
+
+export const getWarehouseWithdrawals = async (req, res) => {
+  try {
+    const { page, limit, skip } = getPagination(req, {
+      defaultLimit: 25,
+      maxLimit: 200,
+    });
+
+    const data = await getWarehouseWithdrawalsData({ page, limit, skip });
+    return handleResponse(res, 200, "Warehouse withdrawals fetched", data);
   } catch (error) {
     return handleResponse(res, 500, error.message);
   }

@@ -32,6 +32,8 @@ export const adminFinanceApi = {
     // Seller / Delivery withdrawals
     getSellerWithdrawals: (params) =>
         axiosInstance.get('/admin/seller-withdrawals', { params }),
+    getWarehouseWithdrawals: (params) =>
+        axiosInstance.get('/admin/warehouse-withdrawals', { params }),
     getDeliveryWithdrawals: (params) =>
         axiosInstance.get('/admin/delivery-withdrawals', { params }),
     getSellerTransactions: (params) =>

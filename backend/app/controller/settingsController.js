@@ -52,6 +52,7 @@ const ALLOWED_KEYS = [
   "productApproval",
   "categoriesBanner",
   "homeVideoBanner",
+  "weather",
 ];
 
 function flattenForMongoSet(prefix, value, target) {
@@ -136,10 +137,24 @@ const updateSettingsSchema = Joi.object({
     buttonText: Joi.string().allow("").max(100),
     buttonLink: Joi.string().allow("").max(500),
     isVisible: Joi.boolean(),
+    banners: Joi.array().items(
+      Joi.object({
+        image: Joi.string().allow("").max(2000),
+        badgeText: Joi.string().allow("").max(100),
+        title: Joi.string().allow("").max(500),
+        buttonText: Joi.string().allow("").max(100),
+        buttonLink: Joi.string().allow("").max(500),
+      })
+    ).default([]),
   }).unknown(false),
   homeVideoBanner: Joi.object({
     videoUrl: Joi.string().allow("").max(2000),
     isVisible: Joi.boolean(),
+  }).unknown(false),
+  weather: Joi.object({
+    isEnabled: Joi.boolean(),
+    condition: Joi.string().max(100),
+    icon: Joi.string().max(100),
   }).unknown(false),
 }).unknown(false);
 
@@ -161,7 +176,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather createdAt",
           )
           .lean();
         return existing || null;
