@@ -927,7 +927,9 @@ const ProductManagement = () => {
                                                                 />
                                                             </div>
                                                             <div className="space-y-1.5 flex flex-col items-start justify-end h-full">
-                                                                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-1 w-full text-left ml-1">Image</label>
+                                                                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-1 w-full text-left ml-1">
+                                                                    Image <span className="lowercase font-normal tracking-normal text-slate-400">(800 × 800 px)</span>
+                                                                </label>
                                                                 <div className="relative h-11 w-full max-w-[4rem] shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-white hover:border-primary/50 overflow-hidden cursor-pointer flex items-center justify-center transition-colors">
                                                                     {variantImageFiles[i] ? (
                                                                         <img src={URL.createObjectURL(variantImageFiles[i])} alt="" className="h-full w-full object-cover" />

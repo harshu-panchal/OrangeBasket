@@ -645,6 +645,7 @@ const CategoryManagement = () => {
                                             <>
                                                 <Upload className="h-10 w-10 text-slate-300 group-hover:text-primary group-hover:scale-110 transition-all" />
                                                 <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">Upload Image</p>
+                                                <span className="text-[10px] font-semibold text-slate-400 mt-1 lowercase tracking-normal">Recommended: 400 × 400 px (1:1)</span>
                                             </>
                                         )}
                                         <input

@@ -66,6 +66,16 @@ const settingSchema = new mongoose.Schema(
         metaKeywords: String,
         keywords: [{ type: String }], // Array for structured SEO keywords
 
+        // Footer Message
+        footerMessage: {
+            type: String,
+            default: "Sab kuchh ek basket mein",
+        },
+        footerEmoji: {
+            type: String,
+            default: "❤️",
+        },
+
         // Optional: multi-tenant (null = default tenant)
         tenantId: {
             type: mongoose.Schema.Types.ObjectId,

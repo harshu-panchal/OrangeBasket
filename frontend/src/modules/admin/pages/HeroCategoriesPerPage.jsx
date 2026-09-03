@@ -359,12 +359,15 @@ export default function HeroCategoriesPerPage() {
                               id={`hero-banner-file-${idx}`}
                               onChange={(e) => handleBannerFileChange(idx, e.target.files?.[0])}
                             />
-                            <label
-                              htmlFor={`hero-banner-file-${idx}`}
-                              className="inline-block px-2 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer hover:bg-slate-200"
-                            >
-                              {item.isUploading ? "Uploading…" : item.imageUrl ? "Change" : "Upload"}
-                            </label>
+                            <div className="flex items-center gap-2">
+                              <label
+                                htmlFor={`hero-banner-file-${idx}`}
+                                className="inline-block px-2 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer hover:bg-slate-200"
+                              >
+                                {item.isUploading ? "Uploading…" : item.imageUrl ? "Change" : "Upload"}
+                              </label>
+                              <span className="text-[10px] font-semibold text-slate-400">(1920 × 1080 px)</span>
+                            </div>
                             <input
                               value={item.title || ""}
                               onChange={(e) => updateBannerItem(idx, { title: e.target.value })}

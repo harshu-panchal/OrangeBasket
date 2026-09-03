@@ -339,7 +339,9 @@ const FestivalDealsAdmin = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700">Card Image</label>
+                  <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    Card Image <span className="text-[10px] font-semibold text-slate-400 font-normal">(Recommended: 600 × 600 px, 1:1)</span>
+                  </label>
                   <div className="flex gap-4 items-center">
                     {cardForm.image && <img src={cardForm.image} alt="preview" className="h-16 w-16 object-contain border border-slate-200 rounded-lg p-1 bg-slate-50" />}
                     <label className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl cursor-pointer font-bold transition-colors flex-1">

@@ -538,6 +538,8 @@ const HeaderCategories = () => {
                   </div>
                   <p className="text-xs text-gray-500 text-center">
                     Choose an SVG icon or upload a custom image
+                    <br />
+                    <span className="font-semibold text-gray-500">Recommended Size: 400 × 400 px (Ratio 1:1)</span>
                   </p>
                 </div>
 

@@ -27,15 +27,7 @@ import { Smile } from 'lucide-react';
 import axiosInstance from '@core/api/axios';
 import { adminApi } from '../services/adminApi';
 
-const EMOJIS = [
-    '🔥', '🎉', '✅', '⚡', '💥', '💸', '🛍️', '🎁', '🚚', '📦',
-    '⏰', '📣', '📌', '🆕', '🛒', '🏷️', '💳', '💰', '📉', '📈',
-    '❤️', '💙', '💚', '🧡', '✨', '⭐', '🌟', '🚀', '🎯', '💯',
-    '😀', '😄', '😁', '😂', '😉', '😊', '😍', '🤩', '😎', '🤔',
-    '🙏', '🤝', '👍', '👎', '👀', '💪', '🎊', '🥳', '🎈', '🎂',
-    '🍕', '🍔', '🍟', '🍦', '🍩', '🍫', '🥤', '☕', '🍎', '🥗',
-    '🌧️', '☀️', '❄️', '🌙', '🌈', '⚠️', '❗', '❓', '🔔', '🔒',
-];
+import { EMOJIS } from '@shared/utils/emojis';
 
 const NotificationComposer = () => {
     const { showToast } = useToast();
@@ -365,7 +357,7 @@ const NotificationComposer = () => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="ds-label">Image (Optional)</label>
+                                        <label className="ds-label flex items-center gap-2">Image (Optional) <span className="text-[10px] font-semibold text-slate-400 font-normal normal-case">(Recommended: 800 × 400 px, 2:1)</span></label>
                                         <input
                                             ref={imageInputRef}
                                             type="file"
@@ -440,7 +432,7 @@ const NotificationComposer = () => {
                                     Close
                                 </button>
                             </div>
-                            <div className="grid grid-cols-10 gap-1.5">
+                            <div className="grid grid-cols-10 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
                                 {EMOJIS.map((emoji) => (
                                     <button
                                         key={emoji}

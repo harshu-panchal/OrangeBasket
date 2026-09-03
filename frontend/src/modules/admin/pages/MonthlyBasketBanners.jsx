@@ -129,7 +129,7 @@ const MonthlyBasketBanners = () => {
                                     <div className="flex flex-col items-center text-slate-400">
                                         <Upload className="h-8 w-8 mb-2" />
                                         <span className="font-bold text-sm text-slate-500">Upload Banner {banners.length + 1}/2</span>
-                                        <span className="text-xs mt-1">Recommended: 1200x400px</span>
+                                        <span className="text-[10px] font-semibold text-slate-400 mt-1">Recommended: 1200 × 400 px (3:1)</span>
                                     </div>
                                 )}
                                 <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={isUploading} />

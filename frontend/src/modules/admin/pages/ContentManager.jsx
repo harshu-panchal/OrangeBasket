@@ -654,6 +654,8 @@ const ContentManager = () => {
                                                                 : item.imageUrl
                                                                 ? 'File uploaded'
                                                                 : 'PNG, JPG, MP4 up to 10MB'}
+                                                            <br />
+                                                            <span className="font-semibold text-slate-500">Recommended Ratio: 21:9 (e.g., 2100 × 900 px)</span>
                                                         </p>
                                                     </div>
                                                 </div>

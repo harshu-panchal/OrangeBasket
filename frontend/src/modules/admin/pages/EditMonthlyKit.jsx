@@ -681,6 +681,9 @@ const EditMonthlyKit = () => {
                                                 <p className="text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-widest group-hover:text-primary">
                                                     Upload Cover
                                                 </p>
+                                                <span className="text-[8px] font-semibold text-slate-400 mt-1 lowercase tracking-normal group-hover:text-primary">
+                                                    (800 × 800 px)
+                                                </span>
                                             </>
                                         )}
                                     </div>
@@ -727,6 +730,9 @@ const EditMonthlyKit = () => {
                                                     <p className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-widest group-hover:text-primary">
                                                         Add
                                                     </p>
+                                                    <span className="text-[7px] font-semibold text-slate-400 mt-0.5 lowercase tracking-normal group-hover:text-primary">
+                                                        (800 × 800 px)
+                                                    </span>
                                                 </>
                                             )}
                                         </div>

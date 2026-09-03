@@ -4,11 +4,13 @@ import { useSettings } from '@core/context/SettingsContext';
 const MobileFooterMessage = () => {
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
+    const footerMessage = settings?.footerMessage || 'Sab kuchh ek basket mein';
+    const footerEmoji = settings?.footerEmoji || '❤️';
     return (
         <div className="md:hidden w-full flex flex-col items-center mt-8 pt-0 pb-28 px-6 bg-transparent">
             <div className="w-full flex flex-col">
                 <h2 className="text-[38px] leading-[1.1] font-black text-slate-300 tracking-tight text-left">
-                    Sab kuchh ek basket mein <span className="text-red-500">❤️</span>
+                    {footerMessage} <span className="text-red-500">{footerEmoji}</span>
                 </h2>
 
                 <div className="w-full h-[1px] bg-slate-200 mt-6 mb-4"></div>

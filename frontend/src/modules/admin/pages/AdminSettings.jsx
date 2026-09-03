@@ -25,12 +25,15 @@ import {
     Snowflake,
     Cloud,
     CloudLightning,
-    Wind
+    Wind,
+    Smile
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
 import { adminApi } from '../services/adminApi';
 import { useSettings } from '@core/context/SettingsContext';
+
+import { EMOJIS } from '@shared/utils/emojis';
 
 const AdminSettings = () => {
     const normalizeProductApprovalConfig = (raw) => {
@@ -50,6 +53,12 @@ const AdminSettings = () => {
     const [faviconUploading, setFaviconUploading] = useState(false);
     const logoInputRef = useRef(null);
     const faviconInputRef = useRef(null);
+
+    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+    const [emojiPickerPos, setEmojiPickerPos] = useState({ top: 0, left: 0 });
+    const emojiBtnRef = useRef(null);
+    const emojiPopoverRef = useRef(null);
+    const emojiInputRef = useRef(null);
 
     /** @type {any} */
     const defaultSettings = {
@@ -77,6 +86,8 @@ const AdminSettings = () => {
         metaDescription: '',
         metaKeywords: '',
         keywords: [],
+        footerMessage: 'Sab kuchh ek basket mein',
+        footerEmoji: '❤️',
         returnDeliveryCommission: 0,
         lowStockAlertsEnabled: true,
         productApproval: {
@@ -390,6 +401,74 @@ const AdminSettings = () => {
         }));
     };
 
+    const closeEmojiPicker = () => setEmojiPickerOpen(false);
+
+    const openEmojiPicker = () => {
+        if (emojiPickerOpen) {
+            closeEmojiPicker();
+            return;
+        }
+        setEmojiPickerOpen(true);
+
+        const btn = emojiBtnRef.current;
+        if (!btn || typeof btn.getBoundingClientRect !== 'function' || typeof window === 'undefined') return;
+
+        const rect = btn.getBoundingClientRect();
+        const popoverWidth = 280;
+        const padding = 12;
+        const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+        const left = clamp(rect.right - popoverWidth, padding, window.innerWidth - popoverWidth - padding);
+        const top = rect.bottom + 10;
+        setEmojiPickerPos({ top, left });
+    };
+
+    useEffect(() => {
+        if (!emojiPickerOpen) return;
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') closeEmojiPicker();
+        };
+
+        const onPointerDown = (e) => {
+            const target = e.target;
+            if (!target) return;
+            if (emojiPopoverRef.current?.contains(target)) return;
+            if (emojiBtnRef.current?.contains(target)) return;
+            closeEmojiPicker();
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('pointerdown', onPointerDown);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('pointerdown', onPointerDown);
+        };
+    }, [emojiPickerOpen]);
+
+    const insertEmoji = (emoji) => {
+        const nextEmoji = String(emoji || '');
+        if (!nextEmoji) return;
+
+        const el = emojiInputRef.current;
+        const value = settings.footerEmoji || '';
+        
+        const start = typeof el?.selectionStart === 'number' ? el.selectionStart : value.length;
+        const end = typeof el?.selectionEnd === 'number' ? el.selectionEnd : value.length;
+        const next = `${value.slice(0, start)}${nextEmoji}${value.slice(end)}`;
+
+        handleInputChange('footerEmoji', next);
+
+        requestAnimationFrame(() => {
+            try {
+                el?.focus?.();
+                const caret = start + nextEmoji.length;
+                el?.setSelectionRange?.(caret, caret);
+            } catch {
+                // ignore
+            }
+        });
+    };
+
     return (
         <div className="ds-section-spacing animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
             {/* Header Section */}
@@ -596,7 +675,7 @@ const AdminSettings = () => {
                                 <input type="file" ref={faviconInputRef} accept="image/*" className="hidden" onChange={handleFaviconUpload} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">App Logo</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">App Logo <span className="font-semibold text-slate-400 normal-case tracking-normal">(Recommended: 512 × 512 px)</span></label>
                                         <div
                                             role="button"
                                             tabIndex={0}
@@ -629,7 +708,7 @@ const AdminSettings = () => {
                                         <input type="url" value={settings.logoUrl} onChange={(e) => handleInputChange('logoUrl', e.target.value)} placeholder="Or paste logo URL" className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-brand-500/20" />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Favicon</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Favicon <span className="font-semibold text-slate-400 normal-case tracking-normal">(Recommended: 192 × 192 px)</span></label>
                                         <div
                                             role="button"
                                             tabIndex={0}
@@ -695,6 +774,46 @@ const AdminSettings = () => {
                                             className="w-full px-5 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all font-mono"
                                         />
                                     </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Footer Message</label>
+                                    <input
+                                        type="text"
+                                        value={settings.footerMessage ?? 'Sab kuchh ek basket mein'}
+                                        onChange={(e) => handleInputChange('footerMessage', e.target.value)}
+                                        className="w-full px-5 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
+                                        placeholder="Sab kuchh ek basket mein"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Footer Emoji</label>
+                                        <button
+                                            ref={emojiBtnRef}
+                                            type="button"
+                                            onClick={openEmojiPicker}
+                                            className={cn(
+                                                "inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl transition-all ring-1",
+                                                emojiPickerOpen
+                                                    ? "bg-brand-50 text-brand-600 ring-brand-200"
+                                                    : "bg-slate-50 text-slate-500 ring-slate-200 hover:bg-slate-100 hover:text-slate-700"
+                                            )}
+                                            aria-label="Add emoji"
+                                            title="Add emoji"
+                                        >
+                                            <Smile className="h-4 w-4" />
+                                            Emoji
+                                        </button>
+                                    </div>
+                                    <input
+                                        ref={emojiInputRef}
+                                        type="text"
+                                        value={settings.footerEmoji ?? '❤️'}
+                                        onChange={(e) => handleInputChange('footerEmoji', e.target.value)}
+                                        className="w-full px-5 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
+                                        placeholder="❤️"
+                                        maxLength={10}
+                                    />
                                 </div>
                             </div>
                         </Card>
@@ -926,7 +1045,7 @@ const AdminSettings = () => {
                                         </button>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-4">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Banner Image {index + 1}</label>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Banner Image {index + 1} <span className="font-semibold text-slate-400 normal-case tracking-normal">(Recommended: 600 × 250 px)</span></label>
                                                 <div
                                                     onClick={() => triggerBannerUpload(index)}
                                                     className={cn(
@@ -1047,7 +1166,7 @@ const AdminSettings = () => {
                                             <div className="space-y-2">
                                                 <Upload className="h-8 w-8 text-slate-400 mx-auto" />
                                                 <p className="text-xs font-bold text-slate-500">Upload Video</p>
-                                                <p className="text-[10px] text-slate-400 font-semibold uppercase">Max size: 10 MB (MP4, WebM)</p>
+                                                <p className="text-[10px] text-slate-400 font-semibold uppercase">Max size: 10 MB (MP4, WebM) <span className="normal-case">| Recommended: 1920×1080 px (16:9)</span></p>
                                             </div>
                                         )}
                                     </div>
@@ -1127,6 +1246,45 @@ const AdminSettings = () => {
                                 </div>
                             </div>
                         </Card>
+                    )}
+                    {emojiPickerOpen && (
+                        <div
+                            ref={emojiPopoverRef}
+                            className="fixed z-[999999] w-[280px] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3"
+                            style={{ top: emojiPickerPos.top, left: emojiPickerPos.left }}
+                            role="dialog"
+                            aria-label="Emoji picker"
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                    Add Emoji
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={closeEmojiPicker}
+                                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-10 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                                {EMOJIS.map((emoji) => (
+                                    <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => insertEmoji(emoji)}
+                                        className="h-8 w-8 rounded-xl hover:bg-slate-50 transition-colors text-lg flex items-center justify-center"
+                                        aria-label={`Insert ${emoji}`}
+                                        title={`Insert ${emoji}`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="mt-2 text-[10px] font-bold text-slate-400">
+                                Tip: click inside the text field, then pick emojis.
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>

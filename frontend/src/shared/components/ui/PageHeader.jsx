@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-const PageHeader = ({ title, description, actions, badge, className }) => {
+const PageHeader = ({ title, description, actions = null, badge = null, className = "" }) => {
     return (
         <div className={cn("ds-page-header", className)}>
             <div className="ds-page-title-group">

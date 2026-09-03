@@ -505,7 +505,7 @@ const Level2Categories = () => {
 
               <div className="p-6 space-y-4">
                 {/* Image Upload */}
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center justify-center gap-1">
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-brand-500 overflow-hidden transition-colors">
@@ -518,12 +518,13 @@ const Level2Categories = () => {
                     ) : (
                       <div className="text-center">
                         <Image className="w-8 h-8 text-gray-400 mx-auto" />
-                        <span className="text-xs text-gray-500 mt-1">
+                        <span className="text-xs text-gray-500 mt-1 block">
                           Upload
                         </span>
                       </div>
                     )}
                   </div>
+                  <span className="text-[10px] font-semibold text-gray-400 mt-1">Recommended: 400 × 400 px (1:1)</span>
                   <input
                     type="file"
                     ref={fileInputRef}

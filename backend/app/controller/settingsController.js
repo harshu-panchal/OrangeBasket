@@ -34,6 +34,8 @@ const ALLOWED_KEYS = [
   "metaDescription",
   "metaKeywords",
   "keywords",
+  "footerMessage",
+  "footerEmoji",
   "returnDeliveryCommission",
   "deliveryPricingMode",
   "pricingMode",
@@ -106,6 +108,8 @@ const updateSettingsSchema = Joi.object({
   metaDescription: Joi.string().allow("").max(500),
   metaKeywords: Joi.string().allow("").max(1000),
   keywords: Joi.array().items(Joi.string().max(200)),
+  footerMessage: Joi.string().allow("").max(200),
+  footerEmoji: Joi.string().allow("").max(10),
   returnDeliveryCommission: Joi.number().min(0),
   deliveryPricingMode: Joi.string().valid("fixed_price", "distance_based"),
   pricingMode: Joi.string().valid("fixed_price", "distance_based"),
@@ -176,7 +180,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor footerMessage footerEmoji returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather createdAt",
           )
           .lean();
         return existing || null;
