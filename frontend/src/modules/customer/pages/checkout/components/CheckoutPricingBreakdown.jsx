@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
  * Props:
  *   pricingPreview    – breakdown object from the preview API (or null)
  *   isPreviewLoading  – boolean
+ *   previewError      – string | null when preview failed
  *   selectedTip       – number
  *   onSelectTip       – (value) => void
  *   tipAmounts        – array of { value, label }
@@ -20,6 +21,7 @@ import { motion } from "framer-motion";
 const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
   pricingPreview,
   isPreviewLoading,
+  previewError,
   selectedTip,
   onSelectTip,
   tipAmounts,
@@ -33,6 +35,8 @@ const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
   const handlingFee = pricingPreview?.handlingFeeCharged || 0;
   const tipAmount = pricingPreview?.tipTotal || selectedTip || 0;
   const taxAmount = pricingPreview?.taxTotal || 0;
+  const isWalletCovered =
+    !!pricingPreview && walletAmountToUse > 0 && finalAmountToPay === 0;
 
   return (
     <>
@@ -70,6 +74,12 @@ const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
           </h3>
         </div>
 
+        {previewError && !isPreviewLoading && (
+          <div className="mb-4 px-3 py-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-xs font-semibold leading-relaxed">
+            {previewError}
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="flex justify-between items-center px-2">
             <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
@@ -83,7 +93,9 @@ const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
             <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
               Delivery Fee
             </span>
-            <span className="font-black text-slate-800">₹{deliveryFee}</span>
+            <span className="font-black text-slate-800">
+              {pricingPreview ? `₹${deliveryFee}` : isPreviewLoading ? "…" : "—"}
+            </span>
           </div>
           {pricingPreview &&
             typeof pricingPreview.distanceKmActual === "number" &&
@@ -106,13 +118,17 @@ const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
             <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
               Handling Fee
             </span>
-            <span className="font-black text-slate-800">₹{handlingFee}</span>
+            <span className="font-black text-slate-800">
+              {pricingPreview ? `₹${handlingFee}` : isPreviewLoading ? "…" : "—"}
+            </span>
           </div>
           <div className="flex justify-between items-center px-2">
             <span className="text-slate-500 font-bold text-[13px] uppercase tracking-wider">
               Tax
             </span>
-            <span className="font-black text-slate-800">₹{taxAmount}</span>
+            <span className="font-black text-slate-800">
+              {pricingPreview ? `₹${taxAmount}` : isPreviewLoading ? "…" : "—"}
+            </span>
           </div>
 
           {selectedCoupon && (
@@ -155,14 +171,22 @@ const CheckoutPricingBreakdown = React.memo(function CheckoutPricingBreakdown({
             <div className="flex justify-between items-center">
               <div className="flex flex-col">
                 <span className="font-[1000] text-slate-800 text-lg uppercase tracking-tight">
-                  {finalAmountToPay === 0 ? "Fully Covered" : "Total Payable"}
+                  {isWalletCovered ? "Fully Covered" : "Total Payable"}
                 </span>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-                  {finalAmountToPay === 0 ? "Paid via Wallet" : "Safe & Secure Payment"}
+                  {isWalletCovered
+                    ? "Paid via Wallet"
+                    : previewError
+                      ? "Fix address to continue"
+                      : "Safe & Secure Payment"}
                 </span>
               </div>
               <span className="font-[1000] text-primary text-3xl tracking-tighter italic">
-                {isPreviewLoading ? "Calculating..." : `₹${Math.ceil(finalAmountToPay)}`}
+                {isPreviewLoading
+                  ? "Calculating..."
+                  : pricingPreview
+                    ? `₹${Math.ceil(finalAmountToPay)}`
+                    : "—"}
               </span>
             </div>
           </div>

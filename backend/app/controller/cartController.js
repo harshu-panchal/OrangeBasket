@@ -2,6 +2,10 @@ import Cart from "../models/cart.js";
 import Product from "../models/product.js";
 import handleResponse from "../utils/helper.js";
 import { getApprovedOrLegacyFilter } from "../services/productModerationService.js";
+import {
+  parseCustomerCoordinates,
+  getNearbySellerIdsForCustomer,
+} from "../services/customerVisibilityService.js";
 
 const CART_POPULATE_FIELDS =
   "name slug price salePrice mainImage stock status headerId categoryId subcategoryId sellerId warehouseId variants";
@@ -23,8 +27,29 @@ async function getCustomerVisibleProductById(productId) {
     _id: productId,
     ...CUSTOMER_VISIBLE_PRODUCT_MATCH,
   })
-    .select("_id")
+    .select("_id sellerId warehouseId")
     .lean();
+}
+
+async function assertProductInCustomerRadius(product, lat, lng) {
+  const coords = parseCustomerCoordinates({ lat, lng });
+  if (!coords.valid) {
+    const err = new Error("lat and lng are required to add items in your delivery area");
+    err.statusCode = 400;
+    throw err;
+  }
+  const nearbyIds = await getNearbySellerIdsForCustomer(coords.lat, coords.lng);
+  const nearbySet = new Set(nearbyIds.map(String));
+  const fulfillmentId = product?.sellerId
+    ? String(product.sellerId)
+    : product?.warehouseId
+      ? String(product.warehouseId)
+      : null;
+  if (!fulfillmentId || !nearbySet.has(fulfillmentId)) {
+    const err = new Error("This product is not available for delivery to your location");
+    err.statusCode = 400;
+    throw err;
+  }
 }
 
 async function fetchPopulatedCart(cartId) {
@@ -70,11 +95,25 @@ export const getCart = async (req, res) => {
 export const addToCart = async (req, res) => {
   try {
     const customerId = req.user.id;
-    const { productId, quantity = 1, variantSku = "", kitAddons = [] } = req.body;
+    const { productId, quantity = 1, variantSku = "", kitAddons = [], lat, lng } = req.body;
     const normalizedVariantSku = String(variantSku || "").trim();
     const customerVisibleProduct = await getCustomerVisibleProductById(productId);
     if (!customerVisibleProduct) {
       return handleResponse(res, 404, "Product is not available for purchase");
+    }
+
+    try {
+      await assertProductInCustomerRadius(
+        customerVisibleProduct,
+        lat ?? req.query?.lat,
+        lng ?? req.query?.lng,
+      );
+    } catch (radiusErr) {
+      return handleResponse(
+        res,
+        radiusErr.statusCode || 400,
+        radiusErr.message,
+      );
     }
 
     let cart = await Cart.findOne({ customerId });
@@ -91,13 +130,20 @@ export const addToCart = async (req, res) => {
     );
 
     if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity;
-      // Also update kitAddons if they are passed (for monthly kits)
-      if (kitAddons && kitAddons.length > 0) {
+      // quantity 0 + kitAddons = patch addons only (used by basket sheet live updates)
+      if (Number(quantity) === 0 && kitAddons !== undefined) {
         cart.items[itemIndex].kitAddons = kitAddons;
+      } else {
+        cart.items[itemIndex].quantity += quantity;
+        if (kitAddons !== undefined) {
+          cart.items[itemIndex].kitAddons = kitAddons;
+        }
       }
     } else {
-      cart.items.push({ productId, variantSku: normalizedVariantSku, quantity, kitAddons });
+      if (Number(quantity) < 1) {
+        return handleResponse(res, 400, "Quantity must be at least 1 for new cart items");
+      }
+      cart.items.push({ productId, variantSku: normalizedVariantSku, quantity, kitAddons: kitAddons || [] });
     }
 
     await cart.save();

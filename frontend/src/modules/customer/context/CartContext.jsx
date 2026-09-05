@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import { customerApi } from "../services/customerApi";
 import { useAuth } from "../../../core/context/AuthContext";
 import { getJSON, setJSON, remove as removeStorage, STORAGE_KEYS } from "@core/utils/storage";
+import { useLocation as useAppLocation } from "./LocationContext";
 
 const CartContext = createContext(null);
 
@@ -18,6 +20,7 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const { currentLocation } = useAppLocation();
   const [cart, setCart] = useState(() => loadGuestCart());
 
   const [loading, setLoading] = useState(false);
@@ -40,6 +43,7 @@ export const CartProvider = ({ children }) => {
         price,
         salePrice,
         image: variantImage || product?.mainImage, // Handle mapping for frontend
+        kitAddons: Array.isArray(item.kitAddons) ? item.kitAddons : [],
       };
     });
   };
@@ -142,12 +146,26 @@ export const CartProvider = ({ children }) => {
         (item) => `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key,
       );
       if (existingItem) {
-        console.log("DEBUG: addToCart existing item incrementing");
-        return prev.map((item) =>
-          `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key
-            ? { ...item, quantity: item.quantity + defaultQuantity, ...(options.kitAddons ? { kitAddons: options.kitAddons } : {}) }
-            : item,
-        );
+        // quantity 0 + kitAddons = patch addons only (do not change line qty)
+        const addonsOnly = options.kitAddons && defaultQuantity === 0;
+        console.log("DEBUG: addToCart existing item", addonsOnly ? "addons-only" : "incrementing");
+        return prev.map((item) => {
+          if (`${item.id || item._id}::${String(item.variantSku || "").trim()}` !== key) {
+            return item;
+          }
+          if (addonsOnly) {
+            return { ...item, kitAddons: options.kitAddons };
+          }
+          return {
+            ...item,
+            quantity: item.quantity + defaultQuantity,
+            ...(options.kitAddons ? { kitAddons: options.kitAddons } : {}),
+          };
+        });
+      }
+
+      if (defaultQuantity < 1) {
+        return prev;
       }
 
       console.log("DEBUG: addToCart new item adding");
@@ -178,12 +196,23 @@ export const CartProvider = ({ children }) => {
         if (options.kitAddons) {
             payload.kitAddons = options.kitAddons;
         }
+        if (
+          Number.isFinite(currentLocation?.latitude) &&
+          Number.isFinite(currentLocation?.longitude)
+        ) {
+          payload.lat = currentLocation.latitude;
+          payload.lng = currentLocation.longitude;
+        }
         const response = await customerApi.addToCart(payload);
         pendingRequestsRef.current -= 1;
         await syncCart(response.data.result.items);
       } catch (error) {
         pendingRequestsRef.current -= 1;
         console.error("Error adding to cart on backend", error);
+        const message =
+          error?.response?.data?.message ||
+          "Could not add item to cart for your delivery location";
+        toast.error(message);
         // Re-fetch entire cart to ensure consistency on error
         if (pendingRequestsRef.current === 0) {
           await fetchCart();
@@ -296,7 +325,13 @@ export const CartProvider = ({ children }) => {
       Number(item.salePrice || 0) > 0 && Number(item.salePrice) < Number(item.price || 0)
         ? Number(item.salePrice)
         : Number(item.price || 0);
-    return total + unit * Number(item.quantity || 0);
+    
+    let addonsTotal = 0;
+    if (item.kitAddons && Array.isArray(item.kitAddons)) {
+      addonsTotal = item.kitAddons.reduce((sum, addon) => sum + (Number(addon.price) * Number(addon.quantity)), 0);
+    }
+    
+    return total + (unit + addonsTotal) * Number(item.quantity || 0);
   }, 0);
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 

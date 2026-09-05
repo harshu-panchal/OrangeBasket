@@ -17,6 +17,15 @@ const orderItemSchema = Joi.object({
   quantity: Joi.number().integer().min(1).required(),
   price: Joi.number().min(0).optional(),
   image: Joi.string().allow("", null),
+  kitAddons: Joi.array().items(
+    Joi.object({
+      addonId: Joi.string().required(),
+      name: Joi.string().allow("", null),
+      price: Joi.number().min(0).required(),
+      quantity: Joi.number().min(0).required(),
+      image: Joi.string().allow("", null).optional()
+    })
+  ).optional(),
 }).or("product", "productId", "id");
 
 export const checkoutPreviewSchema = Joi.object({

@@ -56,7 +56,9 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
   let seller = await query;
   
   if (!seller) {
-    let whQuery = Warehouse.findById(sellerId).select("location").lean();
+    // Monthly kits resolve to a warehouse — must select serviceRadius (same as sellers)
+    // or lean() omits it and radius incorrectly defaults to 5km.
+    let whQuery = Warehouse.findById(sellerId).select("location serviceRadius name").lean();
     if (session) whQuery.session(session);
     seller = await whQuery;
   }
@@ -67,7 +69,11 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
     throw err;
   }
   const coords = seller?.location?.coordinates;
-  if (!Array.isArray(coords) || coords.length < 2) return 0;
+  if (!Array.isArray(coords) || coords.length < 2) {
+    const err = new Error("Store location is not configured for delivery distance");
+    err.statusCode = 400;
+    throw err;
+  }
 
   const [sellerLng, sellerLat] = coords;
   
@@ -86,6 +92,7 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
       throw new Error("Route calculation degraded/failed");
     }
   } catch (error) {
+    if (error.statusCode) throw error;
     const err = new Error("Could not calculate actual route distance for delivery: " + error.message);
     err.statusCode = 400;
     throw err;
@@ -93,7 +100,8 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
   
   const radius = Number(seller.serviceRadius || 5);
   if (distanceKm > radius) {
-    const err = new Error(`${seller.shopName || "Store"} does not deliver to your current location (Distance: ${distanceKm}km, Service Radius: ${radius}km)`);
+    const storeName = seller.shopName || seller.name || "Store";
+    const err = new Error(`${storeName} does not deliver to your current location (Distance: ${distanceKm}km, Service Radius: ${radius}km)`);
     err.statusCode = 400;
     throw err;
   }

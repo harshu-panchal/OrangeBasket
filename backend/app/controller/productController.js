@@ -415,28 +415,31 @@ export const getProducts = async (req, res) => {
           ];
         }
       } else {
-        // If no specific seller requested, include nearby sellers OR monthly kits
+        // Nearby sellers + warehouses only (monthly kits included via warehouseId)
         if (!finalSellerIds.length) {
-          query.isMonthlyKit = true;
-        } else {
-          if (query.$or) {
-            query.$and = query.$and || [];
-            query.$and.push({ $or: query.$or });
-            delete query.$or;
-            query.$and.push({
-              $or: [
-                { sellerId: { $in: finalSellerIds } },
-                { warehouseId: { $in: finalSellerIds } },
-                { isMonthlyKit: true }
-              ]
-            });
-          } else {
-            query.$or = [
+          return handleResponse(res, 200, "No products available in your area", {
+            items: [],
+            page: 1,
+            limit: 24,
+            total: 0,
+            totalPages: 1,
+          });
+        }
+        if (query.$or) {
+          query.$and = query.$and || [];
+          query.$and.push({ $or: query.$or });
+          delete query.$or;
+          query.$and.push({
+            $or: [
               { sellerId: { $in: finalSellerIds } },
               { warehouseId: { $in: finalSellerIds } },
-              { isMonthlyKit: true }
-            ];
-          }
+            ]
+          });
+        } else {
+          query.$or = [
+            { sellerId: { $in: finalSellerIds } },
+            { warehouseId: { $in: finalSellerIds } },
+          ];
         }
       }
     }
@@ -1283,22 +1286,31 @@ export const getProductById = async (req, res) => {
     }
 
     if (enforceRadius) {
-      if (product.isMonthlyKit) {
-        // Bypass location check for monthly kits
-      } else {
-        let sellerIdForProduct = product?.sellerId?._id ? String(product.sellerId._id) : (product?.sellerId ? String(product.sellerId) : null);
-        if (!sellerIdForProduct || sellerIdForProduct === "null") {
-          // If it was null because populate failed for a warehouse, query raw product directly to get the real sellerId/warehouseId
-          const rawProduct = await Product.findOne(isObjectId ? { _id: id } : { slug: id }).select("sellerId warehouseId").lean();
-          if (rawProduct && rawProduct.sellerId) {
-            sellerIdForProduct = String(rawProduct.sellerId);
-          } else if (rawProduct && rawProduct.warehouseId) {
-            sellerIdForProduct = String(rawProduct.warehouseId);
-          }
-        }
-        if (!nearbySellerSet || !nearbySellerSet.has(sellerIdForProduct)) {
-          return handleResponse(res, 404, "Product not available in your area");
-        }
+      let sellerIdForProduct = product?.sellerId?._id
+        ? String(product.sellerId._id)
+        : product?.sellerId
+          ? String(product.sellerId)
+          : null;
+      let warehouseIdForProduct = product?.warehouseId?._id
+        ? String(product.warehouseId._id)
+        : product?.warehouseId
+          ? String(product.warehouseId)
+          : null;
+
+      if (
+        (!sellerIdForProduct || sellerIdForProduct === "null") &&
+        (!warehouseIdForProduct || warehouseIdForProduct === "null")
+      ) {
+        const rawProduct = await Product.findOne(isObjectId ? { _id: id } : { slug: id })
+          .select("sellerId warehouseId")
+          .lean();
+        if (rawProduct?.sellerId) sellerIdForProduct = String(rawProduct.sellerId);
+        if (rawProduct?.warehouseId) warehouseIdForProduct = String(rawProduct.warehouseId);
+      }
+
+      const fulfillmentId = sellerIdForProduct || warehouseIdForProduct;
+      if (!nearbySellerSet || !fulfillmentId || !nearbySellerSet.has(String(fulfillmentId))) {
+        return handleResponse(res, 404, "Product not available in your area");
       }
     }
 

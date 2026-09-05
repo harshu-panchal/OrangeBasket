@@ -41,7 +41,7 @@ export const getPublicOfferSections = async (req, res) => {
           .populate("sellerIds", "shopName name logo")
           .populate({
             path: "productIds",
-            select: "name slug price salePrice mainImage stock unit sellerId status approvalStatus",
+            select: "name slug price salePrice mainImage stock unit sellerId warehouseId status approvalStatus",
             match: {
               status: "active",
               ...getApprovedOrLegacyFilter(),
@@ -60,7 +60,8 @@ export const getPublicOfferSections = async (req, res) => {
           const productIds = Array.isArray(section.productIds)
             ? section.productIds.filter((product) => {
                 const sid = String(product?.sellerId?._id || product?.sellerId || "");
-                return sid && nearbySellerSet.has(sid);
+                const wid = String(product?.warehouseId?._id || product?.warehouseId || "");
+                return (sid && nearbySellerSet.has(sid)) || (wid && nearbySellerSet.has(wid));
               })
             : [];
 

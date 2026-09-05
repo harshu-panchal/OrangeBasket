@@ -158,6 +158,7 @@ const CheckoutPage = () => {
   const [orderId, setOrderId] = useState(null);
   const [pricingPreview, setPricingPreview] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(null);
   const postOrderNavigateRef = useRef(null);
   const previewDebounceRef = useRef(null);
   const [currentAddress, setCurrentAddress] = useState({
@@ -687,6 +688,7 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!isAuthenticated || cart.length === 0) {
       setPricingPreview(null);
+      setPreviewError(null);
       return;
     }
 
@@ -698,6 +700,7 @@ const CheckoutPage = () => {
         quantity: item.quantity,
         price: item.price,
         image: item.image,
+        kitAddons: item.kitAddons || [],
       })),
       address: buildAddressForOrder(),
       discountTotal: discountAmount,
@@ -710,12 +713,23 @@ const CheckoutPage = () => {
     const fetchPreview = async () => {
       try {
         setIsPreviewLoading(true);
+        setPreviewError(null);
         const res = await customerApi.checkoutPreview(buildPreviewPayload());
         if (res.data?.success) {
           setPricingPreview(res.data.result?.breakdown ?? null);
+          setPreviewError(null);
+        } else {
+          setPricingPreview(null);
+          setPreviewError(res.data?.message || "Unable to calculate order total");
         }
       } catch (error) {
         console.error("Checkout preview failed", error);
+        setPricingPreview(null);
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Unable to calculate order total. Please check your delivery address.";
+        setPreviewError(message);
       } finally {
         setIsPreviewLoading(false);
       }
@@ -787,6 +801,7 @@ const CheckoutPage = () => {
           quantity: item.quantity,
           price: item.price,
           image: item.image,
+          kitAddons: item.kitAddons || [],
         })),
       };
 
@@ -1119,6 +1134,7 @@ const CheckoutPage = () => {
             <CheckoutPricingBreakdown
               pricingPreview={pricingPreview}
               isPreviewLoading={isPreviewLoading}
+              previewError={previewError}
               selectedTip={selectedTip}
               onSelectTip={setSelectedTip}
               tipAmounts={tipAmounts}
@@ -1146,7 +1162,11 @@ const CheckoutPage = () => {
                 amount={finalAmountToPay}
                 onSuccess={handlePlaceOrder}
                 isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
-                text={finalAmountToPay === 0 ? "Place Free Order" : "Order Now"}
+                text={
+                  pricingPreview && finalAmountToPay === 0
+                    ? "Place Free Order"
+                    : "Order Now"
+                }
               />
               <p className="text-center text-[10px] text-slate-400 font-bold mt-4 uppercase tracking-[0.1em]">
                 🔒 SSL encrypted secure checkout
@@ -1163,7 +1183,11 @@ const CheckoutPage = () => {
             amount={finalAmountToPay}
             onSuccess={handlePlaceOrder}
             isLoading={isPlacingOrder || isPreviewLoading || !pricingPreview}
-            text={finalAmountToPay === 0 ? "Place Free Order" : "Slide to Pay"}
+            text={
+              pricingPreview && finalAmountToPay === 0
+                ? "Place Free Order"
+                : "Slide to Pay"
+            }
           />
         </div>
       </div>
