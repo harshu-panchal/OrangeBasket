@@ -163,4 +163,5 @@ export const customerApi = {
   // Kits
   getKitHomeData: (params) => getWithDedupe("/kits/home-data", params),
   getKitById: (id, params) => getWithDedupe(`/kits/${id}`, params),
+  getKitAddons: (params) => getWithDedupe("/kits/addons", params),
 };

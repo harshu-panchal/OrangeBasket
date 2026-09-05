@@ -101,6 +101,11 @@ const ProductDetailSheet = () => {
     const [extendedProduct, setExtendedProduct] = useState(null);
     const [expandedSections, setExpandedSections] = useState(['description']); // Start with description open
     const [showHeartPopup, setShowHeartPopup] = useState(false);
+    
+    // Kit Add-ons State
+    const [addons, setAddons] = useState([]);
+    const [addonQuantities, setAddonQuantities] = useState({});
+    const [addonsLoading, setAddonsLoading] = useState(false);
 
     const toggleSection = (section) => {
         setExpandedSections(prev =>
@@ -185,13 +190,47 @@ const ProductDetailSheet = () => {
             setSelectedVariant(null);
         }
         setActiveImageIndex(0);
+        
+        // Reset Addons
+        setAddons([]);
+        setAddonQuantities({});
 
         if (selectedProduct?.id || selectedProduct?._id) {
             const pid = selectedProduct.id || selectedProduct._id;
             fetchReviews(pid);
             fetchExtendedProduct(pid);
+            if (selectedProduct.isMonthlyKit) {
+                fetchAddons(pid);
+            }
         }
     }, [selectedProduct]);
+
+    const fetchAddons = async (kitId) => {
+        try {
+            setAddonsLoading(true);
+            const response = await customerApi.getKitAddons({ kitId });
+            if (response?.data?.success) {
+                const items = response.data.results || response.data.result || response.data.data || [];
+                setAddons(items);
+                const initQty = {};
+                items.forEach(item => { initQty[item._id] = 0; });
+                setAddonQuantities(initQty);
+            }
+        } catch (err) {
+            console.error("Error fetching add-ons:", err);
+        } finally {
+            setAddonsLoading(false);
+        }
+    };
+
+    const updateAddonQty = (addonId, delta) => {
+        setAddonQuantities(prev => {
+            const addon = addons.find(a => a._id === addonId);
+            const max = addon?.maxQtyPerOrder || 10;
+            const newQty = Math.max(0, Math.min(max, (prev[addonId] || 0) + delta));
+            return { ...prev, [addonId]: newQty };
+        });
+    };
 
     const fetchExtendedProduct = async (productId) => {
         try {
@@ -343,10 +382,29 @@ const ProductDetailSheet = () => {
     };
 
     const handleAddToCart = () => {
-        addToCart({
-            ...selectedProduct,
-            variantSku: String(selectedVariant?.sku || selectedVariant?.name || "").trim(),
-        });
+        let customData = {};
+        if (selectedProduct.isMonthlyKit) {
+            const selectedAddons = addons.filter(a => (addonQuantities[a._id] || 0) > 0);
+            const addonData = selectedAddons.map(a => ({
+                addonId: a._id,
+                name: a.name,
+                image: a.mainImage,
+                quantity: addonQuantities[a._id],
+                price: a.price,
+                unit: a.unit,
+                subtotal: a.price * addonQuantities[a._id],
+            }));
+            if (addonData.length > 0) {
+                customData.kitAddons = addonData;
+            }
+        }
+        
+        addToCart(
+            selectedProduct,
+            1, 
+            String(selectedVariant?.sku || selectedVariant?.name || "").trim(),
+            customData
+        );
         showToast(`${selectedProduct.name} added to cart`, 'success');
     };
 
@@ -382,6 +440,95 @@ const ProductDetailSheet = () => {
     if (!selectedProduct) return null;
 
     const cleanDesc = cleanDescription(selectedProduct?.description);
+
+    const selectedAddons = addons.filter(a => (addonQuantities[a._id] || 0) > 0);
+    const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price * addonQuantities[a._id]), 0);
+
+    const KitAddonsUI = () => (
+        !addonsLoading && addons.length > 0 && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-4 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+            >
+                <div className="px-4 pt-4 pb-3">
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                        <ShoppingCart className="h-4 w-4 text-primary" />
+                        अपनी Basket में और Add करें
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium mt-1">
+                        Atta, Oil, Rice — जितना चाहें उतना quantity select करें
+                    </p>
+                </div>
+
+                <div className="px-4 pb-4 space-y-3">
+                    {addons.map((addon) => {
+                        const qty = addonQuantities[addon._id] || 0;
+                        return (
+                            <div
+                                key={addon._id}
+                                className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
+                                    qty > 0
+                                        ? 'border-primary/30 bg-primary/5 shadow-sm'
+                                        : 'border-slate-100 bg-slate-50/50'
+                                }`}
+                            >
+                                <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-slate-100 flex-shrink-0">
+                                    {addon.mainImage ? (
+                                        <img
+                                            src={addon.mainImage}
+                                            alt={addon.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
+                                            <Package className="h-5 w-5 text-orange-300" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-black text-slate-900 text-sm leading-tight">{addon.name}</h4>
+                                    <p className="text-xs text-slate-500 font-medium">{addon.unit}</p>
+                                    <p className="text-sm font-black text-primary mt-0.5">₹{addon.price}</p>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    {qty > 0 ? (
+                                        <>
+                                            <button
+                                                onClick={() => updateAddonQty(addon._id, -1)}
+                                                className="w-7 h-7 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center hover:border-primary/50 active:scale-90 transition-all shadow-sm"
+                                            >
+                                                <Minus className="h-3 w-3 text-slate-600" />
+                                            </button>
+                                            <span className="w-6 text-center text-sm font-black text-slate-900">
+                                                {qty}
+                                            </span>
+                                            <button
+                                                onClick={() => updateAddonQty(addon._id, 1)}
+                                                className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all shadow-sm shadow-primary/20"
+                                            >
+                                                <Plus className="h-3 w-3" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => updateAddonQty(addon._id, 1)}
+                                            className="px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-black hover:bg-primary/20 active:scale-95 transition-all"
+                                        >
+                                            + ADD
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+        )
+    );
 
     return (
         <AnimatePresence>
@@ -739,6 +886,9 @@ const ProductDetailSheet = () => {
                                             </ul>
                                         </motion.div>
                                     )}
+
+                                    {/* Kit Addons (Desktop) */}
+                                    {selectedProduct.isMonthlyKit && <KitAddonsUI />}
 
                                     {/* Decorative Divider */}
                                     <div className="relative -mt-1 -mb-1">
@@ -1120,6 +1270,9 @@ const ProductDetailSheet = () => {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Kit Addons (Mobile) */}
+                                        {selectedProduct.isMonthlyKit && <KitAddonsUI />}
 
                                         {/* Product Information Accordion (Mobile) */}
                                         <div className="mt-2 border-t border-slate-100">

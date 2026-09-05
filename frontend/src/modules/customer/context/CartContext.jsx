@@ -129,8 +129,8 @@ export const CartProvider = ({ children }) => {
     };
   }, [cart, isAuthenticated]);
 
-  const addToCart = async (product) => {
-    const variantSku = String(product?.variantSku || product?.variantName || "").trim();
+  const addToCart = async (product, defaultQuantity = 1, forceVariantSku = null, options = {}) => {
+    const variantSku = forceVariantSku ?? String(product?.variantSku || product?.variantName || "").trim();
     const id = product.id || product._id;
     const key = `${id}::${variantSku || ""}`;
     console.log("DEBUG: addToCart product:", { id, name: product?.name, variantSku, key });
@@ -145,7 +145,7 @@ export const CartProvider = ({ children }) => {
         console.log("DEBUG: addToCart existing item incrementing");
         return prev.map((item) =>
           `${item.id || item._id}::${String(item.variantSku || "").trim()}` === key
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + defaultQuantity, ...(options.kitAddons ? { kitAddons: options.kitAddons } : {}) }
             : item,
         );
       }
@@ -160,8 +160,9 @@ export const CartProvider = ({ children }) => {
           variantName,
           price,
           salePrice,
-          quantity: 1,
+          quantity: defaultQuantity,
           image: variantImage || product.image || product.mainImage,
+          ...(options.kitAddons ? { kitAddons: options.kitAddons } : {})
         },
       ];
     });
@@ -169,11 +170,15 @@ export const CartProvider = ({ children }) => {
     if (isAuthenticated) {
       pendingRequestsRef.current += 1;
       try {
-        const response = await customerApi.addToCart({
+        const payload = {
           productId: id,
           variantSku,
-          quantity: 1,
-        });
+          quantity: defaultQuantity,
+        };
+        if (options.kitAddons) {
+            payload.kitAddons = options.kitAddons;
+        }
+        const response = await customerApi.addToCart(payload);
         pendingRequestsRef.current -= 1;
         await syncCart(response.data.result.items);
       } catch (error) {

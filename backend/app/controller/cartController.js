@@ -70,7 +70,7 @@ export const getCart = async (req, res) => {
 export const addToCart = async (req, res) => {
   try {
     const customerId = req.user.id;
-    const { productId, quantity = 1, variantSku = "" } = req.body;
+    const { productId, quantity = 1, variantSku = "", kitAddons = [] } = req.body;
     const normalizedVariantSku = String(variantSku || "").trim();
     const customerVisibleProduct = await getCustomerVisibleProductById(productId);
     if (!customerVisibleProduct) {
@@ -92,8 +92,12 @@ export const addToCart = async (req, res) => {
 
     if (itemIndex > -1) {
       cart.items[itemIndex].quantity += quantity;
+      // Also update kitAddons if they are passed (for monthly kits)
+      if (kitAddons && kitAddons.length > 0) {
+        cart.items[itemIndex].kitAddons = kitAddons;
+      }
     } else {
-      cart.items.push({ productId, variantSku: normalizedVariantSku, quantity });
+      cart.items.push({ productId, variantSku: normalizedVariantSku, quantity, kitAddons });
     }
 
     await cart.save();

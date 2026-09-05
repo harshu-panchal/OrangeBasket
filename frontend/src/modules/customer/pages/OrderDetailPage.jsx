@@ -1060,6 +1060,48 @@ const OrderDetailPage = () => {
           </div>
         </motion.div>
 
+        {/* Kit Add-On Items */}
+        {order.kitAddons && order.kitAddons.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+            className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100"
+          >
+            <h3 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Package size={18} className="text-orange-400" />
+              Add-On Items
+            </h3>
+            <div className="space-y-3">
+              {order.kitAddons.map((addon, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/50 border border-orange-100"
+                >
+                  <div className="h-12 w-12 bg-white rounded-xl overflow-hidden flex-shrink-0 border border-orange-100">
+                    {addon.image ? (
+                      <img src={addon.image} alt={addon.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-orange-50">
+                        <Package size={16} className="text-orange-300" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-slate-800 text-sm truncate">{addon.name}</h4>
+                    <p className="text-slate-500 text-xs font-medium">
+                      {addon.unit} · Qty: {addon.quantity}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-slate-900">₹{addon.subtotal || addon.quantity * addon.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Bill Summary - Cleaner Design */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

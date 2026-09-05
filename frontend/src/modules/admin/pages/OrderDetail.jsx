@@ -271,6 +271,36 @@ const OrderDetail = () => {
                                 </tbody>
                             </table>
                         </div>
+                        {/* Kit Add-On Items */}
+                        {order.kitAddons && order.kitAddons.length > 0 && (
+                            <div className="px-6 py-4 bg-orange-50/50 border-t border-orange-100">
+                                <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Package className="h-3.5 w-3.5" />
+                                    Kit Add-On Items
+                                </h4>
+                                <div className="space-y-2">
+                                    {order.kitAddons.map((addon, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-orange-100">
+                                            <div className="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0 border border-orange-100 bg-orange-50">
+                                                {addon.image ? (
+                                                    <img src={addon.image} alt={addon.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Package className="h-4 w-4 text-orange-300" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-sm font-black text-slate-900">{addon.name}</span>
+                                                <span className="text-xs font-medium text-slate-400 ml-2">{addon.unit}</span>
+                                            </div>
+                                            <span className="bg-orange-100 px-2.5 py-1 rounded-lg text-xs font-black text-orange-700">×{addon.quantity}</span>
+                                            <span className="text-sm font-black text-slate-900 min-w-[60px] text-right">₹{addon.subtotal || addon.quantity * addon.price}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div className="p-4 bg-slate-50/50 flex flex-col items-end gap-3 text-right">
                             <div className="flex items-center justify-between w-full max-w-[240px]">
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>

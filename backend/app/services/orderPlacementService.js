@@ -172,6 +172,7 @@ async function resolveOrderItemsInput({
     product: item.productId,
     variantSku: String(item.variantSku || "").trim(),
     quantity: item.quantity,
+    kitAddons: item.kitAddons || [],
   }));
   return {
     orderItemsInput,
@@ -545,6 +546,7 @@ export async function placeOrderAtomic({
         seller: entry.actualSellerId || null,
         warehouseId: entry.actualWarehouseId || await resolveWarehouseIdFromItems(entry.items),
         items: mapOrderItemsForPersistence(entry.items),
+        kitAddons: entry.items.reduce((addons, item) => addons.concat(item.kitAddons || []), []),
         address: normalizedAddress,
         paymentMode,
         paymentStatus:

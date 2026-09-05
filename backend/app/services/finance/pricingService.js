@@ -318,6 +318,7 @@ export async function hydrateOrderItems(
       headerCategoryId: String(product.headerId),
       ...(product.sellerId ? { sellerId: String(product.sellerId) } : {}),
       ...(product.warehouseId ? { warehouseId: String(product.warehouseId) } : {}),
+      kitAddons: item.kitAddons || [],
       variantSku: rawVariantSku || "",
       variantName: resolvedVariant ? String(resolvedVariant?.name || "").trim() : "",
     };

@@ -34,6 +34,20 @@ const cartSchema = new mongoose.Schema(
                     min: 1,
                     default: 1,
                 },
+                kitAddons: [
+                    {
+                        addonId: {
+                            type: mongoose.Schema.Types.ObjectId,
+                            ref: "KitAddonItem",
+                        },
+                        name: String,
+                        image: String,
+                        quantity: Number,
+                        price: Number,
+                        unit: String,
+                        subtotal: Number,
+                    },
+                ],
             },
         ],
     },

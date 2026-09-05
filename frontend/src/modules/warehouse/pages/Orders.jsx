@@ -138,6 +138,7 @@ const Orders = () => {
                     ? 'Cash on Delivery'
                     : 'Online Paid',
                 deliveryBoy: order.deliveryBoy || null,
+                kitAddons: order.kitAddons || [],
             }));
 
             setOrders(formattedOrders);
@@ -892,6 +893,40 @@ const Orders = () => {
                                                 </div>
                                             ))}
                                         </div>
+
+                                        {/* Kit Add-On Items - Prominent for warehouse packing */}
+                                        {selectedOrder.kitAddons && selectedOrder.kitAddons.length > 0 && (
+                                            <div className="mt-4">
+                                                <h4 className="text-xs font-black text-orange-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                                                    Kit Add-On Items ({selectedOrder.kitAddons.length})
+                                                </h4>
+                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                    {selectedOrder.kitAddons.map((addon, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 bg-orange-50 ring-1 ring-orange-200 rounded-2xl">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded-xl overflow-hidden bg-white ring-1 ring-orange-200 flex-shrink-0">
+                                                                    {addon.image ? (
+                                                                        <img src={addon.image} alt={addon.name} className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="h-full w-full flex items-center justify-center bg-orange-100">
+                                                                            <span className="text-orange-400 text-xs font-black">📦</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-black text-orange-900">{addon.name}</p>
+                                                                    <p className="text-xs font-semibold text-orange-600">{addon.unit} × {addon.quantity}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs font-black text-orange-900">₹{(addon.subtotal || addon.quantity * addon.price).toFixed(2)}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Modal Footer */}
