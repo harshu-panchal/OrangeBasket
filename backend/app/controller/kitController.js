@@ -4,10 +4,26 @@ import HeroConfig from "../models/heroConfig.js";
 import handleResponse from "../utils/helper.js";
 import { uploadToCloudinary } from "../services/mediaService.js";
 import logger from "../services/logger.js";
+import {
+  parseCustomerCoordinates,
+  getNearbySellerIdsForCustomer,
+} from "../services/customerVisibilityService.js";
 
 // Customer Endpoints
 export const getHomeData = async (req, res) => {
     try {
+        const coords = parseCustomerCoordinates(req.query || {});
+        if (!coords.valid) {
+            return handleResponse(
+                res,
+                400,
+                "lat and lng are required for customer kit visibility",
+            );
+        }
+
+        const nearbyIds = await getNearbySellerIdsForCustomer(coords.lat, coords.lng);
+        const nearbySet = new Set(nearbyIds.map(String));
+
         // Fetch kit banners
         const heroConfig = await HeroConfig.findOne({ pageType: "monthly_basket" }).lean();
         const banners = heroConfig ? heroConfig.banners.items : [];
@@ -15,11 +31,12 @@ export const getHomeData = async (req, res) => {
         // Fetch kit categories
         const categories = await Category.find({ isKitCategory: true, status: "active" }).lean();
 
-        // Fetch approved kits
+        // Only kits whose warehouse is within the customer's delivery radius
         const kits = await Product.find({
             isMonthlyKit: true,
             status: "active",
-            approvalStatus: "approved"
+            approvalStatus: "approved",
+            warehouseId: { $in: [...nearbySet] },
         }).populate("categoryId", "name").lean();
 
         return handleResponse(res, 200, "Kit home data fetched successfully", {
@@ -34,6 +51,18 @@ export const getHomeData = async (req, res) => {
 
 export const getKitById = async (req, res) => {
     try {
+        const coords = parseCustomerCoordinates(req.query || {});
+        if (!coords.valid) {
+            return handleResponse(
+                res,
+                400,
+                "lat and lng are required for customer kit visibility",
+            );
+        }
+
+        const nearbyIds = await getNearbySellerIdsForCustomer(coords.lat, coords.lng);
+        const nearbySet = new Set(nearbyIds.map(String));
+
         const kit = await Product.findOne({
             _id: req.params.id,
             isMonthlyKit: true
@@ -43,6 +72,16 @@ export const getKitById = async (req, res) => {
 
         if (!kit) {
             return handleResponse(res, 404, "Kit not found");
+        }
+
+        const warehouseId = kit.warehouseId?._id
+            ? String(kit.warehouseId._id)
+            : kit.warehouseId
+              ? String(kit.warehouseId)
+              : null;
+
+        if (!warehouseId || !nearbySet.has(warehouseId)) {
+            return handleResponse(res, 404, "Kit not available in your area");
         }
 
         return handleResponse(res, 200, "Kit details fetched", kit);

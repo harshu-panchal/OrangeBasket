@@ -77,6 +77,7 @@ function mapOrderItemsForPersistence(hydratedItems = []) {
     price: item.price,
     variantSlot: String(item.variantSku || item.variantSlot || "").trim() || undefined,
     image: item.image || "",
+    kitAddons: item.kitAddons || [],
   }));
 }
 
@@ -228,6 +229,7 @@ async function consumeCartItems({
         productId: cartItem.productId,
         variantSku,
         quantity: quantityLeft,
+        kitAddons: cartItem.kitAddons || [],
       });
     }
     requestedQtyByLineKey.delete(key);

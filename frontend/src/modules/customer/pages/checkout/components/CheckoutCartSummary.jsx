@@ -22,8 +22,8 @@ const CheckoutCartSummary = React.memo(function CheckoutCartSummary({
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
       {cart.map((item) => (
+        <React.Fragment key={`${item.id}::${String(item.variantSku || "").trim()}`}>
         <div
-          key={`${item.id}::${String(item.variantSku || "").trim()}`}
           className="flex items-start gap-3 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
           <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-50 flex-shrink-0">
             <img
@@ -76,9 +76,17 @@ const CheckoutCartSummary = React.memo(function CheckoutCartSummary({
                 Number.isFinite(sale) &&
                 sale > 0 &&
                 sale < mrp;
-              const unit = hasDiscount ? sale : mrp;
+              let unit = hasDiscount ? sale : mrp;
+              
+              let addonsTotal = 0;
+              if (item.kitAddons && Array.isArray(item.kitAddons) && item.kitAddons.length > 0) {
+                addonsTotal = item.kitAddons.reduce((sum, addon) => sum + (Number(addon.price) * Number(addon.quantity)), 0);
+                unit += addonsTotal;
+              }
+
               const total = Math.round(unit * qty);
-              const totalMrp = Math.round(mrp * qty);
+              const totalMrp = Math.round((mrp + addonsTotal) * qty);
+              
               return (
                 <div className="text-right leading-tight">
                   <p className="text-base font-black text-slate-800">₹{total}</p>
@@ -92,6 +100,29 @@ const CheckoutCartSummary = React.memo(function CheckoutCartSummary({
             })()}
           </div>
         </div>
+        
+        {/* Render Kit Addons if any */}
+        {item.kitAddons && Array.isArray(item.kitAddons) && item.kitAddons.length > 0 && (
+          <div className="ml-[92px] -mt-2 mb-4 bg-orange-50/50 rounded-xl p-3 border border-orange-100">
+            <h5 className="text-[10px] font-black text-orange-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Plus size={10} className="text-orange-500" /> Included Add-ons
+            </h5>
+            <div className="space-y-1.5">
+              {item.kitAddons.map((addon) => (
+                <div key={addon.addonId} className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600 font-medium">{addon.name}</span>
+                    <span className="text-[10px] bg-white px-1.5 py-0.5 rounded text-slate-500 font-bold border border-slate-100">
+                      x{addon.quantity}
+                    </span>
+                  </div>
+                  <span className="font-bold text-slate-700">₹{addon.price * addon.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </React.Fragment>
       ))}
     </div>
   );

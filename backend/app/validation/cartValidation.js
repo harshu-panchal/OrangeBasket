@@ -29,8 +29,22 @@ const variantSkuField = trimmedString.max(64).optional().allow("");
 /** POST /cart/add — add an item to the customer's cart. */
 export const addToCartSchema = Joi.object({
   productId: objectIdLike.required(),
-  quantity: Joi.number().integer().min(1).max(99).required(),
+  // min(0) allows kitAddons-only patches (quantity 0 = do not change line qty)
+  quantity: Joi.number().integer().min(0).max(99).required(),
   variantSku: variantSkuField,
+  lat: Joi.number().min(-90).max(90).optional(),
+  lng: Joi.number().min(-180).max(180).optional(),
+  kitAddons: Joi.array().items(
+    Joi.object({
+      addonId: objectIdLike.required(),
+      name: Joi.string().allow("", null),
+      price: Joi.number().min(0).required(),
+      quantity: Joi.number().min(0).required(),
+      image: Joi.string().allow("", null).optional(),
+      unit: Joi.string().allow("", null).optional(),
+      subtotal: Joi.number().min(0).optional(),
+    })
+  ).optional(),
 });
 
 /** PUT /cart/update — update quantity (and optionally variantSku) for an existing line item. */

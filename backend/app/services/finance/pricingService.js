@@ -40,6 +40,15 @@ function normalizeLinePrice(value) {
   return Number.isFinite(amount) ? clampMoney(amount, 0) : 0;
 }
 
+function getItemUnitPrice(item) {
+  let unitPrice = normalizeLinePrice(item.price);
+  if (item.kitAddons && Array.isArray(item.kitAddons)) {
+    const addonsPrice = item.kitAddons.reduce((acc, addon) => acc + (Number(addon.price) * Number(addon.quantity)), 0);
+    unitPrice += addonsPrice;
+  }
+  return unitPrice;
+}
+
 function resolveCommissionConfig(category) {
   if (!category) {
     return {
@@ -108,7 +117,8 @@ export function calculateProductSubtotal(items = []) {
   return roundCurrency(
     items.reduce((sum, item) => {
       const quantity = normalizeLineQuantity(item.quantity);
-      const unitPrice = normalizeLinePrice(item.price);
+      let unitPrice = getItemUnitPrice(item);
+      
       return sum + unitPrice * quantity;
     }, 0),
   );
@@ -116,7 +126,9 @@ export function calculateProductSubtotal(items = []) {
 
 export function calculateCategoryCommission(item, categoryConfig) {
   const quantity = normalizeLineQuantity(item.quantity);
-  const itemSubtotal = roundCurrency(normalizeLinePrice(item.price) * quantity);
+  const basePrice = getItemUnitPrice(item);
+  
+  const itemSubtotal = roundCurrency(basePrice * quantity);
   const { type, value, fixedRule } = resolveCommissionConfig(categoryConfig);
 
   let adminCommission = 0;
@@ -158,7 +170,7 @@ export function calculateHandlingFee(cartItems, options = {}) {
   const categorySubtotalMap = new Map();
   for (const item of cartItems) {
     const headerId = toObjectIdString(item.headerCategoryId);
-    const itemSubtotal = roundCurrency(normalizeLinePrice(item.price) * normalizeLineQuantity(item.quantity));
+    const itemSubtotal = roundCurrency(getItemUnitPrice(item) * normalizeLineQuantity(item.quantity));
     categorySubtotalMap.set(headerId, addMoney(categorySubtotalMap.get(headerId) || 0, itemSubtotal));
   }
 
@@ -190,7 +202,7 @@ export function calculateHandlingFee(cartItems, options = {}) {
       const category = categoryById.get(headerId);
       const handling = resolveHandlingConfig(category);
       const quantity = normalizeLineQuantity(item.quantity);
-      const itemSubtotal = roundCurrency(normalizeLinePrice(item.price) * quantity);
+      const itemSubtotal = roundCurrency(getItemUnitPrice(item) * quantity);
       const perLine =
         handling.type === HANDLING_FEE_TYPE.FIXED
           ? roundCurrency(handling.value * quantity)

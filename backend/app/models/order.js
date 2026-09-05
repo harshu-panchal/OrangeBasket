@@ -50,6 +50,20 @@ const orderSchema = new mongoose.Schema(
         },
         variantSlot: String,
         image: String,
+        kitAddons: [
+          {
+            addonId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "KitAddonItem",
+            },
+            name: String,
+            image: String,
+            quantity: Number,
+            price: Number,
+            unit: String,
+            subtotal: Number,
+          }
+        ]
       },
     ],
     /** Add-on items selected by customer for monthly kit orders (Atta, Oil, Rice etc.) */

@@ -3,27 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { customerApi } from '../../services/customerApi';
 import { Sparkles, Package, ChevronRight } from 'lucide-react';
 import ProductCard from '../shared/ProductCard';
+import { useLocation as useAppLocation } from '../../context/LocationContext';
 
 const MonthlyBasketSection = () => {
     const [kitData, setKitData] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { currentLocation } = useAppLocation();
 
     useEffect(() => {
         const fetchKits = async () => {
+            const hasValidLocation =
+                Number.isFinite(currentLocation?.latitude) &&
+                Number.isFinite(currentLocation?.longitude);
+
+            if (!hasValidLocation) {
+                setKitData(null);
+                setLoading(false);
+                return;
+            }
+
             try {
-                const response = await customerApi.getKitHomeData();
+                setLoading(true);
+                const response = await customerApi.getKitHomeData({
+                    lat: currentLocation.latitude,
+                    lng: currentLocation.longitude,
+                });
                 if (response?.data?.success) {
                     setKitData(response.data.result);
                 }
             } catch (err) {
                 console.error("Error fetching kit home data:", err);
+                setKitData(null);
             } finally {
                 setLoading(false);
             }
         };
         fetchKits();
-    }, []);
+    }, [currentLocation?.latitude, currentLocation?.longitude]);
 
     if (loading) return null;
     if (!kitData || (!kitData.banners?.length && !kitData.categories?.length && !kitData.kits?.length)) {

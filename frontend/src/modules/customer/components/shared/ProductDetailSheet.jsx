@@ -212,8 +212,24 @@ const ProductDetailSheet = () => {
             if (response?.data?.success) {
                 const items = response.data.results || response.data.result || response.data.data || [];
                 setAddons(items);
+                
+                // Get current cart item if it exists
+                const variantKey = String(selectedVariant?.sku || selectedVariant?.name || "").trim();
+                const currentCartItem = cart.find(
+                    (item) =>
+                        `${item.id || item._id}::${String(item.variantSku || "").trim()}` ===
+                        `${kitId}::${variantKey || ""}`,
+                );
+                
                 const initQty = {};
-                items.forEach(item => { initQty[item._id] = 0; });
+                items.forEach(item => {
+                    if (currentCartItem && currentCartItem.kitAddons) {
+                        const existing = currentCartItem.kitAddons.find(a => String(a.addonId) === String(item._id));
+                        initQty[item._id] = existing ? existing.quantity : 0;
+                    } else {
+                        initQty[item._id] = 0;
+                    }
+                });
                 setAddonQuantities(initQty);
             }
         } catch (err) {
@@ -228,7 +244,30 @@ const ProductDetailSheet = () => {
             const addon = addons.find(a => a._id === addonId);
             const max = addon?.maxQtyPerOrder || 10;
             const newQty = Math.max(0, Math.min(max, (prev[addonId] || 0) + delta));
-            return { ...prev, [addonId]: newQty };
+            
+            const updatedPrev = { ...prev, [addonId]: newQty };
+            
+            // If the item is already in cart, auto update cart addons
+            if (quantity > 0) {
+                const newSelectedAddons = addons.filter(a => (updatedPrev[a._id] || 0) > 0);
+                const newAddonData = newSelectedAddons.map(a => ({
+                    addonId: a._id,
+                    name: a.name,
+                    price: a.price,
+                    quantity: updatedPrev[a._id],
+                    image: a.image
+                }));
+                
+                // Patch kitAddons only (qty 0) — CartContext/backend treat this as addons-only update
+                addToCart(
+                    selectedProduct,
+                    0,
+                    String(selectedVariant?.sku || selectedVariant?.name || "").trim(),
+                    { kitAddons: newAddonData }
+                );
+            }
+            
+            return updatedPrev;
         });
     };
 
@@ -443,6 +482,7 @@ const ProductDetailSheet = () => {
 
     const selectedAddons = addons.filter(a => (addonQuantities[a._id] || 0) > 0);
     const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price * addonQuantities[a._id]), 0);
+    const displayPrice = (selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.salePrice || selectedProduct.price || 0) + addonsTotal;
 
     const KitAddonsUI = () => (
         !addonsLoading && addons.length > 0 && (
@@ -553,10 +593,10 @@ const ProductDetailSheet = () => {
                         transition={{ type: 'spring', damping: 28, stiffness: 380 }}
                         className="hidden md:flex fixed z-[590] top-[72px] bottom-[16px] left-[3%] right-[3%] lg:left-[6%] lg:right-[6%] xl:left-[12%] xl:right-[12%] bg-white rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.25)] overflow-hidden"
                     >
-                        {/* Parent flex container that holds both sides together so the whole modal scrolls */}
-                        <div className="flex w-full min-h-full">
-                            {/* Left: Image Gallery — sticky to window so it doesn't scroll out of view if you want */}
-                            <div className="relative w-[42%] lg:w-[44%] flex-shrink-0 flex flex-col min-h-full sticky top-0" style={{ background: 'linear-gradient(145deg, #f9fafb 0%, #f1f8f2 50%, #fafbfc 100%)' }}>
+                        {/* Height-constrained row so the right column can scroll independently */}
+                        <div className="flex w-full h-full min-h-0 overflow-hidden">
+                            {/* Left: Image Gallery */}
+                            <div className="relative w-[42%] lg:w-[44%] flex-shrink-0 flex flex-col h-full" style={{ background: 'linear-gradient(145deg, #f9fafb 0%, #f1f8f2 50%, #fafbfc 100%)' }}>
                                 {/* Top bar with back + wishlist */}
                                 <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-5 z-20">
                                     <motion.button
@@ -676,8 +716,8 @@ const ProductDetailSheet = () => {
                                 )}
                             </div>
 
-                            {/* Right: Product Info (scrollable naturally) */}
-                            <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+                            {/* Right: Product Info (scrollable for tall basket content) */}
+                            <div className="flex-1 flex flex-col bg-white min-h-0 overflow-y-auto overscroll-contain">
                                 <div className="flex-1 px-7 py-6 lg:px-8 lg:py-7 space-y-3">
 
                                     {/* Top badges row */}
@@ -759,7 +799,7 @@ const ProductDetailSheet = () => {
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-baseline gap-2">
                                                     <span className="text-[28px] lg:text-[32px] font-[800] text-primary tracking-tight leading-none">
-                                                        ₹{selectedProduct.price}
+                                                        ₹{displayPrice}
                                                     </span>
                                                     {selectedProduct.originalPrice > selectedProduct.price && (
                                                         <span className="text-[14px] text-gray-400 line-through font-[600]">₹{selectedProduct.originalPrice}</span>
@@ -1465,7 +1505,7 @@ const ProductDetailSheet = () => {
                                         className="flex-1 bg-[#FF8200] text-white h-14 rounded-[20px] font-bold text-sm flex items-center justify-between px-6 shadow-xl shadow-brand-100 transition-all border border-white/20"
                                     >
                                         <span className="uppercase tracking-wider font-extrabold text-[13px]">Add to Cart</span>
-                                        <span className="text-sm font-black">₹{selectedVariant?.salePrice || selectedVariant?.price || selectedProduct.price}</span>
+                                        <span className="text-sm font-black">₹{displayPrice}</span>
                                     </motion.button>
                                 )}
                             </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { customerApi } from '../services/customerApi';
 import { useCart } from '../context/CartContext';
+import { useLocation as useAppLocation } from '../context/LocationContext';
 import { toast } from 'sonner';
 import { ChevronLeft, Package, Check, Sparkles, Plus, Minus, ShoppingCart } from 'lucide-react';
 
@@ -9,6 +10,7 @@ const KitDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { currentLocation } = useAppLocation();
     const [kit, setKit] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -19,20 +21,36 @@ const KitDetailPage = () => {
 
     useEffect(() => {
         const fetchKit = async () => {
+            const hasValidLocation =
+                Number.isFinite(currentLocation?.latitude) &&
+                Number.isFinite(currentLocation?.longitude);
+
+            if (!hasValidLocation) {
+                setKit(null);
+                setLoading(false);
+                toast.error("Set your location to view this basket");
+                return;
+            }
+
             try {
-                const response = await customerApi.getKitById(id);
+                setLoading(true);
+                const response = await customerApi.getKitById(id, {
+                    lat: currentLocation.latitude,
+                    lng: currentLocation.longitude,
+                });
                 if (response?.data?.success) {
                     setKit(response.data.data || response.data.result);
                 }
             } catch (err) {
                 console.error("Error fetching kit:", err);
-                toast.error("Kit not found");
+                setKit(null);
+                toast.error(err?.response?.data?.message || "Kit not available in your area");
             } finally {
                 setLoading(false);
             }
         };
         fetchKit();
-    }, [id]);
+    }, [id, currentLocation?.latitude, currentLocation?.longitude]);
 
     // Fetch add-on items
     useEffect(() => {
