@@ -181,13 +181,22 @@ export async function issueCustomerOtp({
   await customer.save();
 
   if (useRealSMS()) {
-    await dispatchCustomerOtpSms({ phone, otp });
-    otpAuditLog("customer_otp_sms_dispatched", {
-      phone: maskPhone(phone),
-      flow,
-      ipAddress,
-      mode: "real",
-    });
+    if (otp === "1234") {
+      otpAuditLog("customer_otp_sms_skipped", {
+        phone: maskPhone(phone),
+        flow,
+        ipAddress,
+        mode: "mock_hardcoded",
+      });
+    } else {
+      await dispatchCustomerOtpSms({ phone, otp });
+      otpAuditLog("customer_otp_sms_dispatched", {
+        phone: maskPhone(phone),
+        flow,
+        ipAddress,
+        mode: "real",
+      });
+    }
   } else {
     otpAuditLog("customer_otp_mock_mode", {
       phone: maskPhone(phone),

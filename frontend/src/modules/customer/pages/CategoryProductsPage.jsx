@@ -30,8 +30,14 @@ const CategoryProductsPage = () => {
     const [category, setCategory] = useState(null);
     const [subCategories, setSubCategories] = useState([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }]);
     const [products, setProducts] = useState([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [queryKey, setQueryKey] = useState(null);
+
     const [isLoading, setIsLoading] = useState(true);
     const [noServiceData, setNoServiceData] = useState(null);
+    const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
     // Dynamically load no-service Lottie on mount
     useEffect(() => {
@@ -40,90 +46,157 @@ const CategoryProductsPage = () => {
             .catch(() => {});
     }, []);
 
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
+    // 1. Fetch Category Tree when catId changes
+    useEffect(() => {
+        let mounted = true;
+        const fetchTree = async () => {
+            try {
+                const catRes = await customerApi.getCategories({ tree: true });
+                if (!mounted) return;
+                let qk = 'categoryId';
+                let currentCat = null;
+                let subCategoriesList = [{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }];
+
+                if (catRes.data.success) {
+                    const tree = catRes.data.results || catRes.data.result || [];
+                    for (const header of tree) {
+                        if (header._id === catId || header.id === catId) {
+                            currentCat = header;
+                            qk = 'headerId';
+                            break;
+                        }
+                        const found = (header.children || []).find(c => c._id === catId || c.id === catId);
+                        if (found) {
+                            currentCat = found;
+                            break;
+                        }
+                    }
+
+                    if (currentCat) {
+                        setCategory(currentCat);
+                        const subs = (currentCat.children || []).map(s => ({
+                            id: s._id || s.id,
+                            name: s.name,
+                            icon: s.image || 'https://cdn-icons-png.flaticon.com/128/2321/2321801.png'
+                        }));
+                        subCategoriesList = [...subCategoriesList, ...subs];
+                        setSubCategories(subCategoriesList);
+                    }
+                }
+                setQueryKey(qk);
+            } catch (err) {
+                console.error("Error fetching category tree:", err);
+                if (mounted) setQueryKey('categoryId');
+            }
+        };
+        fetchTree();
+        return () => { mounted = false; };
+    }, [catId]);
+
+    // Reset pagination when subcategory changes
+    useEffect(() => {
+        setPage(1);
+        setProducts([]);
+        setHasMore(false);
+    }, [selectedSubCategory, catId]);
+
+    // 2. Fetch Products with Pagination
+    useEffect(() => {
+        if (!queryKey) return; // Wait for tree
+
+        let mounted = true;
+        const fetchProducts = async () => {
             const hasValidLocation =
                 Number.isFinite(currentLocation?.latitude) &&
                 Number.isFinite(currentLocation?.longitude);
 
-            // Fetch products and categories in parallel instead of sequentially
-            const [prodRes, catRes] = await Promise.all([
-                hasValidLocation
-                    ? customerApi.getProducts({
-                        categoryId: catId,
-                        lat: currentLocation.latitude,
-                        lng: currentLocation.longitude,
-                    })
-                    : Promise.resolve({ data: { success: true, result: { items: [] } } }),
-                customerApi.getCategories({ tree: true }),
-            ]);
-
-            if (prodRes.data.success) {
-                const rawResult = prodRes.data.result;
-                const dbProds = Array.isArray(prodRes.data.results)
-                    ? prodRes.data.results
-                    : Array.isArray(rawResult?.items)
-                    ? rawResult.items
-                    : Array.isArray(rawResult)
-                    ? rawResult
-                    : [];
-
-                const formattedProds = dbProds.map(p => ({
-                    ...p,
-                    id: p._id,
-                    image:
-                      p.mainImage ||
-                      p.image ||
-                      "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
-                    price: p.salePrice || p.price,
-                    originalPrice: p.price,
-                    weight: p.weight || "1 unit",
-                    deliveryTime: "8-15 mins"
-                }));
-                setProducts(Array.isArray(formattedProds) ? formattedProds : []);
-            } else {
-                setProducts([]);
+            if (!hasValidLocation) {
+                if (mounted) {
+                    setProducts([]);
+                    setServiceUnavailable(true);
+                    setIsLoading(false);
+                }
+                return;
             }
 
-            if (catRes.data.success) {
-                const tree = catRes.data.results || catRes.data.result || [];
-                let currentCat = null;
-                for (const header of tree) {
-                    const found = (header.children || []).find(c => c._id === catId);
-                    if (found) {
-                        currentCat = found;
-                        break;
-                    }
+            if (page === 1) setIsLoading(true);
+            else setIsFetchingMore(true);
+
+            try {
+                const params = {
+                    limit: 24,
+                    page: page,
+                    lat: currentLocation.latitude,
+                    lng: currentLocation.longitude,
+                };
+                
+                if (selectedSubCategory !== 'all') {
+                    params.subcategoryId = selectedSubCategory;
+                } else {
+                    params[queryKey] = catId;
                 }
 
-                if (currentCat) {
-                    setCategory(currentCat);
-                    const subs = (currentCat.children || []).map(s => ({
-                        id: s._id,
-                        name: s.name,
-                        icon: s.image || 'https://cdn-icons-png.flaticon.com/128/2321/2321801.png'
+                const prodRes = await customerApi.getProducts(params);
+                if (!mounted) return;
+
+                if (prodRes.data.success) {
+                    const rawResult = prodRes.data.result;
+                    const dbProds = Array.isArray(prodRes.data.results)
+                        ? prodRes.data.results
+                        : Array.isArray(rawResult?.items)
+                        ? rawResult.items
+                        : Array.isArray(rawResult)
+                        ? rawResult
+                        : [];
+
+                    const formattedProds = dbProds.map(p => ({
+                        ...p,
+                        id: p._id || p.id,
+                        image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
+                        price: p.salePrice || p.price,
+                        originalPrice: p.price,
+                        weight: p.weight || "1 unit",
+                        deliveryTime: "8-15 mins"
                     }));
-                    setSubCategories([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }, ...subs]);
+
+                    setProducts(prev => page === 1 ? formattedProds : [...prev, ...formattedProds]);
+                    
+                    const totalPages = rawResult?.totalPages || 1;
+                    setHasMore(page < totalPages);
+                    setServiceUnavailable(prodRes.data.message === "No products available in your area");
+                } else {
+                    if (page === 1) setProducts([]);
+                    setHasMore(false);
+                    setServiceUnavailable(false);
+                }
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            } finally {
+                if (mounted) {
+                    setIsLoading(false);
+                    setIsFetchingMore(false);
                 }
             }
-        } catch (error) {
-            console.error("Error fetching category data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        };
 
-    useEffect(() => {
-        fetchData();
-        setSelectedSubCategory(location.state?.activeSubcategoryId || 'all');
-    }, [catId, location.state?.activeSubcategoryId, currentLocation?.latitude, currentLocation?.longitude]);
+        fetchProducts();
+        return () => { mounted = false; };
+    }, [catId, queryKey, selectedSubCategory, page, currentLocation?.latitude, currentLocation?.longitude]);
+
+    // Intersection Observer for Infinite Scroll
+    const observer = React.useRef();
+    const lastProductElementRef = React.useCallback(node => {
+        if (isLoading || isFetchingMore) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                setPage(prev => prev + 1);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [isLoading, isFetchingMore, hasMore]);
 
     const safeProducts = Array.isArray(products) ? products : [];
-
-    const filteredProducts = safeProducts.filter(p =>
-        selectedSubCategory === 'all' || p.subcategoryId?._id === selectedSubCategory || p.subcategoryId === selectedSubCategory
-    );
 
     const productsById = React.useMemo(() => {
         const map = {};
@@ -149,6 +222,7 @@ const CategoryProductsPage = () => {
             </header>
 
             {(safeProducts.length === 0 && !isLoading) ? (
+                serviceUnavailable ? (
                     <div className="w-full flex-1 py-20 px-8 flex flex-col items-center justify-center text-center">
                         <div className="w-64 h-64 mb-6">
                             {noServiceData ? (
@@ -170,6 +244,19 @@ const CategoryProductsPage = () => {
                             Try Refreshing
                         </button>
                     </div>
+                ) : (
+                    <div className="w-full flex-1 py-20 px-8 flex flex-col items-center justify-center text-center">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <Search size={40} className="text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">
+                            No Products Found
+                        </h3>
+                        <p className="text-slate-500 text-sm max-w-[280px]">
+                            We couldn't find any products in this category at your current location.
+                        </p>
+                    </div>
+                )
             ) : (
                 <div>
                     {/* Horizontal Tabs */}
@@ -192,10 +279,25 @@ const CategoryProductsPage = () => {
 
                     {/* Products Grid */}
                     <div className="px-3 pt-4 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {filteredProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} layout="grid" />
-                        ))}
+                        {safeProducts.map((product, index) => {
+                            if (safeProducts.length === index + 1) {
+                                return (
+                                    <div ref={lastProductElementRef} key={product.id}>
+                                        <ProductCard product={product} layout="grid" />
+                                    </div>
+                                );
+                            } else {
+                                return <ProductCard key={product.id} product={product} layout="grid" />;
+                            }
+                        })}
                     </div>
+                    
+                    {/* Loading indicator for pagination */}
+                    {isFetchingMore && (
+                        <div className="w-full flex justify-center py-6">
+                            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    )}
                 </div>
             )}
 

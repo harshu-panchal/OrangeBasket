@@ -55,6 +55,7 @@ const ALLOWED_KEYS = [
   "categoriesBanner",
   "homeVideoBanner",
   "weather",
+  "storeStatus",
 ];
 
 function flattenForMongoSet(prefix, value, target) {
@@ -160,6 +161,11 @@ const updateSettingsSchema = Joi.object({
     condition: Joi.string().max(100),
     icon: Joi.string().max(100),
   }).unknown(false),
+  storeStatus: Joi.object({
+    isClosed: Joi.boolean(),
+    reopenTime: Joi.string().allow("").max(100),
+    message: Joi.string().allow("").max(500),
+  }).unknown(false),
 }).unknown(false);
 
 /**
@@ -180,7 +186,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor footerMessage footerEmoji returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor footerMessage footerEmoji returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather storeStatus createdAt",
           )
           .lean();
         return existing || null;

@@ -1,7 +1,9 @@
 import Product from "../models/product.js";
 import Order from "../models/order.js";
 import Review from "../models/review.js";
+import Category from "../models/category.js";
 import { handleResponse } from "../utils/helper.js";
+import { applyTypoCorrection } from "../utils/searchUtils.js";
 import https from "https";
 
 // Helper function to translate input search terms to English dynamically
@@ -303,6 +305,10 @@ export const getProducts = async (req, res) => {
       sort,
       lat,
       lng,
+      minPrice,
+      maxPrice,
+      brand,
+      inStockOnly,
     } = req.query;
     const enforceRadius = isCustomerVisibilityRequest(req);
 
@@ -355,6 +361,20 @@ export const getProducts = async (req, res) => {
           }
         }
       }
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    if (brand) {
+      query.brand = { $regex: new RegExp(brand, "i") };
+    }
+
+    if (inStockOnly === "true") {
+      query.stock = { $gt: 0 };
     }
 
     // Support both field names for flexibility (backward compatibility)
@@ -496,8 +516,11 @@ export const getProducts = async (req, res) => {
       "price-desc": { price: -1, createdAt: -1 },
       "stock-asc": { stock: 1, createdAt: -1 },
       "stock-desc": { stock: -1, createdAt: -1 },
+      "relevance": { stock: -1, createdAt: -1 },
+      "popular": { rating: -1, createdAt: -1 },
+      "discount": { salePrice: 1, price: -1 },
     };
-    const sortQuery = sortMap[String(sort || "newest").toLowerCase()] || sortMap.newest;
+    const sortQuery = sortMap[String(sort || "relevance").toLowerCase()] || sortMap.relevance;
 
     const fetchFn = async () => {
       const [rawProducts, total] = await Promise.all([
@@ -1553,6 +1576,85 @@ export const rejectProduct = async (req, res) => {
       "Product rejected successfully",
       normalizeProductDocumentModeration(updated?.toObject?.() || updated),
     );
+  } catch (error) {
+    return handleResponse(res, 500, error.message);
+  }
+};
+
+export const getSearchSuggestions = async (req, res) => {
+  try {
+    const { search, lat, lng } = req.query;
+    if (!search || search.trim().length < 2) {
+      return handleResponse(res, 200, "Success", { products: [], categories: [], brands: [] });
+    }
+
+    const enforceRadius = isCustomerVisibilityRequest(req);
+    const coords = parseCustomerCoordinates({ lat, lng });
+    
+    let baseProductQuery = { status: "active" };
+    
+    if (enforceRadius) {
+      if (!coords.valid) {
+        return handleResponse(res, 200, "Success", { products: [], categories: [], brands: [] });
+      }
+      
+      const nearbySellerIds = await getNearbySellerIdsForCustomer(coords.lat, coords.lng);
+      if (!nearbySellerIds.length) {
+        return handleResponse(res, 200, "Success", { products: [], categories: [], brands: [] });
+      }
+      
+      if (baseProductQuery.$or) {
+        baseProductQuery.$and = baseProductQuery.$and || [];
+        baseProductQuery.$and.push({ $or: baseProductQuery.$or });
+        delete baseProductQuery.$or;
+        baseProductQuery.$and.push({
+          $or: [
+            { sellerId: { $in: nearbySellerIds } },
+            { warehouseId: { $in: nearbySellerIds } }
+          ]
+        });
+      } else {
+        baseProductQuery.$or = [
+          { sellerId: { $in: nearbySellerIds } },
+          { warehouseId: { $in: nearbySellerIds } }
+        ];
+      }
+      baseProductQuery = { $and: [baseProductQuery, getApprovedOrLegacyFilter()] };
+    }
+
+    const term = applyTypoCorrection(String(search).trim());
+    const regex = new RegExp(term, 'i');
+
+    // Fetch Products (Top 5 exact/starts-with or contains matches)
+    const productQuery = { ...baseProductQuery, name: regex };
+    const products = await Product.find(productQuery)
+      .select('name image mainImage price salePrice stock originalPrice variants')
+      .limit(5)
+      .lean();
+
+    // Fetch Categories
+    const categories = await Category.find({ name: regex, status: "active" })
+      .select('name image slug')
+      .limit(5)
+      .lean();
+
+    // Fetch Brands (Distinct from Products matching query)
+    const brands = await Product.distinct("brand", {
+      ...baseProductQuery,
+      brand: regex
+    });
+
+    const formattedProducts = products.map(p => ({
+        ...p,
+        id: p._id,
+    }));
+
+    return handleResponse(res, 200, "Success", {
+      products: formattedProducts,
+      categories: categories.map(c => ({ id: c._id, name: c.name, image: c.image, slug: c.slug })),
+      brands: brands.slice(0, 5).filter(Boolean)
+    });
+
   } catch (error) {
     return handleResponse(res, 500, error.message);
   }

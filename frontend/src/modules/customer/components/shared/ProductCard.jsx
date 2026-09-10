@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import ParticleBurst from "./ParticleBurst";
 import { useVariantSelection } from "../../context/VariantSelectionContext";
+import { useSettings } from "@core/context/SettingsContext";
 
 /**
  * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string, priority?: boolean }} props
@@ -21,6 +22,8 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
     const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
     const { showToast } = useToast();
     const { animateAddToCart, animateRemoveFromCart } = useCartAnimation();
+    const { settings } = useSettings();
+    const isClosed = settings?.storeStatus?.isClosed === true;
 
     const navigate = useNavigate();
     const { openProduct } = useProductDetail();
@@ -109,6 +112,8 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
       (e) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        if (isClosed) return;
         
         if (Array.isArray(product?.variants) && product.variants.length > 1) {
             if (openVariantSelection) {
@@ -219,7 +224,7 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
         </AnimatePresence>
 
         {/* Top Image Section */}
-        <div className={cn("relative w-full overflow-hidden flex items-center justify-center p-0.5", layout === "list" ? "w-[90px] h-[90px] shrink-0" : "aspect-square")}>
+        <div className={cn("relative w-full overflow-hidden flex items-center justify-center", layout === "list" ? "w-[90px] h-[90px] shrink-0 p-1" : "aspect-square p-3 sm:p-4")}>
           {/* Discount Badge (Top-Left Orange Speech Bubble) */}
           {discountText && (
             <div className="absolute top-0 left-0 z-10 bg-[#FF8200] text-white font-black text-[9.5px] px-2.5 py-1 rounded-[10px_10px_10px_0px] shadow-3xs tracking-tight leading-none select-none">
@@ -234,7 +239,10 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+            className={cn(
+              "w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500",
+              isClosed ? "blur-xs opacity-75 grayscale" : ""
+            )}
           />
         </div>
 
@@ -242,7 +250,7 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
         <div className={cn("flex flex-col flex-1 mt-1.5", layout === "list" && "mt-0")}>
           {/* Title & Weight */}
           <div>
-            <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-slate-900 transition-colors">
+            <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 min-h-[32px] sm:min-h-[40px] group-hover:text-slate-900 transition-colors">
               {product.name}
             </h4>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -282,7 +290,14 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
 
             {/* ADD / Quantity Selector Button */}
             <div className="shrink-0 ml-auto">
-              {quantity > 0 ? (
+              {isClosed ? (
+                <button
+                  disabled
+                  className="h-8 min-w-[68px] px-2 rounded-sm border border-slate-300 bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-[11px] uppercase cursor-not-allowed"
+                >
+                  CLOSED
+                </button>
+              ) : quantity > 0 ? (
                 <div 
                   className="h-8 min-w-[68px] flex items-center justify-between rounded-sm bg-[#FF8200] text-white shadow-sm"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}

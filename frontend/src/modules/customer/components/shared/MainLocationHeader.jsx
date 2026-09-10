@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
-import Lottie from "lottie-react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import LocationDrawer from "./LocationDrawer";
+import StoreClosedBanner from "./StoreClosedBanner";
 import { useLocation } from "../../context/LocationContext";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import { useSettings } from "@core/context/SettingsContext";
@@ -321,6 +321,24 @@ const MainLocationHeader = ({
     return () => clearTimeout(timeout);
   }, [typingState]);
 
+  // Mobile Search Placeholder Animation (Vertical Flip)
+  const mobileSearchPhrases = [
+    'Search "Atta, Rice, Oil, Maggi..."',
+    'Search "Fresh Fruits & Veggies..."',
+    'Search "Dairy, Bread & Eggs..."',
+    'Search "Snacks & Munchies..."',
+    'Search "Sweet Cravings..."',
+    'Search "Cold Drinks & Juices..."',
+  ];
+  const [mobilePhraseIndex, setMobilePhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMobilePhraseIndex((prev) => (prev + 1) % mobileSearchPhrases.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   // Smooth scroll interpolations
   const headerTopPadding = useTransform(scrollY, [0, 160], [16, 16]);
   const headerBottomPadding = useTransform(scrollY, [0, 160], [4, 4]);
@@ -369,7 +387,8 @@ const MainLocationHeader = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-[200]">
+      <div className="fixed top-0 left-0 right-0 z-[200] flex flex-col pointer-events-auto">
+        <StoreClosedBanner />
         <motion.div
           initial={false}
           style={{
@@ -669,21 +688,36 @@ const MainLocationHeader = ({
             </motion.div>
 
             {/* Bottom row: Unified Search Bar with Mic and Scanner SVG */}
-            <div
+            <motion.div
               onClick={handleSearchClick}
-              className="w-full bg-white border border-[#FF8200]/70 rounded-full px-4 h-10 flex items-center shadow-[0_0_10px_rgba(255,130,0,0.2)] cursor-pointer hover:shadow-[0_0_14px_rgba(255,130,0,0.3)] transition-all"
+              animate={{ 
+                borderColor: ["rgba(255, 130, 0, 0.7)", "rgba(255, 130, 0, 0.1)", "rgba(255, 130, 0, 0.7)"],
+                boxShadow: ["0 0 10px rgba(255,130,0,0.2)", "0 0 0px rgba(255,130,0,0)", "0 0 10px rgba(255,130,0,0.2)"]
+              }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-full bg-white border-[1.5px] rounded-full px-4 h-10 flex items-center cursor-pointer overflow-hidden relative"
             >
-              <SearchIcon sx={{ color: "#FF8200", fontSize: 20 }} className="shrink-0" />
-              <input
-                type="text"
-                placeholder='Search "Atta, Rice, Oil, Maggi..."'
-                readOnly
-                className="flex-1 bg-transparent border-none outline-none pl-2 text-slate-800 font-bold placeholder:text-slate-400 text-[12.5px] cursor-pointer"
-              />
-              <div className="flex items-center gap-3.5 shrink-0 ml-1">
+              <SearchIcon sx={{ color: "#FF8200", fontSize: 20 }} className="shrink-0 relative z-10" />
+              
+              <div className="flex-1 relative h-full ml-2 flex items-center overflow-hidden">
+                 <AnimatePresence mode="popLayout">
+                    <motion.div
+                       key={mobilePhraseIndex}
+                       initial={{ y: -25, opacity: 0 }}
+                       animate={{ y: 0, opacity: 1 }}
+                       exit={{ y: 25, opacity: 0 }}
+                       transition={{ duration: 0.5, ease: "anticipate" }}
+                       className="absolute inset-0 flex items-center text-[12.5px] font-bold text-slate-400 whitespace-nowrap pointer-events-none"
+                    >
+                       {mobileSearchPhrases[mobilePhraseIndex]}
+                    </motion.div>
+                 </AnimatePresence>
+              </div>
+              
+              <div className="flex items-center gap-3.5 shrink-0 ml-1 relative z-10 bg-white pl-2 h-full">
                 <MicIcon sx={{ color: "#78909c", fontSize: 20 }} className="cursor-pointer" />
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Categories Navigation Row (Shared for Desktop & Mobile) */}

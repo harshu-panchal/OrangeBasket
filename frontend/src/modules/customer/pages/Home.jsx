@@ -533,8 +533,10 @@ const Home = () => {
     return null; // Particles were already simplified out earlier
   };
 
+  const isClosed = settings?.storeStatus?.isClosed === true;
+
   return (
-    <div className="min-h-screen pt-[210px] md:pt-[220px] bg-white">
+    <div className={cn("min-h-screen bg-white", isClosed ? "pt-[285px] md:pt-[295px]" : "pt-[210px] md:pt-[220px]")}>
       <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
 
       <>

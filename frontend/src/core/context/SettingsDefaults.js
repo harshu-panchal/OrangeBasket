@@ -43,6 +43,11 @@ export const DEFAULT_SETTINGS = {
     sellerCreateRequiresApproval: false,
     sellerEditRequiresApproval: false,
   },
+  storeStatus: {
+    isClosed: false,
+    reopenTime: "",
+    message: "",
+  },
 };
 
 /**

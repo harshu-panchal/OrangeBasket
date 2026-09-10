@@ -100,7 +100,7 @@ export const signupDelivery = async (req, res) => {
             await delivery.save();
         }
 
-        if (useRealSMS()) {
+        if (useRealSMS() && otp !== "1234") {
             await sendSmsIndiaHubOtp({ phone, otp });
         }
 
@@ -140,7 +140,7 @@ export const loginDelivery = async (req, res) => {
         delivery.otpExpiry = Date.now() + 5 * 60 * 1000;
         await delivery.save();
 
-        if (useRealSMS()) {
+        if (useRealSMS() && otp !== "1234") {
             await sendSmsIndiaHubOtp({ phone, otp });
         }
 

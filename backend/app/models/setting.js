@@ -265,6 +265,11 @@ const settingSchema = new mongoose.Schema(
                 default: "CloudRain",
             }
         },
+        storeStatus: {
+            isClosed: { type: Boolean, default: false },
+            reopenTime: { type: String, default: "" },
+            message: { type: String, default: "Store closed" }
+        },
     },
     {
         timestamps: true,

@@ -9,6 +9,7 @@ import {
     getModerationProducts,
     approveProduct,
     rejectProduct,
+    getSearchSuggestions,
 } from "../controller/productController.js";
 import { adjustStock, getStockHistory } from "../controller/stockController.js";
 import {
@@ -25,6 +26,7 @@ const upload = multer({ storage });
 const router = express.Router();
 
 // Public routes with optional auth (to detect admin/seller vs customer)
+router.get("/suggestions", optionalVerifyToken, getSearchSuggestions);
 router.get("/", optionalVerifyToken, getProducts);
 
 // Seller protected routes

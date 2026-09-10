@@ -111,6 +111,11 @@ const AdminSettings = () => {
             condition: 'Rain',
             icon: 'CloudRain',
         },
+        storeStatus: {
+            isClosed: false,
+            reopenTime: '',
+            message: 'Store closed',
+        },
     };
     const [settings, setSettings] = useState(defaultSettings);
 
@@ -137,6 +142,10 @@ const AdminSettings = () => {
                         weather: {
                             ...prev.weather,
                             ...(data.weather || {}),
+                        },
+                        storeStatus: {
+                            ...prev.storeStatus,
+                            ...(data.storeStatus || {}),
                         },
                     }));
                 }
@@ -583,6 +592,70 @@ const AdminSettings = () => {
                                         className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/10 transition-all"
                                     />
                                 </div>
+
+                                {/* Store Status Settings */}
+                                <div className="md:col-span-2 rounded-2xl bg-orange-50/50 border border-orange-100 px-5 py-4 space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900">Store Status (Open / Closed)</p>
+                                            <p className="text-xs font-bold text-slate-500 mt-1">
+                                                When closed, the customer app will show a banner and prevent new orders.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={settings.storeStatus?.isClosed}
+                                            onClick={() => setSettings(prev => ({
+                                                ...prev,
+                                                storeStatus: { ...prev.storeStatus, isClosed: !prev.storeStatus?.isClosed }
+                                            }))}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200",
+                                                settings.storeStatus?.isClosed ? "bg-red-500" : "bg-emerald-500"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200",
+                                                    settings.storeStatus?.isClosed ? "translate-x-7" : "translate-x-1"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+                                    
+                                    {settings.storeStatus?.isClosed && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-orange-100/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reopen Time</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. 6:00 am"
+                                                    value={settings.storeStatus?.reopenTime || ''}
+                                                    onChange={(e) => setSettings(prev => ({
+                                                        ...prev,
+                                                        storeStatus: { ...prev.storeStatus, reopenTime: e.target.value }
+                                                    }))}
+                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Banner Message</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Store closed"
+                                                    value={settings.storeStatus?.message || ''}
+                                                    onChange={(e) => setSettings(prev => ({
+                                                        ...prev,
+                                                        storeStatus: { ...prev.storeStatus, message: e.target.value }
+                                                    }))}
+                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="md:col-span-2 rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 flex items-center justify-between gap-4">
                                     <div>
                                         <p className="text-sm font-black text-slate-900">Auto Low Stock Alerts</p>
