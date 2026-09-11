@@ -1,5 +1,5 @@
 import Bull from "bull";
-import { getRedisClient } from "../config/redis.js";
+import { getRedisClient, isRedisEnabled } from "../config/redis.js";
 import Product from "../models/product.js";
 import SearchIndexFailure from "../models/searchIndexFailure.js";
 import { indexProduct, removeProduct } from "./searchService.js";
@@ -34,7 +34,11 @@ export function getSearchIndexQueue() {
   
   const client = getRedisClient();
   if (!client) {
-    logger.warn("[SearchSync] Redis client not available, search sync queue initialization skipped");
+    if (isRedisEnabled()) {
+      logger.warn("[SearchSync] Redis client not available, search sync queue initialization skipped");
+    } else {
+      logger.info("[SearchSync] Redis is disabled, search sync queue initialization skipped");
+    }
     return null;
   }
   
@@ -188,7 +192,9 @@ export async function startSearchIndexWorker() {
     const queue = getSearchIndexQueue();
     
     if (!queue) {
-      logger.warn("[SearchSync] Queue is null, search index worker not started");
+      if (isRedisEnabled()) {
+        logger.warn("[SearchSync] Queue is null, search index worker not started");
+      }
       return;
     }
     
