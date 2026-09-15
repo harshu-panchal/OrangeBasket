@@ -97,7 +97,7 @@ const EditMonthlyKit = () => {
             const fetchKit = async () => {
                 setLoading(true);
                 try {
-                    const response = await adminApi.get(`/kits/${id}`);
+                    const response = await adminApi.get(`/kits/admin/${id}`);
                     const kit = response.data.results || response.data.result || response.data.data;
                     if (kit) {
                         setFormData({
