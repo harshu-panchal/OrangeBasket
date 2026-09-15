@@ -97,7 +97,7 @@ const AddMonthlyKit = () => {
             const fetchKit = async () => {
                 setLoading(true);
                 try {
-                    const response = await warehouseApi.get(`/kits/${id}`);
+                    const response = await warehouseApi.get(`/kits/warehouse/${id}`);
                     const kit = response.data.results || response.data.result || response.data.data;
                     if (kit) {
                         setFormData({

@@ -16,12 +16,14 @@ router.get("/addons", kitAddonController.getActiveAddons);
 // ─── Warehouse endpoints ──────────────────────────────────────────────────
 router.post("/warehouse", verifyToken, allowRoles("warehouse"), upload.any(), kitController.createKit);
 router.get("/warehouse", verifyToken, allowRoles("warehouse"), kitController.getWarehouseKits);
+router.get("/warehouse/addon-summary", verifyToken, allowRoles("warehouse"), kitAddonController.getAddonOrderSummary);
+router.get("/warehouse/:id", verifyToken, allowRoles("warehouse"), kitController.getWarehouseKitById);
 router.put("/warehouse/:id", verifyToken, allowRoles("warehouse"), upload.any(), kitController.updateKit);
 router.delete("/warehouse/:id", verifyToken, allowRoles("warehouse"), kitController.deleteKit);
-router.get("/warehouse/addon-summary", verifyToken, allowRoles("warehouse"), kitAddonController.getAddonOrderSummary);
 
 // ─── Admin endpoints ──────────────────────────────────────────────────────
 router.get("/admin/approvals", verifyToken, allowRoles("admin"), kitController.getPendingKits);
+router.get("/admin/:id", verifyToken, allowRoles("admin"), kitController.getAdminKitById);
 router.put("/admin/:id/approve", verifyToken, allowRoles("admin"), kitController.approveKit);
 router.put("/admin/edit/:id", verifyToken, allowRoles("admin"), upload.any(), kitController.updateKit);
 router.delete("/admin/:id", verifyToken, allowRoles("admin"), kitController.deleteKit);

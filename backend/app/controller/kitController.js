@@ -175,6 +175,21 @@ export const getWarehouseKits = async (req, res) => {
     }
 };
 
+export const getWarehouseKitById = async (req, res) => {
+    try {
+        const kit = await Product.findOne({
+            _id: req.params.id,
+            isMonthlyKit: true,
+            warehouseId: req.user.id
+        }).populate("categoryId", "name");
+        
+        if (!kit) return handleResponse(res, 404, "Kit not found");
+        return handleResponse(res, 200, "Kit details fetched", kit);
+    } catch (error) {
+        return handleResponse(res, 500, "Failed to fetch kit");
+    }
+};
+
 export const updateKit = async (req, res) => {
     try {
         const { id } = req.params;
@@ -257,6 +272,20 @@ export const getPendingKits = async (req, res) => {
         return handleResponse(res, 200, "Admin kits fetched", kits);
     } catch (error) {
         return handleResponse(res, 500, "Failed to fetch pending kits");
+    }
+};
+
+export const getAdminKitById = async (req, res) => {
+    try {
+        const kit = await Product.findOne({
+            _id: req.params.id,
+            isMonthlyKit: true
+        }).populate("categoryId", "name").populate("warehouseId", "name");
+        
+        if (!kit) return handleResponse(res, 404, "Kit not found");
+        return handleResponse(res, 200, "Kit details fetched", kit);
+    } catch (error) {
+        return handleResponse(res, 500, "Failed to fetch kit");
     }
 };
 
