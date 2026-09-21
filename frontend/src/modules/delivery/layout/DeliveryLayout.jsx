@@ -11,8 +11,13 @@ import {
   getOrderSocket,
   onDeliveryBroadcast,
   onDeliveryBroadcastWithdrawn,
+  onQueueOrderOffered,
+  onQueueOrderOfferExpired,
+  emitQueueOfferResponse,
+  onOrderAssigned,
   registerDeliveryRoom,
 } from "@/core/services/orderSocket";
+import OrderOfferModal from "../components/OrderOfferModal";
 import {
   loadHandledIncomingOrderIds,
   markIncomingOrderHandled,
@@ -41,6 +46,11 @@ const DeliveryLayout = () => {
   const [acceptWindowTotal, setAcceptWindowTotal] = useState(60);
   const shownOrderIdsRef = useRef(new Set());
   const activeOrderRef = useRef(null);
+  // Warehouse-queue order offer (FIFO pop, or a warehouse manually assigning
+  // a specific rider). Global so it shows/rings on every page, not just the
+  // dashboard — see OrderOfferModal.
+  const [pendingOffer, setPendingOffer] = useState(null);
+  const pendingOfferRef = useRef(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [availableOrdersCount, setAvailableOrdersCount] = useState(0);
   const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
@@ -125,6 +135,10 @@ const DeliveryLayout = () => {
   useEffect(() => {
     activeOrderRef.current = activeOrder;
   }, [activeOrder]);
+
+  useEffect(() => {
+    pendingOfferRef.current = pendingOffer;
+  }, [pendingOffer]);
 
   /** While working an active order, do not stack the global incoming-offer modal (fixes refresh on order details). */
   const suppressIncomingModal = useMemo(
@@ -212,13 +226,13 @@ const DeliveryLayout = () => {
   }, []);
 
   useEffect(() => {
-    if (activeOrder) {
+    if (activeOrder || pendingOffer) {
       startOrderRingtone();
       return undefined;
     }
     stopOrderRingtone();
     return undefined;
-  }, [activeOrder]);
+  }, [activeOrder, pendingOffer]);
 
   useEffect(() => {
     return () => {
@@ -556,6 +570,61 @@ const DeliveryLayout = () => {
         stopOrderRingtone();
         setActiveOrder(null);
         toast.info("Another delivery partner accepted this order.");
+      }
+    });
+  }, [user?.isOnline]);
+
+  // Warehouse-queue order offers — global across every page (not just the
+  // dashboard), same as the broadcast alert above. Suppressed while a
+  // broadcast offer or an active delivery flow already owns the screen.
+  useEffect(() => {
+    if (!user?.isOnline) return undefined;
+    const getToken = getDeliveryToken;
+    const handleOffer = (offer) => {
+      if (activeOrderRef.current || suppressIncomingModal) return;
+      if (pendingOfferRef.current?.orderId === offer?.orderId) return;
+      toast.info(
+        `📦 New order offered! You have ${Math.max(1, Math.round((offer?.countdown || 300) / 60))} min to respond`,
+      );
+      setPendingOffer(offer);
+    };
+    const handleExpired = (payload) => {
+      if (pendingOfferRef.current?.orderId !== payload?.orderId) return;
+      setPendingOffer(null);
+      toast.warning("Order offer expired — the warehouse will need to reassign it.");
+    };
+    const offOffered = onQueueOrderOffered(getToken, handleOffer);
+    const offExpired = onQueueOrderOfferExpired(getToken, handleExpired);
+    return () => {
+      offOffered();
+      offExpired();
+    };
+  }, [user?.isOnline, suppressIncomingModal]);
+
+  const handleQueueOfferAccept = async (orderId) => {
+    emitQueueOfferResponse(getDeliveryToken, orderId, true);
+    setPendingOffer(null);
+    toast.success("Order accepted! Preparing for pickup...");
+    navigate(`/delivery/order-details/${orderId}`);
+  };
+
+  const handleQueueOfferReject = (reason) => {
+    const orderId = pendingOfferRef.current?.orderId;
+    if (orderId) {
+      emitQueueOfferResponse(getDeliveryToken, orderId, false);
+    }
+    setPendingOffer(null);
+    if (reason !== "timeout") toast.info("Order declined.");
+  };
+
+  // Confirms a manual-offer accept went through — mainly relevant if the
+  // rider has another tab/device open, since the accepting client already
+  // navigates itself via handleQueueOfferAccept above.
+  useEffect(() => {
+    if (!user?.isOnline) return undefined;
+    return onOrderAssigned(getDeliveryToken, (payload) => {
+      if (pendingOfferRef.current?.orderId === payload?.orderId) {
+        setPendingOffer(null);
       }
     });
   }, [user?.isOnline]);
@@ -908,6 +977,19 @@ const DeliveryLayout = () => {
               </div>
             )}
           </AnimatePresence>,
+          document.body,
+        )}
+
+      {/* Warehouse-queue order offer — global, same as the broadcast alert above. */}
+      {typeof document !== "undefined" &&
+        !activeOrder &&
+        pendingOffer &&
+        createPortal(
+          <OrderOfferModal
+            offer={pendingOffer}
+            onAccept={handleQueueOfferAccept}
+            onReject={handleQueueOfferReject}
+          />,
           document.body,
         )}
 

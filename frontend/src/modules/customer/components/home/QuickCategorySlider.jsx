@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { QUICK_CATEGORY_PALETTES } from "../../constants/homeConstants";
-import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
+import { applyCloudinaryTransform, buildCloudinarySrcSet, getCloudinaryLQIP } from "@/core/utils/imageUtils";
 // @ts-ignore
 import QuickCategoriesBg from "@/assets/Catagorysection_bg.png";
 
@@ -40,9 +40,13 @@ const QuickCategorySlider = ({ categories, onCategoryClick }) => {
                 className="flex flex-col items-center gap-2 min-w-[88px] max-w-[96px] md:min-w-[104px] md:max-w-[110px] cursor-pointer group/item snap-start transition-all active:scale-95 text-center">
                 {/* White Card Box Container */}
                 <div
-                  className="w-[84px] h-[84px] md:w-[100px] md:h-[100px] bg-white border border-slate-100 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm">
+                  className="w-[84px] h-[84px] md:w-[100px] md:h-[100px] bg-white border border-slate-100 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs transition-all duration-300 group-hover/item:-translate-y-1 group-hover/item:shadow-sm bg-no-repeat bg-center bg-cover"
+                  style={{ backgroundImage: `url(${getCloudinaryLQIP(cat.image)})` }}
+                >
                   <img
-                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_300,dpr_auto")}
+                    src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_200,dpr_auto")}
+                    srcSet={buildCloudinarySrcSet(cat.image, [{ w: 100 }, { w: 200 }])}
+                    sizes="(max-width: 768px) 100px, 200px"
                     alt={cat.name}
                     loading={index < 5 ? "eager" : "lazy"}
                     fetchPriority={index < 5 ? "high" : "auto"}

@@ -35,22 +35,42 @@ function toObjectId(id) {
 
 /**
  * Called when a warehouse accepts an order.
- * Transitions order to DELIVERY_SEARCH and immediately pops the queue to assign.
+ *
+ * P0 change: warehouses no longer auto-pop the delivery queue on accept.
+ * Instead the order moves into WAREHOUSE_PROCESSING so staff can scan every
+ * ordered item (deducting stock per scan via orderProcessingService.js).
+ * Once fully scanned the order flips to READY_FOR_ASSIGNMENT and a delivery
+ * boy must be picked manually — see assignDeliveryBoyManually().
  */
 export async function warehouseAcceptAtomic(warehouseId, orderId) {
   const { requireCanonicalOrderId } = await import("../utils/orderLookup.js");
   const { legacyStatusFromWorkflow, WORKFLOW_STATUS } = await import("../constants/orderWorkflow.js");
-  const { removeSellerTimeoutJob, scheduleDeliveryTimeoutJob } = await import("./orderWorkflowService.js");
-  const { INITIAL_DELIVERY_RADIUS_M } = await import("../constants/orderWorkflow.js");
-  const DeliveryAssignment = (await import("../models/deliveryAssignment.js")).default;
+  const { removeSellerTimeoutJob } = await import("./orderWorkflowService.js");
   const { emitOrderStatusUpdate } = await import("./orderSocketEmitter.js");
 
   const canonicalOrderId = await requireCanonicalOrderId(orderId);
   const now = new Date();
-  
-  // WAREHOUSES don't broadcast to the map. They pop from the queue.
-  // Delivery timeout represents the queue's 60-second offer timeout.
-  const deliveryMs = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "60", 10) * 1000;
+
+  const existing = await Order.findOne({
+    orderId: canonicalOrderId,
+    warehouseId: toObjectId(warehouseId),
+    workflowVersion: { $gte: 2 },
+    workflowStatus: WORKFLOW_STATUS.SELLER_PENDING,
+    sellerPendingExpiresAt: { $gt: now },
+  }).select("items");
+
+  if (!existing) {
+    const err = new Error("Order not available for acceptance or expired");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const scannedItems = (existing.items || []).map((item, idx) => ({
+    itemIndex: idx,
+    product: item.product,
+    orderedQty: item.quantity,
+    scannedQty: 0,
+  }));
 
   const updated = await Order.findOneAndUpdate(
     {
@@ -62,18 +82,14 @@ export async function warehouseAcceptAtomic(warehouseId, orderId) {
     },
     {
       $set: {
-        workflowStatus: WORKFLOW_STATUS.DELIVERY_SEARCH,
-        status: legacyStatusFromWorkflow(WORKFLOW_STATUS.DELIVERY_SEARCH),
+        workflowStatus: WORKFLOW_STATUS.WAREHOUSE_PROCESSING,
+        status: legacyStatusFromWorkflow(WORKFLOW_STATUS.WAREHOUSE_PROCESSING),
         sellerAcceptedAt: now,
-        deliverySearchExpiresAt: new Date(now.getTime() + deliveryMs),
-        deliverySearchMeta: {
-          radiusMeters: INITIAL_DELIVERY_RADIUS_M ? INITIAL_DELIVERY_RADIUS_M() : 5000,
-          attempt: 1,
-          lastBroadcastAt: now,
-          isWarehouseQueue: true,
-        },
+        "processing.startedAt": now,
+        "processing.completedAt": null,
+        "processing.scannedItems": scannedItems,
       },
-      $unset: { expiresAt: 1 },
+      $unset: { expiresAt: 1, sellerPendingExpiresAt: 1 },
     },
     { new: true },
   )
@@ -88,25 +104,342 @@ export async function warehouseAcceptAtomic(warehouseId, orderId) {
 
   await removeSellerTimeoutJob(canonicalOrderId);
 
-  // We do NOT create a broadcasting DeliveryAssignment right away,
-  // because offerToNextInQueue handles creating it!
-  
+  emitOrderStatusUpdate(
+    updated.orderId,
+    { workflowStatus: WORKFLOW_STATUS.WAREHOUSE_PROCESSING },
+    updated.customer?._id || updated.customer,
+  );
+
+  return updated;
+}
+
+/* ─── Manual Delivery Boy Assignment (warehouse-initiated) ─────────────────── */
+
+const MANUAL_OFFER_TIMEOUT_SECONDS = parseInt(
+  process.env.MANUAL_ASSIGN_OFFER_TIMEOUT_SECONDS || "120",
+  10,
+);
+
+function manualOfferJobId(orderId, riderId) {
+  return `manual-offer:${orderId}:${riderId}`;
+}
+
+async function removeManualOfferTimeoutJob(orderId, riderId) {
+  try {
+    const job = await queueOfferTimeoutQueue.getJob(manualOfferJobId(orderId, riderId));
+    if (job) await job.remove();
+  } catch {
+    /* ignore — job may have already fired */
+  }
+}
+
+/**
+ * Warehouse staff manually pick a rider from the live queue after scanning
+ * is complete (workflowStatus === READY_FOR_ASSIGNMENT). This sends that
+ * rider a real accept/reject offer (reusing the same OrderOfferModal UI as
+ * the queue-broadcast flow) with a timeout. On accept the rider is assigned;
+ * on reject or timeout the order reverts to READY_FOR_ASSIGNMENT — it is
+ * NOT auto-offered to the next rider — so the warehouse picks again.
+ */
+export async function assignDeliveryBoyManually(warehouseId, orderId, riderId) {
+  const { requireCanonicalOrderId } = await import("../utils/orderLookup.js");
+  const { legacyStatusFromWorkflow, WORKFLOW_STATUS } = await import("../constants/orderWorkflow.js");
+  const { emitOrderStatusUpdate } = await import("./orderSocketEmitter.js");
+
+  const canonicalOrderId = await requireCanonicalOrderId(orderId);
+  const riderOid = toObjectId(riderId);
+  if (!riderOid) {
+    const err = new Error("Invalid delivery boy");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const checkin = await WarehouseCheckin.findOne({
+    deliveryId: riderOid,
+    warehouseId: toObjectId(warehouseId),
+    status: "active",
+  }).populate("deliveryId", "isOnline queueStatus name");
+
+  if (!checkin) {
+    const err = new Error("Selected delivery boy is not checked in at this warehouse");
+    err.statusCode = 409;
+    throw err;
+  }
+  const rider = checkin.deliveryId;
+  if (!rider?.isOnline) {
+    const err = new Error("Selected delivery boy is offline");
+    err.statusCode = 409;
+    throw err;
+  }
+  if (checkin.currentOrderId || ["delivering", "order_assigned", "order_offered"].includes(rider.queueStatus)) {
+    const err = new Error("Selected delivery boy is already handling another order");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + MANUAL_OFFER_TIMEOUT_SECONDS * 1000);
+
+  const updated = await Order.findOneAndUpdate(
+    {
+      orderId: canonicalOrderId,
+      warehouseId: toObjectId(warehouseId),
+      workflowVersion: { $gte: 2 },
+      workflowStatus: WORKFLOW_STATUS.READY_FOR_ASSIGNMENT,
+      deliveryBoy: null,
+    },
+    {
+      $set: {
+        workflowStatus: WORKFLOW_STATUS.DELIVERY_OFFER_PENDING,
+        status: legacyStatusFromWorkflow(WORKFLOW_STATUS.DELIVERY_OFFER_PENDING),
+        pendingDeliveryBoy: riderOid,
+        pendingOfferExpiresAt: expiresAt,
+      },
+    },
+    { new: true },
+  )
+    .populate("customer", "name phone")
+    .populate("warehouseId", "name");
+
+  if (!updated) {
+    const err = new Error("Order is not ready for assignment or already assigned");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  await WarehouseCheckin.findByIdAndUpdate(checkin._id, {
+    $set: { lastActivityAt: now },
+  });
+  await Delivery.findByIdAndUpdate(riderOid, { $set: { queueStatus: "order_offered" } });
+
+  const io = getIo();
+  if (io) {
+    io.to(`delivery:${riderOid}`).emit("queue:order_offered", {
+      orderId: updated.orderId,
+      countdown: MANUAL_OFFER_TIMEOUT_SECONDS,
+      preview: {
+        pickup: updated.warehouseId?.name || "Warehouse",
+        drop: updated.address?.address || "Customer",
+        total: updated.paymentBreakdown?.grandTotal ?? updated.pricing?.total ?? 0,
+      },
+      offeredAt: now.toISOString(),
+      warehouseId: String(warehouseId),
+    });
+  }
+
+  await queueOfferTimeoutQueue.add(
+    JOB_NAMES.MANUAL_OFFER_TIMEOUT,
+    { orderId: canonicalOrderId, warehouseId: String(warehouseId), riderId: String(riderOid) },
+    {
+      jobId: manualOfferJobId(canonicalOrderId, riderOid),
+      delay: MANUAL_OFFER_TIMEOUT_SECONDS * 1000,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  );
+
   emitOrderStatusUpdate(
     updated.orderId,
     {
-      workflowStatus: WORKFLOW_STATUS.DELIVERY_SEARCH,
-      deliverySearchExpiresAt: updated.deliverySearchExpiresAt,
+      workflowStatus: WORKFLOW_STATUS.DELIVERY_OFFER_PENDING,
+      pendingOfferExpiresAt: expiresAt,
     },
     updated.customer?._id || updated.customer,
   );
 
-  // Auto-assign from queue!
-  const queueResult = await offerToNextInQueue(updated.orderId, String(warehouseId), []);
-  if (!queueResult.offered && queueResult.reason === "queue_exhausted") {
-    logger.warn("[warehouseAccept] Queue empty on accept, fell back to broadcast", { orderId: canonicalOrderId });
-  }
+  broadcastQueueUpdate(warehouseId).catch(() => {});
+
+  logger.info("[QueueAssign] Offered order to manually-selected rider", {
+    orderId: canonicalOrderId,
+    riderId: String(riderOid),
+    warehouseId: String(warehouseId),
+    expiresAt,
+  });
 
   return updated;
+}
+
+/**
+ * Shared accept/reject-or-timeout resolution for a manual offer. Accept
+ * assigns the order to the rider (same terminal state as the old direct
+ * assignment). Reject/timeout always revert to READY_FOR_ASSIGNMENT so the
+ * warehouse can pick a different rider — never auto-cycles to "next in queue".
+ */
+async function resolveManualOffer(canonicalOrderId, riderOid, { accepted, reason }) {
+  const { legacyStatusFromWorkflow, WORKFLOW_STATUS } = await import("../constants/orderWorkflow.js");
+  const { emitOrderStatusUpdate } = await import("./orderSocketEmitter.js");
+  const { emitNotificationEvent } = await import("../modules/notifications/notification.emitter.js");
+  const { NOTIFICATION_EVENTS } = await import("../modules/notifications/notification.constants.js");
+
+  await removeManualOfferTimeoutJob(canonicalOrderId, riderOid);
+
+  if (accepted) {
+    const now = new Date();
+    const updated = await Order.findOneAndUpdate(
+      {
+        orderId: canonicalOrderId,
+        workflowVersion: { $gte: 2 },
+        workflowStatus: WORKFLOW_STATUS.DELIVERY_OFFER_PENDING,
+        pendingDeliveryBoy: riderOid,
+        pendingOfferExpiresAt: { $gt: now },
+      },
+      {
+        $set: {
+          deliveryBoy: riderOid,
+          workflowStatus: WORKFLOW_STATUS.DELIVERY_ASSIGNED,
+          status: legacyStatusFromWorkflow(WORKFLOW_STATUS.DELIVERY_ASSIGNED),
+          assignedAt: now,
+          deliveryRiderStep: 1,
+          pendingDeliveryBoy: null,
+          pendingOfferExpiresAt: null,
+        },
+        $inc: { assignmentVersion: 1 },
+      },
+      { new: true },
+    ).populate("customer", "name phone");
+
+    if (!updated) {
+      const err = new Error("This offer has expired or was already handled");
+      err.statusCode = 409;
+      throw err;
+    }
+
+    await WarehouseCheckin.findOneAndUpdate(
+      { deliveryId: riderOid, status: "active" },
+      { $set: { currentOrderId: updated._id, lastActivityAt: now } },
+    );
+    await Delivery.findByIdAndUpdate(riderOid, { $set: { queueStatus: "order_assigned" } });
+
+    emitNotificationEvent(NOTIFICATION_EVENTS.DELIVERY_ASSIGNED, {
+      orderId: updated.orderId,
+      deliveryId: riderOid,
+      customerId: updated.customer,
+      sellerId: updated.seller,
+    });
+
+    emitOrderStatusUpdate(
+      updated.orderId,
+      { workflowStatus: WORKFLOW_STATUS.DELIVERY_ASSIGNED, deliveryBoyId: riderOid.toString() },
+      updated.customer?._id || updated.customer,
+    );
+
+    const io = getIo();
+    if (io) {
+      io.to(`delivery:${riderOid}`).emit("order:assigned", {
+        orderId: updated.orderId,
+        assignedAt: now.toISOString(),
+      });
+      if (updated.warehouseId) {
+        io.to(`warehouse:${updated.warehouseId}`).emit("order:assignment_accepted", {
+          orderId: updated.orderId,
+          riderId: String(riderOid),
+        });
+      }
+    }
+
+    broadcastQueueUpdate(updated.warehouseId).catch(() => {});
+    logger.info("[QueueAssign] Manual offer accepted", { orderId: canonicalOrderId, riderId: String(riderOid) });
+    return { success: true, accepted: true, order: updated };
+  }
+
+  // Rejected or timed out — revert to READY_FOR_ASSIGNMENT for the
+  // warehouse to pick again (no auto-cycling to another rider).
+  const updated = await Order.findOneAndUpdate(
+    {
+      orderId: canonicalOrderId,
+      workflowVersion: { $gte: 2 },
+      workflowStatus: WORKFLOW_STATUS.DELIVERY_OFFER_PENDING,
+      pendingDeliveryBoy: riderOid,
+    },
+    {
+      $set: {
+        workflowStatus: WORKFLOW_STATUS.READY_FOR_ASSIGNMENT,
+        status: legacyStatusFromWorkflow(WORKFLOW_STATUS.READY_FOR_ASSIGNMENT),
+        pendingDeliveryBoy: null,
+        pendingOfferExpiresAt: null,
+      },
+    },
+    { new: true },
+  );
+
+  await Delivery.findByIdAndUpdate(riderOid, { $set: { queueStatus: "waiting" } });
+
+  if (updated) {
+    emitOrderStatusUpdate(
+      updated.orderId,
+      { workflowStatus: WORKFLOW_STATUS.READY_FOR_ASSIGNMENT },
+      updated.customer,
+    );
+    const io = getIo();
+    if (io && updated.warehouseId) {
+      io.to(`warehouse:${updated.warehouseId}`).emit("order:assignment_declined", {
+        orderId: updated.orderId,
+        riderId: String(riderOid),
+        reason,
+      });
+    }
+    broadcastQueueUpdate(updated.warehouseId).catch(() => {});
+  }
+
+  logger.info("[QueueAssign] Manual offer not accepted — reverted to READY_FOR_ASSIGNMENT", {
+    orderId: canonicalOrderId,
+    riderId: String(riderOid),
+    reason,
+  });
+
+  return { success: true, accepted: false };
+}
+
+/**
+ * Called when a rider explicitly accepts/rejects a manually-sent offer.
+ */
+export async function handleManualOfferResponse(riderId, orderId, accepted) {
+  const { requireCanonicalOrderId } = await import("../utils/orderLookup.js");
+  const canonicalOrderId = await requireCanonicalOrderId(orderId);
+  const riderOid = toObjectId(riderId);
+  return resolveManualOffer(canonicalOrderId, riderOid, {
+    accepted,
+    reason: accepted ? "accepted" : "rejected",
+  });
+}
+
+/**
+ * Called by the BullMQ processor when a manual offer's timeout fires.
+ */
+export async function handleManualOfferTimeout({ orderId, riderId }) {
+  const { requireCanonicalOrderId } = await import("../utils/orderLookup.js");
+  const canonicalOrderId = await requireCanonicalOrderId(orderId);
+  const riderOid = toObjectId(riderId);
+
+  const io = getIo();
+  if (io) {
+    io.to(`delivery:${riderId}`).emit("queue:order_offer_expired", { orderId: canonicalOrderId });
+  }
+
+  return resolveManualOffer(canonicalOrderId, riderOid, { accepted: false, reason: "timeout" });
+}
+
+/**
+ * Unified dispatcher for the "queue:offer_response" socket event — routes
+ * to the FIFO-queue offer flow or the warehouse manual-offer flow depending
+ * on which one the order is currently in.
+ */
+export async function handleOfferResponse(riderId, orderId, accepted) {
+  const { requireCanonicalOrderId } = await import("../utils/orderLookup.js");
+  const { WORKFLOW_STATUS } = await import("../constants/orderWorkflow.js");
+
+  const canonicalOrderId = await requireCanonicalOrderId(orderId);
+  const order = await Order.findOne({ orderId: canonicalOrderId }).select("workflowStatus").lean();
+  if (!order) {
+    const err = new Error("Order not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (order.workflowStatus === WORKFLOW_STATUS.DELIVERY_OFFER_PENDING) {
+    return handleManualOfferResponse(riderId, canonicalOrderId, accepted);
+  }
+  return handleQueueRiderResponse(riderId, canonicalOrderId, accepted);
 }
 
 /* ─── Offer to next rider ─────────────────────────────────────────────────── */

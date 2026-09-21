@@ -5,6 +5,8 @@ import OrderOtp from "../models/orderOtp.js";
 import Seller from "../models/seller.js";
 import Warehouse from "../models/warehouse.js";
 import Delivery from "../models/delivery.js";
+import Customer from "../models/customer.js";
+import { sendSmsIndiaHubOtp } from "./smsIndiaHubService.js";
 import {
   clearOrderTracking,
   clearRiderPresence,
@@ -1254,6 +1256,25 @@ export async function requestHandoffOtpAtomic(deliveryId, orderId, lat, lng) {
     payload: otpPayload,
   });
   emitOrderStatusUpdate(orderId, { otpSent: true }, order.customer);
+
+  // SMS fallback — the socket events above only reach a customer whose app
+  // has a live connection open at this exact moment (e.g. on the order
+  // details page). Most customers won't be staring at the app when the
+  // rider arrives, so without this the OTP silently never reaches them.
+  // Mirrors the same pattern already used for the return-pickup OTP flow.
+  setImmediate(async () => {
+    try {
+      const customerDoc = await Customer.findById(customerId).select("phone").lean();
+      const phone = customerDoc?.phone || order.address?.phone;
+      if (phone) {
+        await sendSmsIndiaHubOtp({ phone, otp: code });
+      } else {
+        logger.warn("[requestHandoffOtpAtomic] No phone number on file for SMS OTP", { orderId, customerId });
+      }
+    } catch (smsErr) {
+      logger.error("[requestHandoffOtpAtomic] SMS OTP send failed", { orderId, error: smsErr.message });
+    }
+  });
 
   return { expiresAt, attemptsRemaining: 3, message: "OTP sent to customer" };
 }

@@ -19,10 +19,13 @@ import {
     HiOutlineInboxStack,
     HiOutlineMapPin,
     HiOutlinePhone,
-    HiOutlineCalendarDays
+    HiOutlineCalendarDays,
+    HiOutlineQrCode,
+    HiOutlineUserGroup,
 } from 'react-icons/hi2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 // Orders Page
 
@@ -38,7 +41,20 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { getOrderStatusVariant } from '../components/orders';
 import { useWarehouseOrders } from '../context/WarehouseOrdersContext';
 
+// Orders in these workflow states need warehouse action on the
+// Order Processing / Scan page instead of the raw status dropdown.
+const needsProcessing = (order) =>
+    Number(order?.workflowVersion) >= 2 &&
+    ['WAREHOUSE_PROCESSING', 'READY_FOR_ASSIGNMENT', 'DELIVERY_OFFER_PENDING'].includes(order?.workflowStatus);
+
+const processingLabel = (order) => {
+    if (order?.workflowStatus === 'READY_FOR_ASSIGNMENT') return 'Select Delivery Boy';
+    if (order?.workflowStatus === 'DELIVERY_OFFER_PENDING') return 'Awaiting Rider Response';
+    return 'Process Order';
+};
+
 const Orders = () => {
+    const navigate = useNavigate();
     const { orders: ordersFromContext } = useWarehouseOrders();
     const [orders, setOrders] = useState([]);
     const [summary, setSummary] = useState({
@@ -120,7 +136,13 @@ const Orders = () => {
                     qty: item.quantity,
                     image: item.image
                 })),
-                total: order.pricing?.total || 0,
+                total: order.paymentBreakdown?.grandTotal || order.pricing?.total || 0,
+                // Canonical breakdown lives on paymentBreakdown (Phase 4); pricing is the
+                // legacy mirror and is used only when paymentBreakdown wasn't populated.
+                subtotal: order.paymentBreakdown?.productSubtotal ?? order.pricing?.subtotal ?? 0,
+                deliveryFee: order.paymentBreakdown?.deliveryFeeCharged ?? order.pricing?.deliveryFee ?? 0,
+                tip: order.paymentBreakdown?.tipTotal ?? order.pricing?.tip ?? 0,
+                discount: order.paymentBreakdown?.discountTotal ?? order.pricing?.discount ?? 0,
                 status: getLegacyStatusFromOrder(order),
                 workflowStatus: order.workflowStatus,
                 workflowVersion: order.workflowVersion,
@@ -489,6 +511,17 @@ const Orders = () => {
                                                     <Badge variant={getStatusColor(order.status)} className="text-[10px] font-black uppercase px-2 py-0">
                                                         {order.status}
                                                     </Badge>
+                                                    {needsProcessing(order) ? (
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/warehouse/orders/${order.id}/process`);
+                                                            }}
+                                                            className="text-[10px] px-2.5 py-1.5 h-auto whitespace-nowrap"
+                                                        >
+                                                            {processingLabel(order)}
+                                                        </Button>
+                                                    ) : (
                                                     <select
                                                         value={order.status}
                                                         onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
@@ -507,6 +540,7 @@ const Orders = () => {
                                                         <option value="delivered">Delivered</option>
                                                         <option value="cancelled">Cancelled</option>
                                                     </select>
+                                                    )}
                                                     <button
                                                         onClick={() => handleViewDetails(order)}
                                                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
@@ -574,6 +608,18 @@ const Orders = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-4 lg:px-6 py-3 lg:py-4">
+                                                        {needsProcessing(order) ? (
+                                                            <Badge
+                                                                variant={
+                                                                    order.workflowStatus === 'DELIVERY_OFFER_PENDING' ? 'warning' :
+                                                                        order.workflowStatus === 'READY_FOR_ASSIGNMENT' ? 'success' : 'info'
+                                                                }
+                                                                className="text-[9px] font-black uppercase tracking-widest px-2 py-1"
+                                                            >
+                                                                {order.workflowStatus === 'DELIVERY_OFFER_PENDING' ? 'Awaiting Rider' :
+                                                                    order.workflowStatus === 'READY_FOR_ASSIGNMENT' ? 'Ready to Assign' : 'Processing'}
+                                                            </Badge>
+                                                        ) : (
                                                         <div className="relative inline-block w-36">
                                                             <select
                                                                 value={order.status}
@@ -598,21 +644,40 @@ const Orders = () => {
                                                             </select>
                                                             <HiOutlineChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none opacity-60" />
                                                         </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 lg:px-6 py-3 lg:py-4 text-right">
                                                         <div className="flex items-center justify-end space-x-1.5">
+                                                            {needsProcessing(order) && (
+                                                                <Button
+                                                                    onClick={() => navigate(`/warehouse/orders/${order.id}/process`)}
+                                                                    className="text-[10px] px-3 py-1.5 h-auto flex items-center gap-1.5"
+                                                                >
+                                                                    {order.workflowStatus === 'READY_FOR_ASSIGNMENT' || order.workflowStatus === 'DELIVERY_OFFER_PENDING' ? (
+                                                                        <>
+                                                                            <HiOutlineUserGroup className="h-3.5 w-3.5" />
+                                                                            {processingLabel(order)}
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <HiOutlineQrCode className="h-3.5 w-3.5" />
+                                                                            Process Order
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            )}
                                                             <button
                                                                 onClick={() => handleViewDetails(order)}
                                                                 className="p-1.5 hover:bg-white hover:text-primary rounded-lg transition-all text-slate-600 shadow-sm ring-1 ring-slate-100"
                                                             >
                                                                 <HiOutlineEye className="h-4 w-4" />
                                                             </button>
-                                                            {order.status === 'Pending' && (
+                                                            {order.status === 'pending' && !needsProcessing(order) && (
                                                                 <>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            handleStatusUpdate(order.id, 'Processing');
+                                                                            handleStatusUpdate(order.id, 'confirmed');
                                                                         }}
                                                                         className="p-1.5 hover:bg-brand-50 hover:text-brand-600 rounded-lg transition-all text-slate-600 shadow-sm ring-1 ring-slate-100"
                                                                     >
@@ -851,12 +916,24 @@ const Orders = () => {
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-bold text-slate-600">Subtotal</span>
-                                                            <span className="font-black text-slate-900">₹{(selectedOrder.total - 10).toFixed(2)}</span>
+                                                            <span className="font-black text-slate-900">₹{(selectedOrder.subtotal || 0).toFixed(2)}</span>
                                                         </div>
                                                         <div className="flex justify-between text-xs">
                                                             <span className="font-bold text-slate-600">Delivery Fee</span>
-                                                            <span className="font-black text-brand-600">₹10.00</span>
+                                                            <span className="font-black text-brand-600">₹{(selectedOrder.deliveryFee || 0).toFixed(2)}</span>
                                                         </div>
+                                                        {selectedOrder.tip > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="font-bold text-slate-600">Tip</span>
+                                                                <span className="font-black text-slate-900">₹{selectedOrder.tip.toFixed(2)}</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedOrder.discount > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="font-bold text-slate-600">Discount</span>
+                                                                <span className="font-black text-rose-600">-₹{selectedOrder.discount.toFixed(2)}</span>
+                                                            </div>
+                                                        )}
                                                         <div className="h-px bg-primary/10 my-2" />
                                                         <div className="flex justify-between text-sm">
                                                             <span className="font-black text-slate-900">Total</span>
@@ -933,6 +1010,17 @@ const Orders = () => {
                                     <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center justify-end">
                                         <div className="flex gap-2 items-center">
                                             <button onClick={() => setIsDetailsModalOpen(false)} className="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all">CLOSE</button>
+                                            {needsProcessing(selectedOrder) ? (
+                                                <Button
+                                                    className="px-6 py-2.5 text-sm"
+                                                    onClick={() => {
+                                                        setIsDetailsModalOpen(false);
+                                                        navigate(`/warehouse/orders/${selectedOrder.id}/process`);
+                                                    }}
+                                                >
+                                                    {processingLabel(selectedOrder)}
+                                                </Button>
+                                            ) : (
                                             <div className="relative inline-block w-40">
                                                 <select
                                                     value={selectedOrder.status.toLowerCase()}
@@ -957,6 +1045,7 @@ const Orders = () => {
                                                 </select>
                                                 <HiOutlineChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none opacity-60" />
                                             </div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

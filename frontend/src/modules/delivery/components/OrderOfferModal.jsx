@@ -61,7 +61,7 @@ const OrderOfferModal = ({ offer, onAccept, onReject }) => {
         <div style={styles.timerWrap}>
           <svg width="130" height="130" viewBox="0 0 130 130">
             {/* Background circle */}
-            <circle cx="65" cy="65" r={radius} fill="none" stroke="#1e293b" strokeWidth="8" />
+            <circle cx="65" cy="65" r={radius} fill="none" stroke="#e2e8f0" strokeWidth="8" />
             {/* Progress circle */}
             <circle
               cx="65"
@@ -131,7 +131,7 @@ const styles = {
   overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.85)",
+    background: "rgba(15,23,42,0.55)",
     backdropFilter: "blur(8px)",
     display: "flex",
     alignItems: "center",
@@ -140,21 +140,21 @@ const styles = {
     padding: "16px",
   },
   card: {
-    background: "linear-gradient(145deg,#0f172a,#1e293b)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
     borderRadius: "24px",
     padding: "28px 24px",
     maxWidth: "360px",
     width: "100%",
     textAlign: "center",
-    boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+    boxShadow: "0 25px 60px rgba(15,23,42,0.25)",
   },
   header: { marginBottom: "12px" },
   headerBadge: {
     display: "inline-block",
-    background: "rgba(34,197,94,0.15)",
-    color: "#22c55e",
-    border: "1px solid rgba(34,197,94,0.3)",
+    background: "#dcfce7",
+    color: "#16a34a",
+    border: "1px solid #bbf7d0",
     borderRadius: "99px",
     padding: "4px 14px",
     fontSize: "13px",
@@ -162,7 +162,7 @@ const styles = {
     letterSpacing: "0.5px",
     marginBottom: "6px",
   },
-  headerSub: { color: "#94a3b8", fontSize: "13px", margin: 0 },
+  headerSub: { color: "#64748b", fontSize: "13px", margin: 0 },
   timerWrap: {
     position: "relative",
     width: "130px",
@@ -178,10 +178,10 @@ const styles = {
     justifyContent: "center",
   },
   timerNum: { fontSize: "36px", fontWeight: 800, lineHeight: 1 },
-  timerSec: { fontSize: "12px", color: "#64748b", marginTop: "2px" },
+  timerSec: { fontSize: "12px", color: "#94a3b8", marginTop: "2px" },
   orderCard: {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.07)",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
     borderRadius: "14px",
     padding: "14px 16px",
     marginBottom: "20px",
@@ -189,8 +189,8 @@ const styles = {
   },
   orderRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" },
   orderLabel: { color: "#64748b", fontSize: "12px", fontWeight: 500 },
-  orderVal: { color: "#f1f5f9", fontSize: "13px", fontWeight: 600, textAlign: "right", maxWidth: "60%" },
-  divider: { height: "1px", background: "rgba(255,255,255,0.06)", margin: "8px 0" },
+  orderVal: { color: "#0f172a", fontSize: "13px", fontWeight: 600, textAlign: "right", maxWidth: "60%" },
+  divider: { height: "1px", background: "#e2e8f0", margin: "8px 0" },
   btnRow: { display: "flex", gap: "12px" },
   btn: {
     flex: 1,
@@ -208,11 +208,11 @@ const styles = {
     boxShadow: "0 4px 20px rgba(34,197,94,0.35)",
   },
   btnReject: {
-    background: "rgba(239,68,68,0.12)",
+    background: "#fef2f2",
     color: "#ef4444",
-    border: "1px solid rgba(239,68,68,0.25)",
+    border: "1px solid #fecaca",
   },
-  hint: { color: "#475569", fontSize: "11px", marginTop: "12px", marginBottom: 0 },
+  hint: { color: "#94a3b8", fontSize: "11px", marginTop: "12px", marginBottom: 0 },
 };
 
 export default OrderOfferModal;

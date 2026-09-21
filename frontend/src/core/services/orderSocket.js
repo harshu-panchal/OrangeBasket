@@ -196,6 +196,41 @@ export function onDeliveryBroadcastWithdrawn(getToken, handler) {
   return () => s.off("delivery:broadcast:withdrawn", handler);
 }
 
+/**
+ * A warehouse-queue order offer (FIFO queue pop, or a warehouse manually
+ * assigning a specific rider). Rider has a countdown to accept/reject.
+ */
+export function onQueueOrderOffered(getToken, handler) {
+  const s = getOrderSocket(getToken);
+  if (!s || typeof handler !== "function") return () => { };
+  s.on("queue:order_offered", handler);
+  return () => s.off("queue:order_offered", handler);
+}
+
+export function onQueueOrderOfferExpired(getToken, handler) {
+  const s = getOrderSocket(getToken);
+  if (!s || typeof handler !== "function") return () => { };
+  s.on("queue:order_offer_expired", handler);
+  return () => s.off("queue:order_offer_expired", handler);
+}
+
+export function emitQueueOfferResponse(getToken, orderId, accepted) {
+  const s = getOrderSocket(getToken);
+  if (!s || !orderId) return;
+  s.emit("queue:offer_response", { orderId, accepted: !!accepted });
+}
+
+/**
+ * Confirms a manual-offer accept went through (mirrors the rider's own
+ * accept action — mainly useful if they have another tab/device open).
+ */
+export function onOrderAssigned(getToken, handler) {
+  const s = getOrderSocket(getToken);
+  if (!s || typeof handler !== "function") return () => { };
+  s.on("order:assigned", handler);
+  return () => s.off("order:assigned", handler);
+}
+
 export function onSellerOrderNew(getToken, handler) {
   const s = getOrderSocket(getToken);
   if (!s || typeof handler !== "function") return () => { };

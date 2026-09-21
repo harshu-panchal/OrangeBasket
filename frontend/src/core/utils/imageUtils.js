@@ -71,3 +71,16 @@ export function buildCloudinarySrcSet(
     })
     .join(", ");
 }
+
+/**
+ * Generates a Low Quality Image Placeholder (LQIP) URL for a given Cloudinary image.
+ * Uses a small width and high blur effect.
+ */
+export function getCloudinaryLQIP(rawUrl) {
+  if (!rawUrl) return null;
+  const url = resolveMediaUrl(rawUrl);
+  if (!CLOUDINARY_REGEX.test(url)) return url;
+  
+  // A tiny image with strong blur is sufficient for a placeholder
+  return applyCloudinaryTransform(url, "f_auto,q_auto:low,w_50,e_blur:1000");
+}

@@ -22,13 +22,32 @@ const displayOrderStatus = (order) => {
   return order?.status || "active";
 };
 
+// Real rider payout, not a guess. `paymentBreakdown.riderPayoutTotal` is the
+// canonical, final settled figure (base + distance + bonus + tip);
+// `delivery.riderEarning` is the same value snapshotted at order placement
+// and covers orders settled before paymentBreakdown was populated. There is
+// no reliable fallback beyond these two real fields — showing a fabricated
+// "10% of order total" (which includes product cost, not just delivery)
+// would misrepresent what the rider actually earned.
 const getOrderEarnings = (order) => {
   if (order?.returnStatus && order.returnStatus !== "none" && order.returnCommission != null) {
-    return order.returnCommission;
+    return Math.round(order.returnCommission);
   }
-  if (order?.riderEarnings != null) return order.riderEarnings;
-  if (order?.delivery?.riderEarning != null) return order.delivery.riderEarning;
-  return Math.round((order?.pricing?.total || 0) * 0.1);
+  if (order?.paymentBreakdown?.riderPayoutTotal != null) {
+    return Math.round(order.paymentBreakdown.riderPayoutTotal);
+  }
+  if (order?.delivery?.riderEarning != null) return Math.round(order.delivery.riderEarning);
+  return 0;
+};
+
+const getOrderDistanceKm = (order) => {
+  const km = order?.delivery?.routeDistanceKm ?? order?.distanceSnapshot?.distanceKmRounded;
+  return km != null ? Number(km).toFixed(1) : null;
+};
+
+const getOrderDurationMin = (order) => {
+  const min = order?.delivery?.routeDurationMinutes;
+  return min != null ? Math.round(min) : null;
 };
 
 const OrderHistory = () => {
@@ -285,14 +304,18 @@ const OrderHistory = () => {
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center text-xs text-gray-500">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="flex items-center bg-gray-50 px-2 py-1 rounded border border-gray-100">
-                          <MapPin size={12} className="mr-1 text-gray-400" />{" "}
-                          2.4 km {/* Mock for now */}
-                        </span>
-                        <span className="flex items-center bg-gray-50 px-2 py-1 rounded border border-gray-100">
-                          <Clock size={12} className="mr-1 text-gray-400" /> 15
-                          min
-                        </span>
+                        {getOrderDistanceKm(order) != null && (
+                          <span className="flex items-center bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                            <MapPin size={12} className="mr-1 text-gray-400" />{" "}
+                            {getOrderDistanceKm(order)} km
+                          </span>
+                        )}
+                        {getOrderDurationMin(order) != null && (
+                          <span className="flex items-center bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                            <Clock size={12} className="mr-1 text-gray-400" />{" "}
+                            {getOrderDurationMin(order)} min
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center text-primary font-bold group-hover:underline self-end sm:self-auto">
                         View Details <ChevronRight size={14} className="ml-0.5" />

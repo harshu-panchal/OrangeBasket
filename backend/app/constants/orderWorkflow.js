@@ -6,6 +6,17 @@ export const WORKFLOW_STATUS = {
   CREATED: "CREATED",
   SELLER_PENDING: "SELLER_PENDING",
   SELLER_ACCEPTED: "SELLER_ACCEPTED",
+  // Warehouse-only states (P0): after a warehouse accepts an order it no
+  // longer auto-broadcasts to the delivery queue. Staff must scan every
+  // ordered item (deducting stock per scan) before a delivery boy can be
+  // manually picked. See warehouseQueueAssignmentService.js + orderProcessingService.js.
+  WAREHOUSE_PROCESSING: "WAREHOUSE_PROCESSING",
+  READY_FOR_ASSIGNMENT: "READY_FOR_ASSIGNMENT",
+  // A warehouse manually offered the order to one specific rider; awaiting
+  // that rider's accept/reject (or a timeout). On reject/timeout the order
+  // reverts to READY_FOR_ASSIGNMENT — NOT auto-offered to the next rider —
+  // so the warehouse manually picks again.
+  DELIVERY_OFFER_PENDING: "DELIVERY_OFFER_PENDING",
   DELIVERY_SEARCH: "DELIVERY_SEARCH",
   DELIVERY_ASSIGNED: "DELIVERY_ASSIGNED",
   PICKUP_READY: "PICKUP_READY",
@@ -45,6 +56,12 @@ export function legacyStatusFromWorkflow(workflowStatus) {
       return "pending";
     case WORKFLOW_STATUS.SELLER_ACCEPTED:
       return "confirmed";
+    case WORKFLOW_STATUS.WAREHOUSE_PROCESSING:
+      return "confirmed";
+    case WORKFLOW_STATUS.READY_FOR_ASSIGNMENT:
+      return "packed";
+    case WORKFLOW_STATUS.DELIVERY_OFFER_PENDING:
+      return "packed";
     case WORKFLOW_STATUS.DELIVERY_SEARCH:
       return "confirmed";
     case WORKFLOW_STATUS.DELIVERY_ASSIGNED:

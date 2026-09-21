@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Button from "@shared/components/ui/Button";
 import Badge from "@shared/components/ui/Badge";
+import JsBarcode from "jsbarcode";
 import {
   HiOutlineArrowLeft,
   HiOutlineCube,
@@ -15,12 +16,24 @@ import {
   HiOutlinePlus,
   HiOutlineSquaresPlus,
   HiOutlineSparkles,
+  HiOutlineQrCode,
+  HiOutlineArchiveBox,
+  HiOutlineBuildingStorefront,
 } from "react-icons/hi2";
 import { HiOutlinePhotograph } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { warehouseApi } from "../services/warehouseApi";
+
+// Auto-generates a Code128-safe, human-scannable barcode value.
+// Mirrors the backend fallback in productController.js so the preview
+// shown before saving matches the value the server will persist.
+const makeBarcode = () => {
+  const timestampPart = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.floor(100 + Math.random() * 900).toString();
+  return `PD${timestampPart}${randomPart}`;
+};
 
 export const PRESET_HIGHLIGHT_ICONS = [
   { id: "leaf", emoji: "🌿", name: "Natural / Organic" },
@@ -59,6 +72,8 @@ const AddProduct = () => {
     name: "",
     slug: "",
     sku: "",
+    barcode: "",
+    rackId: "",
     description: "",
     price: "",
     salePrice: "",
@@ -96,6 +111,72 @@ const AddProduct = () => {
 
   const [dbCategories, setDbCategories] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
+  const [racks, setRacks] = useState([]);
+  const [isLoadingRacks, setIsLoadingRacks] = useState(true);
+  const [newRackCode, setNewRackCode] = useState("");
+  const [isCreatingRack, setIsCreatingRack] = useState(false);
+  const barcodeSvgRef = useRef(null);
+
+  // Auto-generate a barcode as soon as the page opens (mirrors backend fallback)
+  useEffect(() => {
+    setFormData((prev) => (prev.barcode ? prev : { ...prev, barcode: makeBarcode() }));
+  }, []);
+
+  // Render the scannable barcode image whenever the code changes
+  useEffect(() => {
+    if (!formData.barcode || !barcodeSvgRef.current) return;
+    try {
+      JsBarcode(barcodeSvgRef.current, formData.barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 60,
+        displayValue: true,
+        fontSize: 14,
+        margin: 8,
+      });
+    } catch {
+      // Invalid characters for Code128 (shouldn't happen with the auto format)
+    }
+  }, [formData.barcode]);
+
+  const loadRacks = async () => {
+    try {
+      setIsLoadingRacks(true);
+      const res = await warehouseApi.getRacks();
+      if (res.data.success) {
+        setRacks(res.data.result || res.data.results || []);
+      }
+    } catch (error) {
+      toast.error("Failed to load racks");
+    } finally {
+      setIsLoadingRacks(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRacks();
+  }, []);
+
+  const handleCreateRack = async () => {
+    if (!newRackCode.trim()) {
+      toast.error("Enter a rack code, e.g. A1");
+      return;
+    }
+    setIsCreatingRack(true);
+    try {
+      const res = await warehouseApi.createRack({ rackCode: newRackCode.trim() });
+      if (res.data.success) {
+        toast.success(`Rack "${res.data.result.rackCode}" created`);
+        setNewRackCode("");
+        await loadRacks();
+        setFormData((prev) => ({ ...prev, rackId: res.data.result._id }));
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create rack");
+    } finally {
+      setIsCreatingRack(false);
+    }
+  };
 
   useEffect(() => {
     setFormData((prev) => {
@@ -174,6 +255,8 @@ const AddProduct = () => {
       data.append("name", formData.name);
       data.append("slug", formData.slug);
       data.append("sku", formData.sku);
+      data.append("barcode", formData.barcode);
+      if (formData.rackId) data.append("rackId", formData.rackId);
       data.append("description", formData.description);
       data.append("tags", formData.tags);
       data.append("weight", formData.weight);
@@ -290,6 +373,8 @@ const AddProduct = () => {
             { id: "variants", label: "Item Variants", icon: HiOutlineSwatch },
             { id: "category", label: "Groups", icon: HiOutlineFolderOpen },
             { id: "highlights", label: "Highlights", icon: HiOutlineSparkles },
+            { id: "barcode", label: "Barcode", icon: HiOutlineQrCode },
+            { id: "rack", label: "Rack Location", icon: HiOutlineBuildingStorefront },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -816,6 +901,114 @@ const AddProduct = () => {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {modalTab === "barcode" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">
+                  Product Barcode
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Auto-generated when the product is created. Warehouse staff scan this
+                  during order processing to deduct stock — print it on the product label.
+                </p>
+              </div>
+
+              <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-100 flex flex-col items-center gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <svg ref={barcodeSvgRef} />
+                </div>
+                <div className="flex items-center gap-2 w-full max-w-sm">
+                  <input
+                    value={formData.barcode}
+                    readOnly
+                    className="flex-1 px-4 py-2.5 bg-white ring-1 ring-slate-200 border-none rounded-md text-sm font-mono font-bold text-center outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, barcode: makeBarcode() }))
+                    }
+                    title="Regenerate barcode"
+                    className="p-2.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+                  >
+                    <HiOutlineArrowPath className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {modalTab === "rack" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-1">
+                  Rack Location
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Choose where this product is physically stored in your warehouse.
+                  This helps staff find items quickly while packing orders.
+                </p>
+              </div>
+
+              <div className="space-y-1.5 flex flex-col max-w-md">
+                <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
+                  Select Rack
+                </label>
+                <select
+                  value={formData.rackId}
+                  onChange={(e) => setFormData({ ...formData, rackId: e.target.value })}
+                  disabled={isLoadingRacks}
+                  className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-md text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/5 transition-all disabled:opacity-50"
+                >
+                  <option value="">
+                    {isLoadingRacks ? "Loading racks..." : "No rack assigned"}
+                  </option>
+                  {racks.map((rack) => (
+                    <option key={rack._id} value={rack._id}>
+                      {rack.rackCode}
+                      {rack.name ? ` — ${rack.name}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 max-w-md space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Don't see the rack you need?
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newRackCode}
+                    onChange={(e) => setNewRackCode(e.target.value)}
+                    placeholder="e.g. A1, B2"
+                    className="flex-1 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-primary/10"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isCreatingRack}
+                    onClick={handleCreateRack}
+                    className="whitespace-nowrap"
+                  >
+                    <HiOutlinePlus className="h-4 w-4 mr-1" />
+                    Add Rack
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium">
+                  New racks can also be managed on the{" "}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/warehouse/racks")}
+                    className="text-primary font-bold hover:underline"
+                  >
+                    Rack Management
+                  </button>{" "}
+                  page.
+                </p>
               </div>
             </div>
           )}

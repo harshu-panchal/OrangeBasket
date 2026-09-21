@@ -25,6 +25,13 @@ import {
   getQueueSnapshotHandler,
   getQueueStatsHandler,
 } from "../controller/warehouseCheckinController.js";
+import {
+  listRacks,
+  getRackById,
+  createRack,
+  updateRack,
+  deleteRack,
+} from "../controller/rackController.js";
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
 import {
     authRouteRateLimiter,
@@ -96,5 +103,12 @@ router.put("/checkin-settings", verifyToken, allowRoles("warehouse"), updateChec
 router.get("/:warehouseId/queue", verifyToken, allowRoles("warehouse", "admin"), getWarehouseQueueHandler);
 router.get("/:warehouseId/queue/snapshot", verifyToken, allowRoles("warehouse", "admin"), getQueueSnapshotHandler);
 router.get("/:warehouseId/queue/stats", verifyToken, allowRoles("warehouse", "admin"), getQueueStatsHandler);
+
+// Rack Locations (per-warehouse shelf/rack management + product placement lookup)
+router.get("/racks", verifyToken, allowRoles("warehouse", "admin"), listRacks);
+router.get("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), getRackById);
+router.post("/racks", verifyToken, allowRoles("warehouse", "admin"), createRack);
+router.put("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), updateRack);
+router.delete("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), deleteRack);
 
 export default router;

@@ -42,6 +42,12 @@ import {
   getOrderRoute,
 } from "../controller/orderWorkflowController.js";
 import {
+  getScanProgressHandler,
+  scanOrderItemHandler,
+  getEligibleRidersHandler,
+  assignDeliveryBoyHandler,
+} from "../controller/orderProcessingController.js";
+import {
   verifyToken,
   allowRoles,
   requireApprovedSeller,
@@ -255,6 +261,32 @@ router.post(
   verifyToken,
   allowRoles("delivery", "admin"),
   uploadReturnPickupProof,
+);
+
+// Warehouse Order Processing / Scan flow
+router.get(
+  "/:orderId/warehouse/scan-progress",
+  verifyToken,
+  allowRoles("warehouse"),
+  getScanProgressHandler,
+);
+router.post(
+  "/:orderId/warehouse/scan",
+  verifyToken,
+  allowRoles("warehouse"),
+  scanOrderItemHandler,
+);
+router.get(
+  "/:orderId/warehouse/eligible-riders",
+  verifyToken,
+  allowRoles("warehouse"),
+  getEligibleRidersHandler,
+);
+router.post(
+  "/:orderId/warehouse/assign-delivery",
+  verifyToken,
+  allowRoles("warehouse"),
+  assignDeliveryBoyHandler,
 );
 
 // Route map

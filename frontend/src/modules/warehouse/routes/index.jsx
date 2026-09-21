@@ -32,6 +32,8 @@ const AddMonthlyKit = React.lazy(() => import("../pages/AddMonthlyKit"));
 const MonthlyKits = React.lazy(() => import("../pages/MonthlyKits"));
 const QRManager = React.lazy(() => import("../pages/QRManager"));
 const QueueMonitor = React.lazy(() => import("../pages/QueueMonitor"));
+const RackManagement = React.lazy(() => import("../pages/RackManagement"));
+const OrderProcessing = React.lazy(() => import("../pages/OrderProcessing"));
 const KitAddonSummary = React.lazy(() => import("../pages/KitAddonSummary"));
 const KitAddonManagement = React.lazy(() => import("../pages/KitAddonManagement"));
 
@@ -52,6 +54,7 @@ const navItems = [
   { label: "Profile", path: "/warehouse/profile", icon: HiOutlineUser },
   { label: "QR Check-in", path: "/warehouse/qr-manager", icon: HiOutlineMapPin },
   { label: "Queue Monitor", path: "/warehouse/queue-monitor", icon: HiOutlineBuildingStorefront },
+  { label: "Racks", path: "/warehouse/racks", icon: HiOutlineBuildingStorefront },
 ];
 
 const WarehouseRoutes = () => {
@@ -81,6 +84,8 @@ const WarehouseRoutes = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/qr-manager" element={<QRManager />} />
         <Route path="/queue-monitor" element={<QueueMonitor />} />
+        <Route path="/racks" element={<RackManagement />} />
+        <Route path="/orders/:orderId/process" element={<OrderProcessing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>

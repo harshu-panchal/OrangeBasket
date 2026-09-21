@@ -6,7 +6,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import { useCart } from "../../context/CartContext";
 import { useToast } from "@shared/components/ui/Toast";
 import { useCartAnimation } from "../../context/CartAnimationContext";
-import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
+import { applyCloudinaryTransform, buildCloudinarySrcSet, getCloudinaryLQIP } from "@/core/utils/imageUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import ParticleBurst from "./ParticleBurst";
@@ -224,7 +224,10 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
         </AnimatePresence>
 
         {/* Top Image Section */}
-        <div className={cn("relative w-full overflow-hidden flex items-center justify-center", layout === "list" ? "w-[90px] h-[90px] shrink-0 p-1" : "aspect-square p-3 sm:p-4")}>
+        <div 
+          className={cn("relative w-full overflow-hidden flex items-center justify-center bg-no-repeat bg-center bg-cover", layout === "list" ? "w-[90px] h-[90px] shrink-0 p-1" : "aspect-square p-3 sm:p-4")}
+          style={{ backgroundImage: `url(${getCloudinaryLQIP(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "")})` }}
+        >
           {/* Discount Badge (Top-Left Orange Speech Bubble) */}
           {discountText && (
             <div className="absolute top-0 left-0 z-10 bg-[#FF8200] text-white font-black text-[9.5px] px-2.5 py-1 rounded-[10px_10px_10px_0px] shadow-3xs tracking-tight leading-none select-none">
@@ -235,7 +238,9 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
           {/* Product Image */}
           <img
             ref={imageRef}
-            src={applyCloudinaryTransform(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "")}
+            src={applyCloudinaryTransform(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "", "f_auto,q_auto,w_400")}
+            srcSet={buildCloudinarySrcSet(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "", [{ w: 150 }, { w: 250 }, { w: 400 }])}
+            sizes="(max-width: 640px) 150px, (max-width: 1024px) 250px, 400px"
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}

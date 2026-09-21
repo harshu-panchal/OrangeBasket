@@ -52,4 +52,17 @@ export const warehouseApi = {
     approveReturn: (orderId, data) => axiosInstance.put(`/orders/returns/${orderId}/approve`, data),
     rejectReturn: (orderId, data) => axiosInstance.put(`/orders/returns/${orderId}/reject`, data),
     assignReturnDelivery: (orderId, data) => axiosInstance.put(`/orders/returns/${orderId}/assign-delivery`, data),
+
+    // Racks (rack/shelf locations for product placement)
+    getRacks: () => axiosInstance.get('/warehouse/racks'),
+    getRackById: (id) => axiosInstance.get(`/warehouse/racks/${id}`),
+    createRack: (data) => axiosInstance.post('/warehouse/racks', data),
+    updateRack: (id, data) => axiosInstance.put(`/warehouse/racks/${id}`, data),
+    deleteRack: (id) => axiosInstance.delete(`/warehouse/racks/${id}`),
+
+    // Order Processing / Scan (warehouse order fulfillment flow)
+    getScanProgress: (orderId) => axiosInstance.get(`/orders/${orderId}/warehouse/scan-progress`),
+    scanOrderItem: (orderId, data) => axiosInstance.post(`/orders/${orderId}/warehouse/scan`, data),
+    getEligibleRiders: (orderId) => axiosInstance.get(`/orders/${orderId}/warehouse/eligible-riders`),
+    assignDeliveryBoy: (orderId, data) => axiosInstance.post(`/orders/${orderId}/warehouse/assign-delivery`, data),
 };

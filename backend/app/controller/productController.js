@@ -158,6 +158,14 @@ function makeProductSku(name, index = 1) {
   return `${prefix}-${String(index).padStart(3, "0")}`;
 }
 
+// Generates a Code128-safe, human-scannable barcode value.
+// Format: <2-letter prefix><timestamp base36><3-digit random> e.g. "PD1D2K3F4G7X2"
+function generateBarcode() {
+  const timestampPart = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.floor(100 + Math.random() * 900).toString();
+  return `PD${timestampPart}${randomPart}`;
+}
+
 function parseJsonIfString(value) {
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
@@ -658,13 +666,14 @@ export const getSellerProducts = async (req, res) => {
     ] = await Promise.all([
       Product.find(query)
         .select(
-          "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
+          "name slug description sku barcode rackId price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants createdAt",
         )
         .populate("headerId", "name")
         .populate("categoryId", "name")
         .populate("subcategoryId", "name")
         .populate("sellerId", "shopName")
         .populate("warehouseId", "name")
+        .populate("rackId", "rackCode name")
         .sort(sortQuery)
         .skip(skip)
         .limit(limit)
@@ -906,6 +915,18 @@ export const createProduct = async (req, res) => {
       productData.sku = makeProductSku(productData.name, 1);
     }
 
+    // Auto-generate barcode if missing
+    if (!productData.barcode || String(productData.barcode).trim() === "") {
+      productData.barcode = generateBarcode();
+    } else {
+      productData.barcode = String(productData.barcode).trim().toUpperCase();
+    }
+
+    // Rack location is optional — avoid CastError on empty string
+    if (!productData.rackId || String(productData.rackId).trim() === "") {
+      delete productData.rackId;
+    }
+
     applyMediaFields(productData);
 
     // Handle tags if string
@@ -1123,6 +1144,17 @@ export const updateProduct = async (req, res) => {
     if (!productData.sku || String(productData.sku).trim() === "") {
       productData.sku = product.sku || makeProductSku(skuBaseName, 1);
     }
+
+    if (!productData.barcode || String(productData.barcode).trim() === "") {
+      productData.barcode = product.barcode || generateBarcode();
+    } else {
+      productData.barcode = String(productData.barcode).trim().toUpperCase();
+    }
+
+    if (Object.prototype.hasOwnProperty.call(productData, "rackId") && !String(productData.rackId || "").trim()) {
+      productData.rackId = null;
+    }
+
     if (productData.mainImage === undefined && product.mainImage) {
       productData.mainImage = product.mainImage;
     }

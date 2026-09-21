@@ -106,8 +106,8 @@ export const initSocket = (io) => {
     socket.on("queue:offer_response", async ({ orderId, accepted }) => {
       if (socket.user?.role !== "delivery" || !orderId) return;
       try {
-        const { handleQueueRiderResponse } = await import("../services/warehouseQueueAssignmentService.js");
-        await handleQueueRiderResponse(userId, orderId, !!accepted);
+        const { handleOfferResponse } = await import("../services/warehouseQueueAssignmentService.js");
+        await handleOfferResponse(userId, orderId, !!accepted);
       } catch (err) {
         socket.emit("queue:offer_response_error", { orderId, error: err.message });
       }

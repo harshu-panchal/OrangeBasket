@@ -28,7 +28,6 @@ import { deliveryApi } from "../services/deliveryApi";
 import DeliveryFooter from "../components/DeliveryFooter";
 import Lottie from "lottie-react";
 import deliveryRidingAnimation from "@/assets/lottie/Ey2fgNNOKZ.json";
-import OrderOfferModal from "../components/OrderOfferModal";
 import { getOrderSocket } from "@core/services/orderSocket";
 import { createSocketTokenReader } from "@core/utils/authStorage";
 import { STORAGE_KEYS } from "@core/utils/storageKeys";
@@ -41,7 +40,6 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("delivery"); // 'delivery' or 'return'
   const [availableOrders, setAvailableOrders] = useState([]);
   const [checkinStatus, setCheckinStatus] = useState(null);
-  const [pendingOffer, setPendingOffer] = useState(null); // active queue order offer
   const [earnings, setEarnings] = useState({
     today: 0,
     deliveries: 0,
@@ -116,81 +114,23 @@ const Dashboard = () => {
     } catch { /* non-fatal */ }
   };
 
-  // Listen for queue order offers from socket
+  // Warehouse staff manually assigned an order directly after the rider
+  // accepted a queue offer. The offer popup + ringtone + accept/reject are
+  // now handled globally in DeliveryLayout.jsx (shows on every page, not
+  // just this dashboard) — see queue:order_offered / order:assigned there.
   useEffect(() => {
     const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
     const socket = getOrderSocket(getToken);
-    if (!socket) return;
-    const handleOffer = (offer) => {
-      toast.info(`📦 New order offered! You have 5 minutes to respond`);
-      setPendingOffer(offer);
+    if (!socket) return undefined;
+    const handleDirectAssignment = () => {
+      fetchCheckinStatus();
     };
-    const handleExpired = () => {
-      setPendingOffer(null);
-      toast.warning("Order offer expired — moving to next rider");
-    };
-    const handleBroadcast = (payload) => {
-      if (payload.type === "RETURN_PICKUP") {
-        toast.info(`📦 New Return Pickup available!`);
-        setPendingOffer({
-          ...payload,
-          countdown: 300,
-          isReturn: true,
-        });
-      } else {
-        toast.info(`📦 New delivery order available!`);
-        setPendingOffer({
-          ...payload,
-          countdown: 300,
-          isReturn: false,
-        });
-      }
-    };
-    
-    socket.on("queue:order_offered", handleOffer);
-    socket.on("queue:order_offer_expired", handleExpired);
-    socket.on("delivery:broadcast", handleBroadcast);
+    socket.on("order:assigned", handleDirectAssignment);
     return () => {
-      socket.off("queue:order_offered", handleOffer);
-      socket.off("queue:order_offer_expired", handleExpired);
-      socket.off("delivery:broadcast", handleBroadcast);
+      socket.off("order:assigned", handleDirectAssignment);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleOfferAccept = async (orderId) => {
-    if (pendingOffer?.isReturn) {
-      await handleAcceptReturn(orderId);
-      setPendingOffer(null);
-    } else if (pendingOffer?.countdown) {
-      if (pendingOffer.warehouseId) {
-        // Queue assignment response
-        const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
-        const socket = getOrderSocket(getToken);
-        socket?.emit("queue:offer_response", { orderId, accepted: true });
-        setPendingOffer(null);
-        toast.success("Order accepted! Preparing for pickup...");
-        navigate(`/delivery/order-details/${orderId}`);
-      } else {
-        // Broadcast fallback accept
-        acceptOrder(orderId);
-      }
-    }
-  };
-
-  const handleOfferReject = (reason) => {
-    if (pendingOffer?.isReturn) {
-      setPendingOffer(null);
-      if (reason !== "timeout") toast.info("Return skipped.");
-    } else {
-      if (pendingOffer?.orderId) {
-        const getToken = createSocketTokenReader(STORAGE_KEYS.AUTH_DELIVERY);
-        const socket = getOrderSocket(getToken);
-        socket?.emit("queue:offer_response", { orderId: pendingOffer.orderId, accepted: false });
-      }
-      setPendingOffer(null);
-      if (reason !== "timeout") toast.info("Order declined.");
-    }
-  };
 
   const handleOnlineToggle = async () => {
     const newStatus = !isOnline;
@@ -224,14 +164,6 @@ const Dashboard = () => {
 
   return (
     <div className="bg-gray-50/50 min-h-full pb-24 font-sans">
-      {/* Queue Order Offer Modal */}
-      {pendingOffer && (
-        <OrderOfferModal
-          offer={pendingOffer}
-          onAccept={handleOfferAccept}
-          onReject={handleOfferReject}
-        />
-      )}
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md px-6 pt-12 pb-4 flex justify-between items-center sticky top-0 z-30 transition-all duration-300">
         <div className="flex items-center gap-2.5">

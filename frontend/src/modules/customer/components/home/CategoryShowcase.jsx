@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { applyCloudinaryTransform } from '@/core/utils/imageUtils';
+import { applyCloudinaryTransform, buildCloudinarySrcSet, getCloudinaryLQIP } from '@/core/utils/imageUtils';
 
 const CategoryShowcase = ({ categoryMap, subcategoryMap }) => {
   const navigate = useNavigate();
@@ -45,9 +45,14 @@ const CategoryShowcase = ({ categoryMap, subcategoryMap }) => {
                 onClick={() => handleSubcategoryClick(category._id, sub._id)}
                 className="flex flex-col items-center gap-1.5 cursor-pointer group"
               >
-                <div className="w-full aspect-[4/5] rounded-[14px] bg-[#eff6f5] flex items-center justify-center p-2 transition-all relative overflow-hidden">
+                <div 
+                  className="w-full aspect-[4/5] rounded-[14px] bg-[#eff6f5] flex items-center justify-center p-2 transition-all relative overflow-hidden bg-no-repeat bg-center bg-cover"
+                  style={{ backgroundImage: `url(${getCloudinaryLQIP(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png")})` }}
+                >
                   <img
-                    src={applyCloudinaryTransform(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png")}
+                    src={applyCloudinaryTransform(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png", "f_auto,q_auto,w_200,dpr_auto")}
+                    srcSet={buildCloudinarySrcSet(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png", [{ w: 100 }, { w: 200 }])}
+                    sizes="(max-width: 768px) 100px, 200px"
                     alt={sub.name}
                     loading="lazy"
                     className="absolute inset-0 w-full h-full p-2 m-auto object-contain group-hover:scale-110 transition-transform duration-300 mix-blend-multiply"

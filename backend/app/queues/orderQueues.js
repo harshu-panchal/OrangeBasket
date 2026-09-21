@@ -67,5 +67,6 @@ export const JOB_NAMES = {
   DELIVERY_TIMEOUT: "delivery-timeout",
   RETURN_PICKUP_TIMEOUT: "return-pickup-timeout",
   QUEUE_OFFER_TIMEOUT: "queue-offer-timeout",
+  MANUAL_OFFER_TIMEOUT: "manual-offer-timeout",
   WAREHOUSE_GPS_WATCHDOG: "warehouse-gps-watchdog",
 };

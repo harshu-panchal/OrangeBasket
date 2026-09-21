@@ -19,6 +19,18 @@ const productSchema = new mongoose.Schema(
             unique: true,
             trim: true,
         },
+        barcode: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+            uppercase: true,
+        },
+        rackId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Rack",
+            default: null,
+        },
         description: {
             type: String,
             trim: true,
@@ -185,6 +197,7 @@ productSchema.index({ subcategoryId: 1, status: 1 });
 productSchema.index({ sellerId: 1, status: 1 });
 productSchema.index({ sellerId: 1, approvalStatus: 1, createdAt: -1 });
 productSchema.index({ sellerId: 1, createdAt: -1, _id: -1 });
+productSchema.index({ warehouseId: 1, rackId: 1 });
 productSchema.index({ name: "text", tags: "text" }); // For better search if regex is too slow
 
 export default mongoose.model("Product", productSchema);

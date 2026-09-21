@@ -424,6 +424,24 @@ const orderSchema = new mongoose.Schema(
     pickupConfirmedAt: Date,
     pickupReadyAt: Date,
     outForDeliveryAt: Date,
+    /**
+     * Warehouse order-processing / scan progress. Populated while
+     * workflowStatus is WAREHOUSE_PROCESSING or READY_FOR_ASSIGNMENT.
+     * One entry per distinct order line (by item array index) — kit addons
+     * are tracked separately in `kitAddonScanned`.
+     */
+    processing: {
+      startedAt: { type: Date, default: null },
+      completedAt: { type: Date, default: null },
+      scannedItems: [
+        {
+          itemIndex: { type: Number, required: true },
+          product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+          orderedQty: { type: Number, required: true },
+          scannedQty: { type: Number, default: 0 },
+        },
+      ],
+    },
     deliveryRiderStep: {
       type: Number,
       min: 1,
@@ -436,6 +454,20 @@ const orderSchema = new mongoose.Schema(
     deliveryBoy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Delivery",
+    },
+    /**
+     * Warehouse manual-assign offer in flight (workflowStatus ===
+     * DELIVERY_OFFER_PENDING). Cleared on accept/reject/timeout — see
+     * warehouseQueueAssignmentService.js.
+     */
+    pendingDeliveryBoy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Delivery",
+      default: null,
+    },
+    pendingOfferExpiresAt: {
+      type: Date,
+      default: null,
     },
     /**
      * @deprecated Phase 4 (P4-9). Use the canonical `deliveryBoy` field.

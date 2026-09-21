@@ -213,7 +213,11 @@ const Dashboard = () => {
       },
       address: addressStr || "—",
       items,
-      total: Number(order.pricing?.total ?? 0),
+      total: Number(order.paymentBreakdown?.grandTotal ?? order.pricing?.total ?? 0),
+      subtotal: Number(order.paymentBreakdown?.productSubtotal ?? order.pricing?.subtotal ?? 0),
+      deliveryFee: Number(order.paymentBreakdown?.deliveryFeeCharged ?? order.pricing?.deliveryFee ?? 0),
+      tip: Number(order.paymentBreakdown?.tipTotal ?? order.pricing?.tip ?? 0),
+      discount: Number(order.paymentBreakdown?.discountTotal ?? order.pricing?.discount ?? 0),
       status: order.status || "pending",
       payment:
         order.payment?.method === "cash" || order.payment?.method === "cod"
@@ -620,7 +624,7 @@ const Dashboard = () => {
                             Subtotal
                           </span>
                           <span className="font-black text-slate-900">
-                            ₹{(selectedOrder.total - 10).toFixed(2)}
+                            ₹{(selectedOrder.subtotal || 0).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between text-xs">
@@ -628,9 +632,29 @@ const Dashboard = () => {
                             Delivery Fee
                           </span>
                           <span className="font-black text-brand-600">
-                            ₹10.00
+                            ₹{(selectedOrder.deliveryFee || 0).toFixed(2)}
                           </span>
                         </div>
+                        {selectedOrder.tip > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="font-bold text-slate-600">
+                              Tip
+                            </span>
+                            <span className="font-black text-slate-900">
+                              ₹{selectedOrder.tip.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {selectedOrder.discount > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="font-bold text-slate-600">
+                              Discount
+                            </span>
+                            <span className="font-black text-rose-600">
+                              -₹{selectedOrder.discount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                         <div className="h-px bg-primary/10 my-2" />
                         <div className="flex justify-between text-sm">
                           <span className="font-black text-slate-900">

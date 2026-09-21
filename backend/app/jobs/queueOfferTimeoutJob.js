@@ -4,7 +4,7 @@
  * When a rider doesn't respond within 20s, the offer moves to the next rider.
  */
 import { queueOfferTimeoutQueue, JOB_NAMES } from "../queues/orderQueues.js";
-import { handleOfferTimeout } from "../services/warehouseQueueAssignmentService.js";
+import { handleOfferTimeout, handleManualOfferTimeout } from "../services/warehouseQueueAssignmentService.js";
 import { isRedisEnabled } from "../config/redis.js";
 import logger from "../services/logger.js";
 
@@ -24,6 +24,21 @@ export function registerQueueOfferTimeoutProcessor() {
       await handleOfferTimeout({ orderId, warehouseId, riderId, skippedIds });
     } catch (err) {
       logger.error("[QueueOfferTimeout] Failed to process timeout", {
+        orderId,
+        riderId,
+        error: err.message,
+      });
+      throw err;
+    }
+  });
+
+  queueOfferTimeoutQueue.process(JOB_NAMES.MANUAL_OFFER_TIMEOUT, async (job) => {
+    const { orderId, riderId } = job.data;
+    logger.info("[ManualOfferTimeout] Processing timeout", { orderId, riderId });
+    try {
+      await handleManualOfferTimeout({ orderId, riderId });
+    } catch (err) {
+      logger.error("[ManualOfferTimeout] Failed to process timeout", {
         orderId,
         riderId,
         error: err.message,

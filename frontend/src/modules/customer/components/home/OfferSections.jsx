@@ -7,7 +7,7 @@ import {
   getBackgroundColorByValue,
   getBackgroundGradientByValue,
 } from "@/shared/constants/offerSectionOptions";
-import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
+import { applyCloudinaryTransform, buildCloudinarySrcSet, getCloudinaryLQIP } from "@/core/utils/imageUtils";
 
 const OfferSections = ({ sections, noServiceData }) => {
   if (!sections || sections.length === 0) return null;
@@ -71,12 +71,19 @@ const OfferSections = ({ sections, noServiceData }) => {
                 <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex-shrink-0 shadow-[0_16px_30px_rgba(0,0,0,0.25)] border border-black/10 overflow-hidden relative bg-black/10 transition-transform hover:-translate-y-1 hover:rotate-[-4deg] hover:scale-105">
                   {sectionProducts[0]?.image ? (
                     <>
-                      <img
-                        src={applyCloudinaryTransform(sectionProducts[0].image, "f_auto,q_auto,w_150")}
-                        alt={section.title}
-                        loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover scale-110"
-                      />
+                      <div
+                        className="absolute inset-0 w-full h-full bg-no-repeat bg-center bg-cover scale-110"
+                        style={{ backgroundImage: `url(${getCloudinaryLQIP(sectionProducts[0].image)})` }}
+                      >
+                        <img
+                          src={applyCloudinaryTransform(sectionProducts[0].image, "f_auto,q_auto,w_150")}
+                          srcSet={buildCloudinarySrcSet(sectionProducts[0].image, [{ w: 100 }, { w: 150 }])}
+                          sizes="100px, 150px"
+                          alt={section.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-black/20 to-transparent" />
                       <div className="absolute -bottom-6 -right-6 w-16 h-16 rounded-full bg-amber-400/60 blur-xl mix-blend-screen" />
                     </>
