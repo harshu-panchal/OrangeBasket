@@ -14,6 +14,14 @@ const SplashScreen = ({ children }) => {
             setShowSplash(false);
             return;
         }
+        
+        // Remove splash screen for user/customer app
+        // (paths that don't start with specific module prefixes)
+        const isUserApp = !window.location.pathname.match(/^\/(delivery|admin|seller|warehouse)/);
+        if (isUserApp) {
+            setShowSplash(false);
+            return;
+        }
 
         const timer = setTimeout(() => {
             setShowSplash(false);

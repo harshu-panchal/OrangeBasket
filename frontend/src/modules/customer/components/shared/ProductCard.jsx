@@ -225,8 +225,7 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
 
         {/* Top Image Section */}
         <div 
-          className={cn("relative w-full overflow-hidden flex items-center justify-center bg-no-repeat bg-center bg-cover", layout === "list" ? "w-[90px] h-[90px] shrink-0 p-1" : "aspect-square p-3 sm:p-4")}
-          style={{ backgroundImage: `url(${getCloudinaryLQIP(product.mainImage || (product.variants?.[0]?.images?.[0]) || product.image || "")})` }}
+          className={cn("relative w-full overflow-hidden flex items-center justify-center", layout === "list" ? "w-[90px] h-[90px] shrink-0 p-1" : "aspect-square p-3 sm:p-4")}
         >
           {/* Discount Badge (Top-Left Orange Speech Bubble) */}
           {discountText && (

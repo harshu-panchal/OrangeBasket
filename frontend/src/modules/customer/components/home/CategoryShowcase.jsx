@@ -46,8 +46,7 @@ const CategoryShowcase = ({ categoryMap, subcategoryMap }) => {
                 className="flex flex-col items-center gap-1.5 cursor-pointer group"
               >
                 <div 
-                  className="w-full aspect-[4/5] rounded-[14px] bg-[#eff6f5] flex items-center justify-center p-2 transition-all relative overflow-hidden bg-no-repeat bg-center bg-cover"
-                  style={{ backgroundImage: `url(${getCloudinaryLQIP(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png")})` }}
+                  className="w-full aspect-[4/5] rounded-[14px] bg-[#eff6f5] flex items-center justify-center p-2 transition-all relative overflow-hidden"
                 >
                   <img
                     src={applyCloudinaryTransform(sub.image || "https://cdn-icons-png.flaticon.com/128/2321/2321801.png", "f_auto,q_auto,w_200,dpr_auto")}
