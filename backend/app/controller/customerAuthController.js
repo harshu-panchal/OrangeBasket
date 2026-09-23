@@ -108,7 +108,7 @@ export const getCustomerProfile = async (req, res) => {
 ================================ */
 export const updateCustomerProfile = async (req, res) => {
     try {
-        const { name, email, phone, bio, addresses } = req.body;
+        const { name, email, phone, bio, addresses, profileImage } = req.body;
 
         const customer = await Customer.findById(req.user.id);
         if (!customer) {
@@ -119,6 +119,7 @@ export const updateCustomerProfile = async (req, res) => {
         if (email !== undefined) customer.email = email;
         if (bio !== undefined) customer.bio = bio;
         if (addresses) customer.addresses = addresses;
+        if (profileImage !== undefined) customer.profileImage = profileImage;
 
         if (phone && phone !== customer.phone) {
             const existingPhone = await Customer.findOne({ phone, _id: { $ne: req.user.id } });

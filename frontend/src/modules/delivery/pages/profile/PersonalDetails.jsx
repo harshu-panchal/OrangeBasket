@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, User, Mail, Phone, MapPin, Calendar, Droplet } from "lucide-react";
+import { ArrowLeft, Save, User, Mail, Phone, MapPin, Calendar, Droplet, Camera, Image as ImageIcon } from "lucide-react";
 import Button from "@/shared/components/ui/Button";
 import Input from "@/shared/components/ui/Input";
 import { toast } from "sonner";
@@ -75,11 +75,57 @@ const PersonalDetails = () => {
     }
   };
 
+  const handleGalleryClick = async () => {
+    if (!isEditing) return;
+    
+    try {
+      if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+        const result = await window.flutter_inappwebview.callHandler('openGallery');
+        if (result && result.success) {
+          const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
+          setPreviewImage(fileUrl);
+          setFormData(prev => ({ ...prev, profileImage: fileUrl }));
+        } else {
+          toast.error("Failed to capture image from gallery");
+        }
+      } else {
+        // Web fallback
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              setPreviewImage(event.target.result);
+              setFormData(prev => ({ ...prev, profileImage: event.target.result }));
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      }
+    } catch (error) {
+      console.error("Gallery error:", error);
+      toast.error("An error occurred while opening the gallery");
+    }
+  };
+
   const handleSave = async () => {
     try {
         if (deliveryApi && deliveryApi.updateProfile) {
-            // Uncomment or use appropriate api call when needed
-            // await deliveryApi.updateProfile(formData);
+            const payload = { ...formData };
+            // Prevent duplicate key error for empty email in MongoDB
+            if (!payload.email || payload.email.trim() === '') {
+                delete payload.email;
+            }
+            
+            const response = await deliveryApi.updateProfile(payload);
+            const updatedUser = response.data?.result || response.data;
+            if (updateUser && updatedUser) {
+              updateUser(updatedUser);
+            }
         }
         setIsEditing(false);
         toast.success("Personal details updated successfully!");
@@ -131,9 +177,14 @@ const PersonalDetails = () => {
               />
             </div>
             {isEditing && (
-              <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg hover:bg-primary/90 transition-colors">
-                <User size={14} />
-              </button>
+              <>
+                <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg hover:bg-primary/90 transition-colors" title="Camera">
+                  <Camera size={14} />
+                </button>
+                <button type="button" onClick={handleGalleryClick} className="absolute bottom-0 left-0 bg-blue-500 text-white p-1.5 rounded-full shadow-lg hover:bg-blue-600 transition-colors" title="Gallery">
+                  <ImageIcon size={14} />
+                </button>
+              </>
             )}
           </div>
           <p className="mt-3 text-sm text-gray-500">Delivery Partner ID: {user?.deliveryBoyId || user?._id?.slice(-6) || "N/A"}</p>
@@ -144,7 +195,8 @@ const PersonalDetails = () => {
           <Input
             label="Full Name"
             value={formData.fullName}
-            readOnly={!isEditing} // Usually name is locked after verification
+            readOnly={!isEditing}
+            onChange={(e) => setFormData({...formData, fullName: e.target.value})}
             icon={User}
             className={!isEditing ? "bg-gray-50 border-transparent" : ""}
           />

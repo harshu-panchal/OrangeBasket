@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Phone, Mail, Camera, Save } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, Camera, Save, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@core/context/AuthContext';
@@ -71,11 +71,52 @@ const EditProfilePage = () => {
         }
     };
 
+    const handleGalleryClick = async () => {
+        try {
+            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                const result = await window.flutter_inappwebview.callHandler('openGallery');
+                if (result && result.success) {
+                    const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
+                    setPreviewImage(fileUrl);
+                    setFormData(prev => ({ ...prev, profileImage: fileUrl }));
+                } else {
+                    toast.error("Failed to capture image from gallery");
+                }
+            } else {
+                // Web fallback
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            setPreviewImage(event.target.result);
+                            setFormData(prev => ({ ...prev, profileImage: event.target.result }));
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+                input.click();
+            }
+        } catch (error) {
+            console.error("Gallery error:", error);
+            toast.error("An error occurred while opening the gallery");
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const response = await customerApi.updateProfile(formData);
+            const payload = { ...formData };
+            // Prevent duplicate key error for empty email in MongoDB
+            if (!payload.email || payload.email.trim() === '') {
+                delete payload.email;
+            }
+
+            const response = await customerApi.updateProfile(payload);
             const updatedUser = response.data.result;
 
             // Update local auth state
@@ -112,8 +153,11 @@ const EditProfilePage = () => {
                                 <User size={48} className="text-slate-400" />
                             )}
                         </div>
-                        <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full border-2 border-white shadow-sm hover:bg-[#0a701a] transition-colors">
+                        <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full border-2 border-white shadow-sm hover:bg-[#0a701a] transition-colors" title="Camera">
                             <Camera size={18} />
+                        </button>
+                        <button type="button" onClick={handleGalleryClick} className="absolute bottom-0 left-0 p-2 bg-blue-500 text-white rounded-full border-2 border-white shadow-sm hover:bg-blue-600 transition-colors" title="Gallery">
+                            <ImageIcon size={18} />
                         </button>
                     </div>
                     <p className="mt-3 text-sm font-bold text-primary">Change Photo</p>
