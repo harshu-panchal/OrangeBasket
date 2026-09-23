@@ -10,11 +10,13 @@ const EditProfilePage = () => {
     const navigate = useNavigate();
     const { user, updateUser } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+    const [previewImage, setPreviewImage] = useState(user?.profileImage || user?.avatar || null);
     const [formData, setFormData] = useState({
         name: user?.name || '',
         phone: user?.phone || '',
         email: user?.email || '',
-        bio: user?.bio || ''
+        bio: user?.bio || '',
+        profileImage: user?.profileImage || user?.avatar || ''
     });
 
     useEffect(() => {
@@ -23,13 +25,50 @@ const EditProfilePage = () => {
                 name: user.name || '',
                 phone: user.phone || '',
                 email: user.email || '',
-                bio: user.bio || ''
+                bio: user.bio || '',
+                profileImage: user.profileImage || user.avatar || ''
             });
+            setPreviewImage(user.profileImage || user.avatar || null);
         }
     }, [user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleImageClick = async () => {
+        try {
+            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                const result = await window.flutter_inappwebview.callHandler('openCamera');
+                if (result && result.success) {
+                    const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
+                    setPreviewImage(fileUrl);
+                    setFormData(prev => ({ ...prev, profileImage: fileUrl }));
+                } else {
+                    toast.error("Failed to capture image from camera");
+                }
+            } else {
+                // Web fallback
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            setPreviewImage(event.target.result);
+                            setFormData(prev => ({ ...prev, profileImage: event.target.result }));
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+                input.click();
+            }
+        } catch (error) {
+            console.error("Camera error:", error);
+            toast.error("An error occurred while opening the camera");
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -67,9 +106,13 @@ const EditProfilePage = () => {
                 <div className="flex flex-col items-center mb-8">
                     <div className="relative">
                         <div className="h-28 w-28 rounded-full bg-slate-200 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
-                            <User size={48} className="text-slate-400" />
+                            {previewImage ? (
+                                <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <User size={48} className="text-slate-400" />
+                            )}
                         </div>
-                        <button className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full border-2 border-white shadow-sm hover:bg-[#0a701a] transition-colors">
+                        <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full border-2 border-white shadow-sm hover:bg-[#0a701a] transition-colors">
                             <Camera size={18} />
                         </button>
                     </div>

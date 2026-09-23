@@ -5,11 +5,13 @@ import Button from "@/shared/components/ui/Button";
 import Input from "@/shared/components/ui/Input";
 import { toast } from "sonner";
 import { useAuth } from "@core/context/AuthContext";
+import { deliveryApi } from "../../services/deliveryApi"; // Assuming standard structure
 
 const PersonalDetails = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [previewImage, setPreviewImage] = useState(user?.profileImage || user?.avatar || "/placeholder-avatar.png");
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
     phone: user?.phone || user?.mobile || "",
@@ -17,6 +19,7 @@ const PersonalDetails = () => {
     address: user?.address || "",
     dob: user?.dob ? new Date(user.dob).toISOString().split('T')[0] : "",
     bloodGroup: user?.bloodGroup || "",
+    profileImage: user?.profileImage || user?.avatar || "",
   });
 
   // Update if user loads later
@@ -29,13 +32,60 @@ const PersonalDetails = () => {
         address: user.address || "",
         dob: user.dob ? new Date(user.dob).toISOString().split('T')[0] : "",
         bloodGroup: user.bloodGroup || "",
+        profileImage: user.profileImage || user.avatar || "",
       });
+      setPreviewImage(user.profileImage || user.avatar || "/placeholder-avatar.png");
     }
   }, [user]);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Personal details updated successfully!");
+  const handleImageClick = async () => {
+    if (!isEditing) return;
+    
+    try {
+      if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+        const result = await window.flutter_inappwebview.callHandler('openCamera');
+        if (result && result.success) {
+          const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
+          setPreviewImage(fileUrl);
+          setFormData(prev => ({ ...prev, profileImage: fileUrl }));
+        } else {
+          toast.error("Failed to capture image from camera");
+        }
+      } else {
+        // Web fallback
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              setPreviewImage(event.target.result);
+              setFormData(prev => ({ ...prev, profileImage: event.target.result }));
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      toast.error("An error occurred while opening the camera");
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+        if (deliveryApi && deliveryApi.updateProfile) {
+            // Uncomment or use appropriate api call when needed
+            // await deliveryApi.updateProfile(formData);
+        }
+        setIsEditing(false);
+        toast.success("Personal details updated successfully!");
+    } catch (error) {
+        toast.error("Failed to update details");
+    }
   };
 
   return (
@@ -75,13 +125,13 @@ const PersonalDetails = () => {
           <div className="relative">
             <div className="w-24 h-24 rounded-full p-1 bg-white shadow-md">
               <img
-                src={user?.profileImage || user?.avatar || "/placeholder-avatar.png"}
+                src={previewImage}
                 alt="Profile"
                 className="w-full h-full rounded-full object-cover bg-gray-100"
               />
             </div>
             {isEditing && (
-              <button className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg hover:bg-primary/90 transition-colors">
+              <button type="button" onClick={handleImageClick} className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-1.5 rounded-full shadow-lg hover:bg-primary/90 transition-colors">
                 <User size={14} />
               </button>
             )}
