@@ -17,6 +17,8 @@ import SectionRenderer from "../components/experience/SectionRenderer";
 import { useLocation as useAppLocation } from '../context/LocationContext';
 import { useSettings } from '@core/context/SettingsContext';
 import Lottie from 'lottie-react';
+import { VirtuosoGrid } from 'react-virtuoso';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 const CategoryProductsPage = () => {
     const { categoryName: catId } = useParams();
@@ -29,15 +31,9 @@ const CategoryProductsPage = () => {
     const [selectedSubCategory, setSelectedSubCategory] = useState(initialSubcategoryId);
     const [category, setCategory] = useState(null);
     const [subCategories, setSubCategories] = useState([{ id: 'all', name: 'All', icon: 'https://cdn-icons-png.flaticon.com/128/2321/2321831.png' }]);
-    const [products, setProducts] = useState([]);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [queryKey, setQueryKey] = useState(null);
 
-    const [isLoading, setIsLoading] = useState(true);
     const [noServiceData, setNoServiceData] = useState(null);
-    const [serviceUnavailable, setServiceUnavailable] = useState(false);
 
     // Dynamically load no-service Lottie on mount
     useEffect(() => {
@@ -93,108 +89,85 @@ const CategoryProductsPage = () => {
         return () => { mounted = false; };
     }, [catId]);
 
-    // Reset pagination when subcategory changes
-    useEffect(() => {
-        setPage(1);
-        setProducts([]);
-        setHasMore(false);
-    }, [selectedSubCategory, catId]);
+    // Reset subcategories is handled automatically by query keys in React Query
 
-    // 2. Fetch Products with Pagination
-    useEffect(() => {
-        if (!queryKey) return; // Wait for tree
-
-        let mounted = true;
-        const fetchProducts = async () => {
-            const hasValidLocation =
-                Number.isFinite(currentLocation?.latitude) &&
-                Number.isFinite(currentLocation?.longitude);
-
-            if (!hasValidLocation) {
-                if (mounted) {
-                    setProducts([]);
-                    setServiceUnavailable(true);
-                    setIsLoading(false);
-                }
-                return;
+    // 2. Fetch Products with Pagination using React Query
+    const hasValidLocation = Number.isFinite(currentLocation?.latitude) && Number.isFinite(currentLocation?.longitude);
+    
+    const {
+        data: infiniteData,
+        fetchNextPage,
+        hasNextPage: hasMore,
+        isFetchingNextPage: isFetchingMore,
+        isLoading,
+    } = useInfiniteQuery({
+        queryKey: ['categoryProducts', catId, queryKey, selectedSubCategory, currentLocation?.latitude, currentLocation?.longitude],
+        queryFn: async ({ pageParam = 1 }) => {
+            const params = {
+                limit: 24,
+                page: pageParam,
+                lat: currentLocation?.latitude,
+                lng: currentLocation?.longitude,
+            };
+            
+            if (selectedSubCategory !== 'all') {
+                params.subcategoryId = selectedSubCategory;
+            } else if (queryKey) {
+                params[queryKey] = catId;
             }
 
-            if (page === 1) setIsLoading(true);
-            else setIsFetchingMore(true);
-
-            try {
-                const params = {
-                    limit: 24,
-                    page: page,
-                    lat: currentLocation.latitude,
-                    lng: currentLocation.longitude,
-                };
-                
-                if (selectedSubCategory !== 'all') {
-                    params.subcategoryId = selectedSubCategory;
-                } else {
-                    params[queryKey] = catId;
+            const prodRes = await customerApi.getProducts(params);
+            
+            if (!prodRes.data.success) {
+                if (prodRes.data.message === "No products available in your area") {
+                    throw new Error("NO_SERVICE");
                 }
-
-                const prodRes = await customerApi.getProducts(params);
-                if (!mounted) return;
-
-                if (prodRes.data.success) {
-                    const rawResult = prodRes.data.result;
-                    const dbProds = Array.isArray(prodRes.data.results)
-                        ? prodRes.data.results
-                        : Array.isArray(rawResult?.items)
-                        ? rawResult.items
-                        : Array.isArray(rawResult)
-                        ? rawResult
-                        : [];
-
-                    const formattedProds = dbProds.map(p => ({
-                        ...p,
-                        id: p._id || p.id,
-                        image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
-                        price: p.salePrice || p.price,
-                        originalPrice: p.price,
-                        weight: p.weight || "1 unit",
-                        deliveryTime: "8-15 mins"
-                    }));
-
-                    setProducts(prev => page === 1 ? formattedProds : [...prev, ...formattedProds]);
-                    
-                    const totalPages = rawResult?.totalPages || 1;
-                    setHasMore(page < totalPages);
-                    setServiceUnavailable(prodRes.data.message === "No products available in your area");
-                } else {
-                    if (page === 1) setProducts([]);
-                    setHasMore(false);
-                    setServiceUnavailable(false);
-                }
-            } catch (error) {
-                console.error("Error fetching products:", error);
-            } finally {
-                if (mounted) {
-                    setIsLoading(false);
-                    setIsFetchingMore(false);
-                }
+                return { items: [], totalPages: 1 };
             }
-        };
+            
+            const rawResult = prodRes.data.result;
+            const dbProds = Array.isArray(prodRes.data.results)
+                ? prodRes.data.results
+                : Array.isArray(rawResult?.items)
+                ? rawResult.items
+                : Array.isArray(rawResult)
+                ? rawResult
+                : [];
 
-        fetchProducts();
-        return () => { mounted = false; };
-    }, [catId, queryKey, selectedSubCategory, page, currentLocation?.latitude, currentLocation?.longitude]);
-
-    // Intersection Observer for Infinite Scroll
-    const observer = React.useRef();
-    const lastProductElementRef = React.useCallback(node => {
-        if (isLoading || isFetchingMore) return;
-        if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore) {
-                setPage(prev => prev + 1);
+            const items = dbProds.map(p => ({
+                ...p,
+                id: p._id || p.id,
+                image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
+                price: p.salePrice || p.price,
+                originalPrice: p.price,
+                weight: p.weight || "1 unit",
+                deliveryTime: "8-15 mins"
+            }));
+            
+            return {
+                items,
+                totalPages: rawResult?.totalPages || 1
+            };
+        },
+        getNextPageParam: (lastPage, allPages) => {
+            if (allPages.length < lastPage.totalPages) {
+                return allPages.length + 1;
             }
-        });
-        if (node) observer.current.observe(node);
-    }, [isLoading, isFetchingMore, hasMore]);
+            return undefined;
+        },
+        enabled: !!queryKey && hasValidLocation,
+        staleTime: 5 * 60 * 1000, // cache for 5 minutes
+    });
+
+    const serviceUnavailable = !hasValidLocation || infiniteData?.pages[0]?.error === "NO_SERVICE";
+    const products = infiniteData ? infiniteData.pages.flatMap(page => page.items) : [];
+    const observer = React.useRef(); // Kept for reference but not needed if using Virtuoso
+    
+    const loadMoreProducts = React.useCallback(() => {
+        if (hasMore && !isFetchingMore && !isLoading) {
+            fetchNextPage();
+        }
+    }, [hasMore, isFetchingMore, isLoading, fetchNextPage]);
 
     const safeProducts = Array.isArray(products) ? products : [];
 
@@ -238,7 +211,7 @@ const CategoryProductsPage = () => {
                             {settings?.appName || 'Our service'} is not available in your area yet. We're expanding fast!
                         </p>
                         <button 
-                            onClick={fetchData}
+                            onClick={() => window.location.reload()}
                             className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-xl shadow-black/10"
                         >
                             Try Refreshing
@@ -278,18 +251,18 @@ const CategoryProductsPage = () => {
                             </div>
 
                     {/* Products Grid */}
-                    <div className="px-3 pt-4 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {safeProducts.map((product, index) => {
-                            if (safeProducts.length === index + 1) {
-                                return (
-                                    <div ref={lastProductElementRef} key={product.id}>
-                                        <ProductCard product={product} layout="grid" />
-                                    </div>
-                                );
-                            } else {
-                                return <ProductCard key={product.id} product={product} layout="grid" />;
-                            }
-                        })}
+                    <div className="pt-4 w-full h-[600px] md:h-[800px] flex flex-col">
+                        <VirtuosoGrid
+                            useWindowScroll
+                            totalCount={safeProducts.length}
+                            overscan={200}
+                            endReached={loadMoreProducts}
+                            listClassName="px-3 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pb-8"
+                            itemContent={(index) => {
+                                const product = safeProducts[index];
+                                return <ProductCard key={product.id || index} product={product} layout="grid" />;
+                            }}
+                        />
                     </div>
                     
                     {/* Loading indicator for pagination */}

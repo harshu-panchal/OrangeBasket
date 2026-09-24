@@ -36,6 +36,7 @@ const Categories = () => {
                                 <img
                                     src={category.image}
                                     alt={category.name}
+                                    loading="lazy"
                                     className="w-full h-full object-contain drop-shadow-sm mix-blend-multiply"
                                 />
                             </div>

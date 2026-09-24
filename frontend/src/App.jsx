@@ -1,4 +1,5 @@
 import { Suspense, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import AppRouter from '@core/routes/AppRouter';
 import { AuthProvider } from '@core/context/AuthContext';
@@ -11,6 +12,16 @@ import Loader from './shared/components/ui/Loader';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 import LenisScroll from './shared/components/LenisScroll';
 import SplashScreen from './shared/components/ui/SplashScreen';
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            refetchOnWindowFocus: false,
+            retry: 1,
+            staleTime: 5 * 60 * 1000, // 5 minutes
+        },
+    },
+});
 
 function App() {
     useEffect(() => {
@@ -38,25 +49,27 @@ function App() {
     }, []);
 
     return (
-        <ErrorBoundary>
-            <AuthProvider>
-                <LanguageProvider>
-                    <SettingsProvider>
-                        <SeoHead />
-                        <ToastProvider>
-                            <Suspense fallback={<Loader fullScreen />}>
-                                <SupportUnreadProvider>
-                                    <LenisScroll />
-                                    <SplashScreen>
-                                        <AppRouter />
-                                    </SplashScreen>
-                                </SupportUnreadProvider>
-                            </Suspense>
-                        </ToastProvider>
-                    </SettingsProvider>
-                </LanguageProvider>
-            </AuthProvider>
-        </ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+            <ErrorBoundary>
+                <AuthProvider>
+                    <LanguageProvider>
+                        <SettingsProvider>
+                            <SeoHead />
+                            <ToastProvider>
+                                <Suspense fallback={<Loader fullScreen />}>
+                                    <SupportUnreadProvider>
+                                        <LenisScroll />
+                                        <SplashScreen>
+                                            <AppRouter />
+                                        </SplashScreen>
+                                    </SupportUnreadProvider>
+                                </Suspense>
+                            </ToastProvider>
+                        </SettingsProvider>
+                    </LanguageProvider>
+                </AuthProvider>
+            </ErrorBoundary>
+        </QueryClientProvider>
     );
 }
 
