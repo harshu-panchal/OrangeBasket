@@ -10,7 +10,8 @@ import {
     Zap,
     MapPin,
     History,
-    Bike
+    Bike,
+    CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
@@ -147,6 +148,69 @@ const BillingCharges = () => {
             <div className="max-w-4xl mx-auto text-left">
                 <div className="space-y-8">
                     
+                    {/* Payment Options Settings */}
+                    <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-[32px] overflow-hidden">
+                        <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                <CreditCard className="h-4 w-4 text-brand-500" />
+                                Payment Methods
+                            </h3>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">Online Payment</p>
+                                    <p className="text-xs font-bold text-slate-500 mt-1">
+                                        Allow customers to pay via UPI, Credit/Debit cards, etc.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={config.onlineEnabled}
+                                    onClick={() => setConfig(prev => ({ ...prev, onlineEnabled: !prev.onlineEnabled }))}
+                                    className={cn(
+                                        "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 shrink-0",
+                                        config.onlineEnabled ? "bg-emerald-500" : "bg-slate-300"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200",
+                                            config.onlineEnabled ? "translate-x-7" : "translate-x-1"
+                                        )}
+                                    />
+                                </button>
+                            </div>
+                            
+                            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">Cash on Delivery (COD)</p>
+                                    <p className="text-xs font-bold text-slate-500 mt-1">
+                                        Allow customers to pay in cash when the order is delivered.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={config.codEnabled}
+                                    onClick={() => setConfig(prev => ({ ...prev, codEnabled: !prev.codEnabled }))}
+                                    className={cn(
+                                        "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 shrink-0",
+                                        config.codEnabled ? "bg-emerald-500" : "bg-slate-300"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200",
+                                            config.codEnabled ? "translate-x-7" : "translate-x-1"
+                                        )}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </Card>
+
                     {/* Customer Delivery Fee Settings */}
                     <Card className="border-none shadow-xl ring-1 ring-slate-100 bg-white rounded-[32px] overflow-hidden">
                         <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
