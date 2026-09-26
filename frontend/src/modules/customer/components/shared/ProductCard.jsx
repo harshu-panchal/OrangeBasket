@@ -36,8 +36,9 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
       const variants = Array.isArray(product?.variants) ? product.variants : [];
       if (variants.length === 0) return null;
 
-      const displayed = Number(product?.price || 0);
-      const displayedOriginal = Number(product?.originalPrice || 0);
+      const hasSalePrice = product?.salePrice && product.salePrice < product.price;
+      const displayed = Number(hasSalePrice ? product.salePrice : (product?.price || 0));
+      const displayedOriginal = Number(hasSalePrice ? product.price : (product?.originalPrice || 0));
 
       const matchesDisplayedPrice = (variant) => {
         const mrp = Number(variant?.price || 0);
@@ -172,6 +173,9 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
     const discountText = React.useMemo(() => {
       if (badge) return badge;
       if (product.discount) return product.discount;
+      if (product.salePrice && product.salePrice < product.price) {
+        return `-${Math.round(((product.price - product.salePrice) / product.price) * 100)}%`;
+      }
       if (product.originalPrice > product.price) {
         return `-${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%`;
       }
@@ -283,13 +287,17 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
           <div className="flex flex-wrap items-end justify-between gap-x-1 gap-y-1.5 mt-1.5 pt-0.5">
             <div className="flex flex-col text-left justify-center shrink-0">
               <span className="font-black text-slate-900 text-[13px] sm:text-[15px] tracking-tight leading-none">
-                ₹{product.price}
+                ₹{product.salePrice && product.salePrice < product.price ? product.salePrice : product.price}
               </span>
-              {product.originalPrice > product.price && (
+              {(product.salePrice && product.salePrice < product.price) ? (
+                <span className="text-[10px] text-slate-400 line-through font-semibold mt-0.5 leading-none">
+                  ₹{product.price}
+                </span>
+              ) : product.originalPrice > product.price ? (
                 <span className="text-[10px] text-slate-400 line-through font-semibold mt-0.5 leading-none">
                   ₹{product.originalPrice}
                 </span>
-              )}
+              ) : null}
             </div>
 
             {/* ADD / Quantity Selector Button */}

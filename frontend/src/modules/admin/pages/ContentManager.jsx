@@ -489,7 +489,7 @@ const ContentManager = () => {
                                                     {['banners', 'multiple_banners'].includes(section.displayType) && `${section.config?.banners?.items?.length || 0} banners configured`}
                                                     {section.displayType === 'categories' && `${section.config?.categories?.categoryIds?.length || 0} categories • ${section.config?.categories?.rows || 1} rows`}
                                                     {section.displayType === 'subcategories' && `${section.config?.subcategories?.subcategoryIds?.length || 0} subcategories • ${section.config?.subcategories?.rows || 1} rows`}
-                                                    {section.displayType === 'products' && `${section.config?.products?.productIds?.length || 0} products • ${section.config?.products?.rows || 1}x${section.config?.products?.columns || 2}${section.config?.products?.singleRowScrollable ? ' • Single row scroll' : ''}`}
+                                                    {section.displayType === 'products' && `${section.config?.products?.productIds?.length ? `${section.config.products.productIds.length} products` : ((section.config?.products?.categoryIds?.length || 0) + (section.config?.products?.subcategoryIds?.length || 0) > 0) ? `Dynamic (Filtered)` : `0 products`} • ${section.config?.products?.rows || 1}x${section.config?.products?.columns || 2}${section.config?.products?.singleRowScrollable ? ' • Single row scroll' : ''}`}
                                                 </p>
                                             </div>
                                             <div className="flex flex-col gap-2 items-end">
@@ -779,7 +779,7 @@ const ContentManager = () => {
                                     Parent categories
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {(selectedHeader?.children || []).map(c => {
+                                    {availableCategories.map(c => {
                                         const isSelected = formData.subCategoryCategoryIds.includes(c._id);
                                         return (
                                             <button
@@ -826,7 +826,7 @@ const ContentManager = () => {
                                     Subcategories
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {(selectedHeader?.children || [])
+                                    {availableCategories
                                         .filter(c => formData.subCategoryCategoryIds.includes(c._id))
                                         .flatMap(c => c.children || [])
                                         .map(s => {
@@ -920,7 +920,7 @@ const ContentManager = () => {
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="flex flex-wrap gap-2">
-                                        {(selectedHeader?.children || []).map(c => {
+                                        {availableCategories.map(c => {
                                             const isSelected = formData.productCategoryIds.includes(c._id);
                                             return (
                                                 <button
@@ -962,7 +962,7 @@ const ContentManager = () => {
                                         })}
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {(selectedHeader?.children || [])
+                                        {availableCategories
                                             .filter(c => formData.productCategoryIds.includes(c._id))
                                             .flatMap(c => c.children || [])
                                             .map(s => {

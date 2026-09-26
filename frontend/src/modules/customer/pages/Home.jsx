@@ -415,14 +415,31 @@ const Home = () => {
 
   const hydrateSelectedSectionProducts = async (sections = []) => {
     const selectedProductIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" ? (s?.config?.products?.productIds || []) : []).map((id) => String(id || "").trim()).filter(Boolean)));
-    if (!selectedProductIds.length) return;
+    const locationParams = Number.isFinite(currentLocation?.latitude) ? { lat: currentLocation.latitude, lng: currentLocation.longitude } : undefined;
+    
+    // 1. Fetch missing specific products
     const existingIds = new Set(productsRef.current.map((p) => String(p?._id || p?.id || "").trim()));
     const missingIds = selectedProductIds.filter((id) => !existingIds.has(id));
-    if (!missingIds.length) return;
+    
+    // 2. Fetch products for dynamic categories (if section has no specific productIds)
+    const dynamicCatIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" && (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.categoryIds || []) : []).filter(Boolean)));
+    const dynamicSubIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" && (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.subcategoryIds || []) : []).filter(Boolean)));
+
+    if (!missingIds.length && !dynamicCatIds.length && !dynamicSubIds.length) return;
+
     try {
-      const locationParams = Number.isFinite(currentLocation?.latitude) ? { lat: currentLocation.latitude, lng: currentLocation.longitude } : undefined;
-      const missingResults = await Promise.allSettled(missingIds.map((id) => customerApi.getProductById(id, locationParams)));
-      const fetchedMissing = missingResults.filter((r) => r.status === "fulfilled").flatMap((r) => { const p = r.value?.data?.result || r.value?.data?.results; return Array.isArray(p) ? p : (p ? [p] : []); }).map((p) => ({ ...p, id: p._id, image: p.mainImage || (p.variants?.[0]?.images?.[0]) || p.image || "", price: p.salePrice || p.price, originalPrice: p.price, weight: p.weight || "1 unit", deliveryTime: "8-15 mins" }));
+      const promises = [];
+      missingIds.forEach((id) => promises.push(customerApi.getProductById(id, locationParams)));
+      dynamicCatIds.forEach((cId) => promises.push(customerApi.getProducts({ categoryId: cId, limit: 12, ...locationParams })));
+      dynamicSubIds.forEach((sId) => promises.push(customerApi.getProducts({ subcategoryId: sId, limit: 12, ...locationParams })));
+
+      const results = await Promise.allSettled(promises);
+      const fetchedMissing = results.filter((r) => r.status === "fulfilled").flatMap((r) => { 
+        const raw = r.value?.data?.result;
+        const p = Array.isArray(r.value?.data?.results) ? r.value.data.results : Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        return p;
+      }).map((p) => ({ ...p, id: p._id, image: p.mainImage || (p.variants?.[0]?.images?.[0]) || p.image || "", price: p.salePrice || p.price, originalPrice: p.price, weight: p.weight || "1 unit", deliveryTime: "8-15 mins" }));
+
       if (fetchedMissing.length) setProducts((prev) => { const merged = [...prev]; const mergedIds = new Set(merged.map((p) => String(p?._id || p?.id || "").trim())); fetchedMissing.forEach((p) => { const key = String(p?._id || p?.id || "").trim(); if (!mergedIds.has(key)) { merged.push(p); mergedIds.add(key); } }); return merged; });
     } catch (e) { }
   };
