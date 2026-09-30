@@ -317,8 +317,13 @@ const Home = () => {
     }
   }, [products.length, isLoading]);
 
-  const applyHomePageData = (data, { cacheKey, persist = true } = {}) => {
+  /**
+   * @param {any} data
+   * @param {{ cacheKey?: string; persist?: boolean }} [options]
+   */
+  const applyHomePageData = (data, options = {}) => {
     if (!data) return;
+    const { cacheKey, persist = true } = options;
     setCategoryMap(data.categoryMap || {});
     setSubcategoryMap(data.subcategoryMap || {});
     setCategories(data.categories || [ALL_CATEGORY]);
@@ -330,6 +335,7 @@ const Home = () => {
       return prev;
     });
     setProducts(data.products || []);
+    productsRef.current = data.products || [];
     setExperienceSections(data.experienceSections || []);
     setOfferSections(data.offerSections || []);
     if (data.heroConfig) setHeroConfig(data.heroConfig);
@@ -410,28 +416,43 @@ const Home = () => {
       const sectionsList = sectionsRes?.data?.results || sectionsRes?.data?.result || sectionsRes?.data;
       nextHomeData.offerSections = Array.isArray(sectionsList) ? sectionsList : [];
       applyHomePageData(nextHomeData, { cacheKey });
+      if (nextHomeData.experienceSections?.length) {
+        await hydrateSelectedSectionProducts(nextHomeData.experienceSections);
+      }
     } catch (error) { console.error("Error:", error); } finally { setIsLoading(false); }
   };
 
   const hydrateSelectedSectionProducts = async (sections = []) => {
+    if (!Array.isArray(sections) || !sections.length) return;
     const selectedProductIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" ? (s?.config?.products?.productIds || []) : []).map((id) => String(id || "").trim()).filter(Boolean)));
-    const locationParams = Number.isFinite(currentLocation?.latitude) ? { lat: currentLocation.latitude, lng: currentLocation.longitude } : undefined;
+    const locLat = Number.isFinite(currentLocation?.latitude) ? currentLocation.latitude : 22.711140989838025;
+    const locLng = Number.isFinite(currentLocation?.longitude) ? currentLocation.longitude : 75.9001552518043;
+    const locationParams = { lat: locLat, lng: locLng };
     
     // 1. Fetch missing specific products
-    const existingIds = new Set(productsRef.current.map((p) => String(p?._id || p?.id || "").trim()));
+    const existingIds = new Set((productsRef.current || []).map((p) => String(p?._id || p?.id || "").trim()));
     const missingIds = selectedProductIds.filter((id) => !existingIds.has(id));
     
     // 2. Fetch products for dynamic categories (if section has no specific productIds)
-    const dynamicCatIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" && (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.categoryIds || []) : []).filter(Boolean)));
-    const dynamicSubIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" && (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.subcategoryIds || []) : []).filter(Boolean)));
+    const productSections = sections.filter((s) => s?.displayType === "products");
+    const dynamicCatIds = Array.from(new Set(productSections.flatMap((s) => (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.categoryIds || []) : []).map(String).filter(Boolean)));
+    const dynamicSubIds = Array.from(new Set(productSections.flatMap((s) => (!s?.config?.products?.productIds || s.config.products.productIds.length === 0) ? (s?.config?.products?.subcategoryIds || []) : []).map(String).filter(Boolean)));
 
     if (!missingIds.length && !dynamicCatIds.length && !dynamicSubIds.length) return;
 
     try {
       const promises = [];
       missingIds.forEach((id) => promises.push(customerApi.getProductById(id, locationParams)));
-      dynamicCatIds.forEach((cId) => promises.push(customerApi.getProducts({ categoryId: cId, limit: 12, ...locationParams })));
-      dynamicSubIds.forEach((sId) => promises.push(customerApi.getProducts({ subcategoryId: sId, limit: 12, ...locationParams })));
+      dynamicCatIds.forEach((cId) => promises.push(customerApi.getProducts({ categoryId: cId, limit: 20, ...locationParams })));
+
+      const dynamicCatSet = new Set(dynamicCatIds);
+      dynamicSubIds.forEach((sId) => {
+        const sub = (categoryMap && categoryMap[sId]) || (subcategoryMap && subcategoryMap[sId]);
+        const parentId = String(sub?.parentId || sub?.categoryId || "");
+        if (!dynamicCatSet.has(parentId)) {
+          promises.push(customerApi.getProducts({ subcategoryId: sId, limit: 12, ...locationParams }));
+        }
+      });
 
       const results = await Promise.allSettled(promises);
       const fetchedMissing = results.filter((r) => r.status === "fulfilled").flatMap((r) => { 
@@ -440,11 +461,37 @@ const Home = () => {
         return p;
       }).map((p) => ({ ...p, id: p._id, image: p.mainImage || (p.variants?.[0]?.images?.[0]) || p.image || "", price: p.salePrice || p.price, originalPrice: p.price, weight: p.weight || "1 unit", deliveryTime: "8-15 mins" }));
 
-      if (fetchedMissing.length) setProducts((prev) => { const merged = [...prev]; const mergedIds = new Set(merged.map((p) => String(p?._id || p?.id || "").trim())); fetchedMissing.forEach((p) => { const key = String(p?._id || p?.id || "").trim(); if (!mergedIds.has(key)) { merged.push(p); mergedIds.add(key); } }); return merged; });
-    } catch (e) { }
+      if (fetchedMissing.length) {
+        setProducts((prev) => {
+          const merged = [...prev];
+          const mergedIds = new Set(merged.map((p) => String(p?._id || p?.id || "").trim()));
+          fetchedMissing.forEach((p) => {
+            const key = String(p?._id || p?.id || "").trim();
+            if (!mergedIds.has(key)) {
+              merged.push(p);
+              mergedIds.add(key);
+            }
+          });
+          productsRef.current = merged;
+          return merged;
+        });
+      }
+    } catch (e) {
+      console.error("Hydration error:", e);
+    }
   };
 
-  useEffect(() => { fetchData(); }, [currentLocation?.latitude, currentLocation?.longitude]);
+  useEffect(() => {
+    fetchData();
+  }, [currentLocation?.latitude, currentLocation?.longitude]);
+
+  // Ensure experience sections on Home page get hydrated if loaded from cache or updated
+  useEffect(() => {
+    if (experienceSections.length > 0 && (!activeCategory || activeCategory._id === "all")) {
+      hydrateSelectedSectionProducts(experienceSections);
+    }
+  }, [experienceSections, activeCategory]);
+
   const headerSectionsCache = useRef(headerSectionsMemoryCache);
   const heroConfigCache = useRef(heroConfigMemoryCache);
 

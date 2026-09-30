@@ -176,7 +176,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           const rows = section.config?.categories?.rows || 1;
           const visibleCount = rows * 4;
           const allItems = ids
-            .map((id) => categoriesById[id])
+            .map((id) => categoriesById[String(id)] || categoriesById[id])
             .filter(Boolean)
             .slice(0, visibleCount);
           const visibleItems = allItems.slice(
@@ -246,7 +246,7 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           const rows = section.config?.subcategories?.rows || 1;
           const visibleCount = rows * 4;
           const allItems = ids
-            .map((id) => subcategoriesById[id])
+            .map((id) => subcategoriesById[String(id)] || subcategoriesById[id])
             .filter(Boolean)
             .slice(0, visibleCount);
           const visibleItems = allItems.slice(
@@ -334,26 +334,28 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
           let allProducts;
 
           if (ids.length) {
-            allProducts = ids.map((id) => productsById[id]).filter(Boolean);
+            allProducts = ids.map((id) => productsById[String(id)] || productsById[id]).filter(Boolean);
           } else {
-            const categoryFilter = productConfig.categoryIds || [];
-            const subcategoryFilter = productConfig.subcategoryIds || [];
+            const categoryFilter = (productConfig.categoryIds || []).map(String);
+            const subcategoryFilter = (productConfig.subcategoryIds || []).map(String);
             const hasCategoryFilter = categoryFilter.length > 0;
             const hasSubcategoryFilter = subcategoryFilter.length > 0;
 
             const all = Object.values(productsById);
             allProducts = all.filter((p) => {
-              const catId = p.categoryId?._id || p.categoryId;
-              const subId = p.subcategoryId?._id || p.subcategoryId;
+              const catId = String(p.categoryId?._id || p.categoryId || "");
+              const subId = String(p.subcategoryId?._id || p.subcategoryId || "");
 
-              const matchesCategory = hasCategoryFilter
-                ? categoryFilter.includes(catId)
-                : true;
-              const matchesSubcategory = hasSubcategoryFilter
-                ? subcategoryFilter.includes(subId)
-                : true;
-
-              return matchesCategory && matchesSubcategory;
+              if (hasSubcategoryFilter && hasCategoryFilter) {
+                return subcategoryFilter.includes(subId) || (categoryFilter.includes(catId) && (!subId || subcategoryFilter.length === 0));
+              }
+              if (hasSubcategoryFilter) {
+                return subcategoryFilter.includes(subId);
+              }
+              if (hasCategoryFilter) {
+                return categoryFilter.includes(catId);
+              }
+              return true;
             });
           }
 
