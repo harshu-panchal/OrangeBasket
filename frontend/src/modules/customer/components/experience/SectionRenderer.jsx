@@ -194,13 +194,10 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
               className="-mx-2 md:-mx-4 lg:-mx-6 px-2 md:px-4 lg:px-6"
             >
               {heading && (
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <h3 className="text-base font-black text-[#1A1A1A]">
                     {heading}
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {allItems.length} categories
-                  </span>
                 </div>
               )}
               <div className="rounded-3xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)] border border-slate-100 px-3.5 py-3">
@@ -263,13 +260,10 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
               className="-mx-2 md:-mx-4 lg:-mx-6 px-2 md:px-4 lg:px-6"
             >
               {heading && (
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <h3 className="text-base font-black text-[#1A1A1A]">
                     {heading}
                   </h3>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {allItems.length} picks
-                  </span>
                 </div>
               )}
               <div className="rounded-3xl bg-white shadow-[0_18px_45px_rgba(15,23,42,0.06)] border border-slate-100 px-3.5 py-3">
@@ -372,16 +366,13 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                 id={`section-${section._id}`}
                 className="-mx-4 md:-mx-8 lg:-mx-[50px] px-1 sm:px-2 md:px-3 mt-6 mb-2"
               >
-                <div className="flex items-center justify-between mb-3 px-3 md:px-5">
-                  {heading && (
+                {heading && (
+                  <div className="mb-3 px-3 md:px-5">
                     <h3 className="text-base font-black text-[#1A1A1A]">
                       {heading}
                     </h3>
-                  )}
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {allProducts.length} items
-                  </span>
-                </div>
+                  </div>
+                )}
                 <div
                   className="relative z-10 flex overflow-x-auto gap-1.5 pb-1.5 no-scrollbar"
                   onScroll={(e) => {
@@ -427,16 +418,13 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
               id={`section-${section._id}`}
               className="-mx-4 md:-mx-8 lg:-mx-[50px] px-1 sm:px-2 md:px-3 mt-6"
             >
-              <div className="flex items-center justify-between mb-3 px-3 md:px-5">
-                {heading && (
+              {heading && (
+                <div className="mb-3 px-3 md:px-5">
                   <h3 className="text-base font-black text-[#1A1A1A]">
                     {heading}
                   </h3>
-                )}
-                <span className="text-[11px] font-semibold text-slate-400">
-                  {cappedItems.length} items
-                </span>
-              </div>
+                </div>
+              )}
               <div
                 className={cn(
                   "grid gap-1.5 sm:gap-2.5",

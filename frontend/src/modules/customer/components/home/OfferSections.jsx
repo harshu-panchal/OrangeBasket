@@ -90,15 +90,6 @@ const OfferSections = ({ sections, noServiceData }) => {
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500" />
                   )}
-
-                  {sectionProducts.length > 0 && (
-                    <div className="absolute top-1 left-1 px-2 py-0.5 rounded-full bg-black/70 text-[9px] font-semibold text-white/90 tracking-wide flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-400" />
-                      {sectionProducts.length} items
-                    </div>
-                  )}
-
-
                 </div>
               </div>
               <div className="px-4 pt-4 md:px-5 md:pt-5 pb-1">
