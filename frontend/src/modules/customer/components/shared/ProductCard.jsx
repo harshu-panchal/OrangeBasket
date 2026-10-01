@@ -3,15 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Heart, Plus, Minus, Check, Store, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "../../context/WishlistContext";
-import { useCart } from "../../context/CartContext";
 import { useToast } from "@shared/components/ui/Toast";
-import { useCartAnimation } from "../../context/CartAnimationContext";
 import { applyCloudinaryTransform, buildCloudinarySrcSet, getCloudinaryLQIP } from "@/core/utils/imageUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProductDetail } from "../../context/ProductDetailContext";
 import ParticleBurst from "./ParticleBurst";
-import { useVariantSelection } from "../../context/VariantSelectionContext";
 import { useSettings } from "@core/context/SettingsContext";
+import AddToCartButton from "./AddToCartButton";
 
 /**
  * @param {{ product: any, badge?: any, className?: string, compact?: boolean, neutralBg?: boolean, layout?: string, priority?: boolean }} props
@@ -19,15 +17,12 @@ import { useSettings } from "@core/context/SettingsContext";
 const ProductCard = ({ product, badge, className, compact = false, neutralBg = false, layout = "grid", priority = false }) => {
     const { toggleWishlist: toggleWishlistGlobal, isInWishlist } =
       useWishlist();
-    const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
     const { showToast } = useToast();
-    const { animateAddToCart, animateRemoveFromCart } = useCartAnimation();
     const { settings } = useSettings();
     const isClosed = settings?.storeStatus?.isClosed === true;
 
     const navigate = useNavigate();
     const { openProduct } = useProductDetail();
-    const { openVariantSelection } = useVariantSelection();
     const [showHeartPopup, setShowHeartPopup] = React.useState(false);
 
     const imageRef = React.useRef(null);
@@ -64,18 +59,7 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
 
     const productId = product.id || product._id;
     const variantKey = String(defaultVariant?.key || "").trim();
-    const cartKey = `${productId}::${variantKey || ""}`;
-
-    const cartItem = React.useMemo(
-      () =>
-        cart.find(
-          (item) =>
-            `${item.id || item._id}::${String(item.variantSku || "").trim()}` ===
-            cartKey,
-        ),
-      [cart, cartKey],
-    );
-    const quantity = cartItem ? cartItem.quantity : 0;
+    
     const isWishlisted = isInWishlist(product.id || product._id);
 
     const handleProductClick = React.useCallback(
@@ -107,67 +91,6 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
         );
       },
       [isWishlisted, toggleWishlistGlobal, product, showToast],
-    );
-
-    const handleAddToCart = React.useCallback(
-      (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        if (isClosed) return;
-        
-        if (Array.isArray(product?.variants) && product.variants.length > 1) {
-            if (openVariantSelection) {
-                openVariantSelection(product);
-            }
-            return;
-        }
-
-        if (imageRef.current) {
-          animateAddToCart(
-            imageRef.current.getBoundingClientRect(),
-            product.mainImage || product.image,
-          );
-        }
-        addToCart({
-          ...product,
-          variantSku: variantKey,
-          variantName: defaultVariant?.name || "",
-        });
-      },
-      [animateAddToCart, product, addToCart, variantKey, defaultVariant?.name, openVariantSelection],
-    );
-
-    const handleIncrement = React.useCallback(
-      (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        updateQuantity(productId, 1, variantKey);
-      },
-      [updateQuantity, productId, variantKey],
-    );
-
-    const handleDecrement = React.useCallback(
-      (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (quantity === 1) {
-          animateRemoveFromCart(product.mainImage || product.image);
-          removeFromCart(productId, variantKey);
-        } else {
-          updateQuantity(productId, -1, variantKey);
-        }
-      },
-      [
-        quantity,
-        animateRemoveFromCart,
-        product.image,
-        removeFromCart,
-        productId,
-        updateQuantity,
-        variantKey,
-      ],
     );
 
     const discountText = React.useMemo(() => {
@@ -302,43 +225,13 @@ const ProductCard = ({ product, badge, className, compact = false, neutralBg = f
 
             {/* ADD / Quantity Selector Button */}
             <div className="shrink-0 ml-auto">
-              {isClosed ? (
-                <button
-                  disabled
-                  className="h-8 min-w-[68px] px-2 rounded-sm border border-slate-300 bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-[11px] uppercase cursor-not-allowed"
-                >
-                  CLOSED
-                </button>
-              ) : quantity > 0 ? (
-                <div 
-                  className="h-8 min-w-[68px] flex items-center justify-between rounded-sm bg-[#FF8200] text-white shadow-sm"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                >
-                  <button 
-                    onClick={handleDecrement} 
-                    className="w-7 h-full flex items-center justify-center active:bg-orange-600 rounded-l-sm transition-colors"
-                  >
-                    <Minus size={15} strokeWidth={2.5} />
-                  </button>
-                  <span className="font-bold text-[13px]">
-                    {quantity}
-                  </span>
-                  <button 
-                    onClick={handleIncrement} 
-                    className="w-7 h-full flex items-center justify-center active:bg-orange-600 rounded-r-sm transition-colors"
-                  >
-                    <Plus size={15} strokeWidth={2.5} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleAddToCart}
-                  className="h-8 min-w-[68px] px-4 rounded-sm border border-[#FF8200] bg-transparent text-[#FF8200] flex items-center justify-center font-bold text-[13px] uppercase active:scale-95 transition-all hover:bg-orange-50"
-                  title="Add to Cart"
-                >
-                  ADD
-                </button>
-              )}
+              <AddToCartButton 
+                product={product} 
+                defaultVariant={defaultVariant} 
+                variantKey={variantKey} 
+                isClosed={isClosed} 
+                imageRef={imageRef} 
+              />
             </div>
           </div>
         </div>

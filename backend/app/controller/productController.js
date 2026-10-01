@@ -317,6 +317,7 @@ export const getProducts = async (req, res) => {
       maxPrice,
       brand,
       inStockOnly,
+      ids,
     } = req.query;
     const enforceRadius = isCustomerVisibilityRequest(req);
 
@@ -473,11 +474,18 @@ export const getProducts = async (req, res) => {
     }
 
     if (categoryIds && typeof categoryIds === "string") {
-      const ids = categoryIds
+      const idsArr = categoryIds
         .split(",")
         .map((id) => id.trim())
         .filter((id) => id && id !== "all");
-      if (ids.length) query.categoryId = { $in: ids };
+      if (idsArr.length) query.categoryId = { $in: idsArr };
+    }
+    if (ids && typeof ids === "string") {
+      const parsedIds = ids
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+      if (parsedIds.length) query._id = { $in: parsedIds };
     }
     // Multiple sellers: sellerIds=id1,id2 (or single sellerId)
     if (!enforceRadius && !query.sellerId) {

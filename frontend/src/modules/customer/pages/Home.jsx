@@ -442,7 +442,9 @@ const Home = () => {
 
     try {
       const promises = [];
-      missingIds.forEach((id) => promises.push(customerApi.getProductById(id, locationParams)));
+      if (missingIds.length > 0) {
+        promises.push(customerApi.getProducts({ ids: missingIds.join(","), limit: missingIds.length, ...locationParams }));
+      }
       dynamicCatIds.forEach((cId) => promises.push(customerApi.getProducts({ categoryId: cId, limit: 20, ...locationParams })));
 
       const dynamicCatSet = new Set(dynamicCatIds);

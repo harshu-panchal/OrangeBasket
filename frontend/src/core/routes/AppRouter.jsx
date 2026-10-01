@@ -16,14 +16,14 @@ import { LocationProvider } from '../../modules/customer/context/LocationContext
 import { PageTransitionProvider } from '../../modules/customer/context/PageTransitionContext';
 import ScrollToTop from '../../modules/customer/components/shared/ScrollToTop';
 
-// Public Pages
-import Auth from '../../modules/seller/pages/Auth';
-import ApplicationPending from '../../modules/seller/pages/ApplicationPending';
-import WarehouseAuth from '../../modules/warehouse/pages/Auth';
-import WarehouseApplicationPending from '../../modules/warehouse/pages/ApplicationPending';
-import AdminAuth from '../../modules/admin/pages/AdminAuth';
-import DeliveryAuth from '../../modules/delivery/pages/DeliveryAuth';
-import CustomerAuth from '../../modules/customer/pages/CustomerAuth';
+// Public Pages (lazy-loaded to reduce initial bundle size)
+const Auth = lazy(() => import('../../modules/seller/pages/Auth'));
+const ApplicationPending = lazy(() => import('../../modules/seller/pages/ApplicationPending'));
+const WarehouseAuth = lazy(() => import('../../modules/warehouse/pages/Auth'));
+const WarehouseApplicationPending = lazy(() => import('../../modules/warehouse/pages/ApplicationPending'));
+const AdminAuth = lazy(() => import('../../modules/admin/pages/AdminAuth'));
+const DeliveryAuth = lazy(() => import('../../modules/delivery/pages/DeliveryAuth'));
+const CustomerAuth = lazy(() => import('../../modules/customer/pages/CustomerAuth'));
 
 // Customer Pages (lazy-loaded)
 const Home = lazy(() => import('../../modules/customer/pages/Home'));
@@ -75,7 +75,7 @@ const CustomerLayoutWrapper = () => {
                             <ProductDetailProvider>
                                 <VariantSelectionProvider>
                                     <ScrollToTop />
-                                    <CustomerLayout>
+                                    <CustomerLayout showHeader={true} showCart={true} showBottomNav={true}>
                                         <Suspense fallback={<div className="flex h-screen items-center justify-center font-outfit">Loading...</div>}>
                                             <Outlet />
                                         </Suspense>
@@ -132,27 +132,27 @@ const AppRouter = () => {
                 // Public legal pages for each module
                 {
                     path: 'seller/terms',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="seller" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="seller" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'seller/privacy',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="seller" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="seller" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'warehouse/terms',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="warehouse" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="warehouse" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'warehouse/privacy',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="warehouse" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="warehouse" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'delivery/support',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="delivery" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="terms" audience="delivery" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'delivery/privacy',
-                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="delivery" /></Suspense>,
+                    element: <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DynamicLegalPage type="privacy" audience="delivery" onBack={() => window.history.back()} /></Suspense>,
                 },
                 {
                     path: 'seller/*',
