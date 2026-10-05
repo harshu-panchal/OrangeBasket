@@ -191,7 +191,25 @@ const DeliveryLayout = () => {
   const applyAvailableOrdersList = useCallback((availableOrders) => {
     setAvailableOrdersCount(availableOrders.length);
     if (activeOrderRef.current) return;
+    
+    // 1. Check for pending queue offers first (high priority full-screen popup)
+    const queueOffer = availableOrders.find((o) => o.isPendingQueueOffer);
+    if (queueOffer && !pendingOfferRef.current) {
+      setPendingOffer({
+        orderId: queueOffer.orderId,
+        countdown: queueOffer.countdown || 300,
+        preview: {
+          pickup: queueOffer.warehouseId?.name || "Warehouse",
+          drop: queueOffer.address?.address || "Customer",
+          total: queueOffer.paymentBreakdown?.grandTotal ?? queueOffer.pricing?.total ?? 0,
+        },
+      });
+      return;
+    }
+
+    // 2. Otherwise process regular broadcast orders
     const newOrder = availableOrders.find((o) => {
+      if (o.isPendingQueueOffer) return false;
       if (shownOrderIdsRef.current.has(o.orderId)) return false;
       if (
         o.deliverySearchExpiresAt &&

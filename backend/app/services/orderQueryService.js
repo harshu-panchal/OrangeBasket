@@ -298,8 +298,29 @@ export async function fetchAvailableOrdersForDelivery({
     usedFallback = true;
   }
 
+  let pendingOffers = [];
   let v2Orders = [];
   if (showDeliveries) {
+    const now = new Date();
+    // 1. Fetch any pending queue assignment for this specific rider
+    const pendingOffersRaw = await Order.find({
+      workflowVersion: { $gte: 2 },
+      workflowStatus: WORKFLOW_STATUS.DELIVERY_OFFER_PENDING,
+      pendingDeliveryBoy: userId,
+      pendingOfferExpiresAt: { $gt: now },
+    })
+      .populate("customer", "name phone")
+      .populate("seller", "shopName address name location serviceRadius")
+      .populate("warehouseId", "name")
+      .lean();
+
+    pendingOffers = pendingOffersRaw.map(o => ({
+      ...o,
+      isPendingQueueOffer: true,
+      countdown: Math.max(1, Math.floor((new Date(o.pendingOfferExpiresAt).getTime() - now.getTime()) / 1000))
+    }));
+
+    // 2. Fetch standard broadcast orders
     const v2OrdersRaw = await Order.find({
       workflowVersion: { $gte: 2 },
       workflowStatus: WORKFLOW_STATUS.DELIVERY_SEARCH,
@@ -384,7 +405,7 @@ export async function fetchAvailableOrdersForDelivery({
   }
 
   const orders = mergeAvailableOrders(
-    v2Orders,
+    [...pendingOffers, ...v2Orders],
     legacyOrders,
     [...assignedReturnPickups, ...returnPickups],
     limit,
