@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
+import ConfirmDialog from "../../../shared/components/ui/ConfirmDialog";
 import { customerApi } from "../services/customerApi";
 import { useAuth } from "../../../core/context/AuthContext";
 import { getJSON, setJSON, remove as removeStorage, STORAGE_KEYS } from "@core/utils/storage";
@@ -24,6 +25,8 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(() => loadGuestCart());
 
   const [loading, setLoading] = useState(false);
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+  const [pendingAdd, setPendingAdd] = useState(null);
   const pendingRequestsRef = React.useRef(0);
   const lsDebounceRef = useRef(null);
 
@@ -134,6 +137,22 @@ export const CartProvider = ({ children }) => {
   }, [cart, isAuthenticated]);
 
   const addToCart = async (product, defaultQuantity = 1, forceVariantSku = null, options = {}) => {
+    // Check if the cart already contains items from a different seller/warehouse
+    if (cart.length > 0) {
+      const existingProduct = cart[0];
+      const existingSeller = existingProduct.sellerId?._id || existingProduct.sellerId || null;
+      const existingWarehouse = existingProduct.warehouseId?._id || existingProduct.warehouseId || null;
+      
+      const newSeller = product.sellerId?._id || product.sellerId || null;
+      const newWarehouse = product.warehouseId?._id || product.warehouseId || null;
+      
+      if (String(existingSeller) !== String(newSeller) || String(existingWarehouse) !== String(newWarehouse)) {
+          setPendingAdd({ product, defaultQuantity, forceVariantSku, options });
+          setShowClearCartDialog(true);
+          return;
+      }
+    }
+
     const variantSku = forceVariantSku ?? String(product?.variantSku || product?.variantName || "").trim();
     const id = product.id || product._id;
     const key = `${id}::${variantSku || ""}`;
@@ -347,9 +366,37 @@ export const CartProvider = ({ children }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [cart, cartTotal, cartCount, loading]);
 
+  const handleConfirmClearAndAdd = async () => {
+    setShowClearCartDialog(false);
+    await clearCart();
+    if (pendingAdd) {
+      await addToCart(
+        pendingAdd.product, 
+        pendingAdd.defaultQuantity, 
+        pendingAdd.forceVariantSku, 
+        pendingAdd.options
+      );
+      setPendingAdd(null);
+    }
+  };
+
+  const handleCancelClear = () => {
+    setShowClearCartDialog(false);
+    setPendingAdd(null);
+  };
+
   return (
     <CartContext.Provider value={cartValue}>
       {children}
+      <ConfirmDialog
+        isOpen={showClearCartDialog}
+        onConfirm={handleConfirmClearAndAdd}
+        onCancel={handleCancelClear}
+        title="Clear Cart?"
+        message="Your cart already contains items from a different seller or warehouse. Do you want to clear your cart and add this item instead?"
+        confirmLabel="Clear & Add"
+        cancelLabel="Cancel"
+      />
     </CartContext.Provider>
   );
 };

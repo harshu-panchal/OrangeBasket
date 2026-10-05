@@ -872,8 +872,9 @@ const ProductManagement = () => {
         </div>
         <div className="p-4 border-t border-slate-100">
           <Pagination
-            currentPage={page}
-            totalItems={total}
+            page={page}
+            total={total}
+            totalPages={Math.ceil(total / pageSize) || 1}
             pageSize={pageSize}
             onPageChange={(newPage) => {
               setPage(newPage);

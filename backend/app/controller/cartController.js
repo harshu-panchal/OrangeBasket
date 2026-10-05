@@ -120,6 +120,22 @@ export const addToCart = async (req, res) => {
 
     if (!cart) {
       cart = new Cart({ customerId, items: [] });
+    } else if (cart.items.length > 0) {
+      // Security Check: enforce single seller/warehouse per cart
+      const firstItemId = cart.items.find(i => Boolean(i.productId))?.productId;
+      if (firstItemId) {
+         const firstProduct = await Product.findById(firstItemId).select("sellerId warehouseId").lean();
+         if (firstProduct) {
+             const existingSellerId = firstProduct.sellerId ? firstProduct.sellerId.toString() : null;
+             const existingWarehouseId = firstProduct.warehouseId ? firstProduct.warehouseId.toString() : null;
+             const newSellerId = customerVisibleProduct.sellerId ? customerVisibleProduct.sellerId.toString() : null;
+             const newWarehouseId = customerVisibleProduct.warehouseId ? customerVisibleProduct.warehouseId.toString() : null;
+             
+             if (existingSellerId !== newSellerId || existingWarehouseId !== newWarehouseId) {
+                return handleResponse(res, 400, "Your cart already contains items from a different seller or warehouse. Please clear your cart first.");
+             }
+         }
+      }
     }
 
     const itemIndex = cart.items.findIndex(
