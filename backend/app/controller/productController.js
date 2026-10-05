@@ -1724,6 +1724,7 @@ export const getSearchSuggestions = async (req, res) => {
     const formattedProducts = products.map(p => ({
         ...p,
         id: p._id,
+        image: p.mainImage || (p.variants?.[0]?.images?.[0]) || p.image || p.images?.[0] || ""
     }));
 
     return handleResponse(res, 200, "Success", {
