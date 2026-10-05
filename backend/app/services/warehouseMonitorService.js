@@ -5,6 +5,7 @@
 import mongoose from "mongoose";
 import WarehouseCheckin from "../models/warehouseCheckin.js";
 import Warehouse from "../models/warehouse.js";
+import { checkOutRider } from "./warehouseCheckinService.js";
 
 function toObjectId(id) {
   try {
@@ -18,7 +19,7 @@ function toObjectId(id) {
  * Returns a detailed queue snapshot for one warehouse.
  */
 export async function getQueueSnapshot(warehouseId) {
-  const [checkins, warehouse] = await Promise.all([
+  const [allCheckins, warehouse] = await Promise.all([
     WarehouseCheckin.find({ warehouseId: toObjectId(warehouseId), status: "active" })
       .sort({ checkinTime: 1 })
       .populate("deliveryId", "name phone vehicleType isOnline queueStatus location")
@@ -26,6 +27,27 @@ export async function getQueueSnapshot(warehouseId) {
       .lean(),
     Warehouse.findById(warehouseId).select("warehouseName name location checkinRadius").lean(),
   ]);
+
+  const today = new Date();
+  const checkins = [];
+
+  for (const c of allCheckins) {
+    const checkinDate = new Date(c.checkinTime);
+    const isStaleDay = 
+      today.getDate() !== checkinDate.getDate() ||
+      today.getMonth() !== checkinDate.getMonth() ||
+      today.getFullYear() !== checkinDate.getFullYear();
+
+    if (isStaleDay) {
+      // Asynchronously checkout the stale session so it doesn't stay stuck
+      const riderId = c.deliveryId?._id || c.deliveryId;
+      if (riderId) {
+        checkOutRider(String(riderId), "auto_evicted").catch(() => {});
+      }
+    } else {
+      checkins.push(c);
+    }
+  }
 
   const queue = checkins.map((c, idx) => ({
     queuePosition: idx + 1,

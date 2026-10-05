@@ -477,6 +477,16 @@ export const updateOrderStatus = async (req, res) => {
     if (status) {
       order.status = status;
       order.orderStatus = status;
+
+      // Keep workflowStatus in sync for v2 orders so frontend
+      // getLegacyStatusFromOrder (which reads workflowStatus first) shows
+      // the correct status after admin overrides.
+      if (order.workflowVersion >= 2) {
+        const { workflowFromLegacyStatus } = await import(
+          "../constants/orderWorkflow.js"
+        );
+        order.workflowStatus = workflowFromLegacyStatus(status);
+      }
     }
     if (deliveryBoyId) order.deliveryBoy = deliveryBoyId;
 

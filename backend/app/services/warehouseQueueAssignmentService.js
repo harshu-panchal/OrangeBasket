@@ -13,7 +13,7 @@ import { queueOfferTimeoutQueue, JOB_NAMES } from "../queues/orderQueues.js";
 // NOTE: deliveryAcceptAtomic is dynamically imported to avoid circular deps
 import logger from "./logger.js";
 
-const OFFER_TIMEOUT_SECONDS = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "60", 10);
+const OFFER_TIMEOUT_SECONDS = parseInt(process.env.QUEUE_OFFER_TIMEOUT_SECONDS || "300", 10);
 
 function getIo() {
   try {
@@ -116,7 +116,7 @@ export async function warehouseAcceptAtomic(warehouseId, orderId) {
 /* ─── Manual Delivery Boy Assignment (warehouse-initiated) ─────────────────── */
 
 const MANUAL_OFFER_TIMEOUT_SECONDS = parseInt(
-  process.env.MANUAL_ASSIGN_OFFER_TIMEOUT_SECONDS || "120",
+  process.env.MANUAL_ASSIGN_OFFER_TIMEOUT_SECONDS || "300",
   10,
 );
 
@@ -246,6 +246,13 @@ export async function assignDeliveryBoyManually(warehouseId, orderId, riderId) {
     },
     updated.customer?._id || updated.customer,
   );
+
+  const { emitNotificationEvent } = await import("../modules/notifications/notification.emitter.js");
+  const { NOTIFICATION_EVENTS } = await import("../modules/notifications/notification.constants.js");
+  emitNotificationEvent(NOTIFICATION_EVENTS.QUEUE_ORDER_OFFERED, {
+    deliveryId: String(riderOid),
+    orderId: updated.orderId,
+  });
 
   broadcastQueueUpdate(warehouseId).catch(() => {});
 
@@ -498,6 +505,13 @@ export async function offerToNextInQueue(orderId, warehouseId, skippedIds = []) 
   if (io) {
     io.to(`delivery:${riderId}`).emit("queue:order_offered", offerPayload);
   }
+
+  const { emitNotificationEvent } = await import("../modules/notifications/notification.emitter.js");
+  const { NOTIFICATION_EVENTS } = await import("../modules/notifications/notification.constants.js");
+  emitNotificationEvent(NOTIFICATION_EVENTS.QUEUE_ORDER_OFFERED, {
+    deliveryId: String(riderId),
+    orderId: order.orderId,
+  });
 
   // Schedule 60-second timeout job
   await queueOfferTimeoutQueue.add(

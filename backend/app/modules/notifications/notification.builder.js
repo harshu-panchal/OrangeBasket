@@ -198,6 +198,16 @@ function eventDefinition(eventType) {
             ? `New order #${payload.orderId} is available nearby.`
             : "A new delivery request is available nearby.",
       };
+    case NOTIFICATION_EVENTS.QUEUE_ORDER_OFFERED:
+      return {
+        role: NOTIFICATION_ROLES.DELIVERY,
+        recipientIds: (payload) => normalizeIdList(payload.deliveryId),
+        title: () => "🛒 Queue Assignment — You're Next!",
+        body: (payload) =>
+          payload.orderId
+            ? `New order #${payload.orderId} is offered to you. Tap to respond.`
+            : "A new queue order has been assigned to you.",
+      };
     case NOTIFICATION_EVENTS.ORDER_READY:
       return {
         role: NOTIFICATION_ROLES.DELIVERY,
