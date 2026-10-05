@@ -75,7 +75,7 @@ const CustomerLayoutWrapper = () => {
                             <ProductDetailProvider>
                                 <VariantSelectionProvider>
                                     <ScrollToTop />
-                                    <CustomerLayout showHeader={true} showCart={true} showBottomNav={true}>
+                                    <CustomerLayout>
                                         <Suspense fallback={<div className="flex h-screen items-center justify-center font-outfit">Loading...</div>}>
                                             <Outlet />
                                         </Suspense>

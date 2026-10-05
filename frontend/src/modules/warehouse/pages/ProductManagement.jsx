@@ -59,15 +59,78 @@ const ProductManagement = () => {
   const [total, setTotal] = useState(0);
   const [summaryStats, setSummaryStats] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState(qFromUrl);
+  const [debouncedSearch, setDebouncedSearch] = useState(qFromUrl);
+
+  React.useEffect(() => {
+    if (qFromUrl !== searchTerm) setSearchTerm(qFromUrl);
+  }, [qFromUrl]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterApproval, setFilterApproval] = useState("all"); // all | approved | pending | rejected
+  const [sortBy, setSortBy] = useState("newest");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterDropdownRef = useRef(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [viewingVariants, setViewingVariants] = useState(null);
+  const [isVariantsViewModalOpen, setIsVariantsViewModalOpen] = useState(false);
+  const [variantImageFiles, setVariantImageFiles] = useState({});
+  const [editingItem, setEditingItem] = useState(null);
+  const [modalTab, setModalTab] = useState("general");
+  const [racks, setRacks] = useState([]);
+  const [isLoadingRacks, setIsLoadingRacks] = useState(true);
+  const [newRackCode, setNewRackCode] = useState("");
+  const [isCreatingRack, setIsCreatingRack] = useState(false);
+  const barcodeSvgRef = useRef(null);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await warehouseApi.getCategoryTree();
+      if (res.data.success) {
+        setDbCategories(res.data.results || res.data.result || []);
+      }
+    } catch (error) {
+      // fail silently
+    }
+  };
+
+  React.useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const categories = dbCategories;
+
   const fetchProducts = async (requestedPage = 1) => {
     setIsLoading(true);
     try {
-      const res = await warehouseApi.getProducts({
+      const params = {
         page: requestedPage,
         limit: pageSize,
         sort: sortBy,
-        approvalStatus: filterApproval,
-      });
+      };
+      
+      if (debouncedSearch) params.search = debouncedSearch.trim();
+      if (filterApproval !== "all") params.approvalStatus = filterApproval;
+      if (filterCategory !== "all") params.category = filterCategory;
+      if (priceMin) params.minPrice = priceMin;
+      if (priceMax) params.maxPrice = priceMax;
+      
+      if (filterStatus === "Active") params.status = "active";
+      if (filterStatus === "Out of Stock") params.stock = 0; // If backend supports it, otherwise it's just passed
+      
+      const res = await warehouseApi.getProducts(params);
       if (res.data.success) {
         // Backend returns handleResponse(..., { items, page, limit, total, totalPages })
         const payload = res.data.result || {};
@@ -103,51 +166,6 @@ const ProductManagement = () => {
       setIsLoading(false);
     }
   };
-
-  const fetchCategories = async () => {
-    try {
-      const res = await warehouseApi.getCategoryTree();
-      if (res.data.success) {
-        setDbCategories(res.data.results || res.data.result || []);
-      }
-    } catch (error) {
-      // fail silently
-    }
-  };
-
-  React.useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const categories = dbCategories;
-
-  const [searchTerm, setSearchTerm] = useState(qFromUrl);
-
-  React.useEffect(() => {
-    if (qFromUrl !== searchTerm) setSearchTerm(qFromUrl);
-  }, [qFromUrl]);
-
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [filterApproval, setFilterApproval] = useState("all"); // all | approved | pending | rejected
-  const [sortBy, setSortBy] = useState("newest");
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterDropdownRef = useRef(null);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [viewingVariants, setViewingVariants] = useState(null);
-  const [isVariantsViewModalOpen, setIsVariantsViewModalOpen] = useState(false);
-  const [variantImageFiles, setVariantImageFiles] = useState({});
-  const [editingItem, setEditingItem] = useState(null);
-  const [modalTab, setModalTab] = useState("general");
-  const [racks, setRacks] = useState([]);
-  const [isLoadingRacks, setIsLoadingRacks] = useState(true);
-  const [newRackCode, setNewRackCode] = useState("");
-  const [isCreatingRack, setIsCreatingRack] = useState(false);
-  const barcodeSvgRef = useRef(null);
 
   const loadRacks = async () => {
     try {
@@ -245,7 +263,7 @@ const ProductManagement = () => {
 
   React.useEffect(() => {
     fetchProducts(1);
-  }, [searchTerm, filterCategory, filterStatus, filterApproval, sortBy, pageSize]);
+  }, [debouncedSearch, filterCategory, filterStatus, filterApproval, sortBy, pageSize, priceMin, priceMax]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -303,66 +321,7 @@ const ProductManagement = () => {
     [products]
   );
 
-  const filteredProducts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    const min = priceMin ? Number(priceMin) : null;
-    const max = priceMax ? Number(priceMax) : null;
-
-    return safeProducts.filter((p) => {
-      const variantSkus = Array.isArray(p.variants)
-        ? p.variants
-          .map((v) => (v?.sku || "").toString().toLowerCase())
-          .filter(Boolean)
-        : [];
-      const skuCandidate =
-        (p.sku || "").toString().toLowerCase() ||
-        (variantSkus.length > 0 ? variantSkus[0] : "");
-
-      const matchesSearch =
-        !term ||
-        p.name.toLowerCase().includes(term) ||
-        (!!skuCandidate && skuCandidate.includes(term));
-      const matchesCategory =
-        filterCategory === "all" ||
-        (p.categoryId?._id || p.categoryId) === filterCategory ||
-        (p.headerId?._id || p.headerId) === filterCategory;
-
-      let matchesStatus = filterStatus === "All";
-      if (filterStatus === "Active") matchesStatus = p.status === "active";
-      if (filterStatus === "Low Stock")
-        matchesStatus =
-          (p.stock ?? 0) > 0 &&
-          (p.stock ?? 0) <= resolveLowStockThreshold(p);
-      if (filterStatus === "Out of Stock") matchesStatus = (p.stock ?? 0) === 0;
-
-      let matchesApproval = filterApproval === "all";
-      const productApproval = String(p.approvalStatus || "approved").toLowerCase();
-      if (filterApproval === "approved") matchesApproval = productApproval === "approved";
-      if (filterApproval === "pending") matchesApproval = productApproval === "pending";
-      if (filterApproval === "rejected") matchesApproval = productApproval === "rejected";
-
-      const price = Number(p.price || 0);
-      const matchesPriceMin = min === null || price >= min;
-      const matchesPriceMax = max === null || price <= max;
-
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesStatus &&
-        matchesApproval &&
-        matchesPriceMin &&
-        matchesPriceMax
-      );
-    });
-  }, [
-    safeProducts,
-    searchTerm,
-    filterCategory,
-    filterStatus,
-    filterApproval,
-    priceMin,
-    priceMax,
-  ]);
+  // Filtering is now handled by the backend
 
   const stats = useMemo(
     () => ({
@@ -723,9 +682,16 @@ const ProductManagement = () => {
                 <optgroup key={h._id || h.id} label={h.name}>
                   <option value={h._id || h.id}>All {h.name}</option>
                   {(h.children || []).map((c) => (
-                    <option key={c._id || c.id} value={c._id || c.id}>
-                      {c.name}
-                    </option>
+                    <React.Fragment key={c._id || c.id}>
+                      <option value={c._id || c.id}>
+                        {c.name}
+                      </option>
+                      {(c.children || []).map((sc) => (
+                        <option key={sc._id || sc.id} value={sc._id || sc.id}>
+                          &nbsp;&nbsp;&nbsp;↳ {sc.name}
+                        </option>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </optgroup>
               ))}
@@ -799,8 +765,8 @@ const ProductManagement = () => {
                 </th>
               </tr>
             </thead>
-            <tbody>
-              {filteredProducts.map((p) => (
+            <tbody className="divide-y divide-slate-100">
+              {safeProducts.map((p) => (
                 <tr
                   key={p._id || p.id}
                   className="hover:bg-gray-50/50 transition-colors group border-b border-gray-100 last:border-b-0">

@@ -1184,7 +1184,6 @@ const ProductDetailSheet = () => {
                             {/* Thumbnail Row (Mobile) */}
                             {allImages.length > 1 && (
                                 <div className="px-5 pt-4 pb-1">
-                                    <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{allImages.length} Product Images</h4>
                                     <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                                         {allImages.map((img, i) => (
                                             <button

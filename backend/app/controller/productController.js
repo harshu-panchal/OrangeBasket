@@ -627,7 +627,7 @@ export const getProducts = async (req, res) => {
 export const getSellerProducts = async (req, res) => {
   try {
     const sellerId = req.user.id;
-    const { stockStatus, sort, approvalStatus } = req.query;
+    const { stockStatus, sort, approvalStatus, search, category, status, minPrice, maxPrice } = req.query;
     const { page, limit, skip } = getPagination(req, {
       defaultLimit: 20,
       maxLimit: 100,
@@ -636,9 +636,46 @@ export const getSellerProducts = async (req, res) => {
     const role = String(req.user?.role || "").toLowerCase();
     const baseSellerQuery = role === "warehouse" ? { warehouseId: sellerId } : { sellerId };
     const query = { ...baseSellerQuery };
+    
+    if (search && String(search).trim()) {
+      const safe = buildSearchRegex(String(search).trim(), { anchored: false });
+      query.$or = [
+        { name: safe },
+        { sku: safe },
+        { barcode: safe },
+      ];
+    }
+    
+    if (category && category !== "all") {
+      query.$or = [
+        ...(query.$or || []),
+        { categoryId: category },
+        { headerId: category },
+        { subcategoryId: category }
+      ];
+      // If we already had an $or from search, we actually need $and
+      if (search && String(search).trim()) {
+         const searchOr = query.$or.splice(0, 3);
+         const categoryOr = query.$or.splice(0, 3);
+         query.$and = [ { $or: searchOr }, { $or: categoryOr } ];
+         delete query.$or;
+      }
+    }
+    
+    if (status && status !== "all") {
+       if (status === "active") query.status = "active";
+       // 'low stock' etc handled via stockStatus or passed in directly
+    }
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
     if (stockStatus === "in") {
       query.stock = { $gt: 0 };
-    } else if (stockStatus === "out") {
+    } else if (stockStatus === "out" || Number(req.query.stock) === 0) {
       query.stock = 0;
     }
 

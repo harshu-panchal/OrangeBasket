@@ -41,6 +41,9 @@ const SearchPage = () => {
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+    const [debouncedBrand, setDebouncedBrand] = useState('');
+    const [debouncedMinPrice, setDebouncedMinPrice] = useState('');
+    const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('');
 
     // Suggestions State
     const [suggestions, setSuggestions] = useState({ products: [], categories: [], brands: [] });
@@ -69,23 +72,34 @@ const SearchPage = () => {
         // Clear results immediately when user starts typing a new query
         if (query !== debouncedQuery) {
             setSearchResults([]);
-            setSearchPage(1);
-            setHasMoreSearch(false);
         }
         
         const timer = setTimeout(() => {
-            setDebouncedQuery(query);
-            setShowSuggestions(false);
+            if (query !== debouncedQuery) {
+                setDebouncedQuery(query);
+                setSearchPage(1);
+                setHasMoreSearch(false);
+            }
         }, 400);
         return () => clearTimeout(timer);
     }, [query, debouncedQuery]);
 
-    // Filter changes reset pagination
+    // Filter debouncing
     useEffect(() => {
-        setSearchResults([]);
-        setSearchPage(1);
-        setHasMoreSearch(false);
-    }, [sort, inStockOnly, brand, minPrice, maxPrice]);
+        const timer = setTimeout(() => {
+            let changed = false;
+            if (brand !== debouncedBrand) { setDebouncedBrand(brand); changed = true; }
+            if (minPrice !== debouncedMinPrice) { setDebouncedMinPrice(minPrice); changed = true; }
+            if (maxPrice !== debouncedMaxPrice) { setDebouncedMaxPrice(maxPrice); changed = true; }
+            
+            if (changed) {
+                setSearchResults([]);
+                setSearchPage(1);
+                setHasMoreSearch(false);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [brand, minPrice, maxPrice, debouncedBrand, debouncedMinPrice, debouncedMaxPrice]);
 
     // Fetch Suggestions
     useEffect(() => {
@@ -193,7 +207,7 @@ const SearchPage = () => {
 
     // Fetch Search Results
     useEffect(() => {
-        if (!debouncedQuery.trim()) return;
+        if (!debouncedQuery.trim() || query !== debouncedQuery) return;
 
         const fetchSearchResults = async () => {
             const hasValidLocation =
@@ -212,9 +226,9 @@ const SearchPage = () => {
                     sort: sort
                 };
                 if (inStockOnly) params.inStockOnly = true;
-                if (brand) params.brand = brand;
-                if (minPrice) params.minPrice = minPrice;
-                if (maxPrice) params.maxPrice = maxPrice;
+                if (debouncedBrand) params.brand = debouncedBrand;
+                if (debouncedMinPrice) params.minPrice = debouncedMinPrice;
+                if (debouncedMaxPrice) params.maxPrice = debouncedMaxPrice;
 
                 const response = await customerApi.getProducts(params);
                 if (response.data.success) {
@@ -248,7 +262,7 @@ const SearchPage = () => {
             }
         };
         fetchSearchResults();
-    }, [currentLocation?.latitude, currentLocation?.longitude, debouncedQuery, searchPage, sort, inStockOnly, brand, minPrice, maxPrice]);
+    }, [currentLocation?.latitude, currentLocation?.longitude, debouncedQuery, searchPage, sort, inStockOnly, debouncedBrand, debouncedMinPrice, debouncedMaxPrice]);
 
     // Fetch Lowest Price Products (Only when no query is present)
     useEffect(() => {
@@ -331,12 +345,14 @@ const SearchPage = () => {
         <div className="min-h-screen bg-white font-outfit">
             {/* Header / Search Input */}
             <div className={cn(
-                "sticky top-0 z-50 bg-linear-to-r from-primary to-[var(--brand-400)] shadow-[0_4px_20px_rgba(0,0,0,0.12)] relative overflow-hidden",
+                "sticky top-0 z-50 bg-linear-to-r from-primary to-[var(--brand-400)] shadow-[0_4px_20px_rgba(0,0,0,0.12)] relative",
                 isProductDetailOpen && "hidden md:block"
             )}>
                 {/* Decorative background elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-xl pointer-events-none" />
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12 blur-xl" />
+                </div>
 
                 <div className="px-4 pt-5 pb-6 flex items-center md:justify-center gap-3 relative z-10">
                     <button
@@ -357,6 +373,7 @@ const SearchPage = () => {
                             value={query}
                             onKeyDown={handleKeyDown}
                             onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             onChange={(e) => {
                                 setQuery(e.target.value);
                                 setShowSuggestions(true);
@@ -484,7 +501,12 @@ const SearchPage = () => {
                                         <input 
                                             type="checkbox" 
                                             checked={inStockOnly} 
-                                            onChange={(e) => setInStockOnly(e.target.checked)}
+                                            onChange={(e) => {
+                                                setInStockOnly(e.target.checked);
+                                                setSearchResults([]);
+                                                setSearchPage(1);
+                                                setHasMoreSearch(false);
+                                            }}
                                             className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary"
                                         />
                                         <span className="font-bold text-slate-700 text-sm">In Stock Only</span>
@@ -527,7 +549,15 @@ const SearchPage = () => {
                                 
                                 {(brand || minPrice || maxPrice || inStockOnly) && (
                                     <button 
-                                        onClick={() => { setBrand(''); setMinPrice(''); setMaxPrice(''); setInStockOnly(false); }}
+                                        onClick={() => { 
+                                            setBrand(''); 
+                                            setMinPrice(''); 
+                                            setMaxPrice(''); 
+                                            setInStockOnly(false); 
+                                            setSearchResults([]);
+                                            setSearchPage(1);
+                                            setHasMoreSearch(false);
+                                        }}
                                         className="w-full mt-6 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-slate-600 text-sm transition-colors"
                                     >
                                         Clear Filters
@@ -555,7 +585,12 @@ const SearchPage = () => {
                                     </button>
                                     <select 
                                         value={sort}
-                                        onChange={(e) => setSort(e.target.value)}
+                                        onChange={(e) => {
+                                            setSort(e.target.value);
+                                            setSearchResults([]);
+                                            setSearchPage(1);
+                                            setHasMoreSearch(false);
+                                        }}
                                         className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer appearance-none"
                                         style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1em', paddingRight: '2.5rem' }}
                                     >
