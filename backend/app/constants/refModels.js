@@ -37,6 +37,7 @@ export const USER_MODEL_NAMES = Object.freeze({
   SELLER: "Seller",
   DELIVERY: "Delivery",
   ADMIN: "Admin",
+  WAREHOUSE: "Warehouse",
 });
 
 export const ALL_USER_MODEL_NAMES = Object.freeze(

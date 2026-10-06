@@ -11,6 +11,7 @@ import { geocodeAddress } from "../services/mapsGeocodeService.js";
 import Order from "../models/order.js";
 import Customer from "../models/customer.js";
 import Transaction from "../models/transaction.js";
+import Admin from "../models/admin.js";
 import { orderMatchQueryFromRouteParam } from "../utils/orderLookup.js";
 import {
   generateReturnPickupOtp,
@@ -535,13 +536,18 @@ export const verifyReturnDropOtp = async (req, res) => {
 
     // Notify admin + seller + customer
     try {
+      const admins = await Admin.find().select("_id").lean();
+      const adminIds = (admins || []).map((a) => a?._id).filter(Boolean);
+
       emitNotificationEvent(NOTIFICATION_EVENTS.RETURN_COMPLETED, {
         orderId: order.orderId,
         customerId: order.customer,
         userId: order.customer,
         sellerId: order.seller?._id || order.seller,
+        warehouseId: order.warehouseId?._id || order.warehouseId,
         deliveryId: userId,
-        data: { message: "Product returned to seller. Admin QC pending." },
+        adminIds,
+        data: { message: "Product returned to store. Admin QC pending." },
       });
     } catch (notifErr) {
       console.warn("[verifyReturnDropOtp] Notification failed:", notifErr.message);

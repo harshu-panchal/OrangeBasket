@@ -33,6 +33,7 @@ export const NOTIFICATION_ROLES = Object.freeze({
   SELLER: "seller",
   DELIVERY: "delivery",
   ADMIN: "admin",
+  WAREHOUSE: "warehouse",
 });
 
 export const ROLE_TO_USER_MODEL = Object.freeze({
@@ -40,6 +41,7 @@ export const ROLE_TO_USER_MODEL = Object.freeze({
   [NOTIFICATION_ROLES.SELLER]: "Seller",
   [NOTIFICATION_ROLES.DELIVERY]: "Delivery",
   [NOTIFICATION_ROLES.ADMIN]: "Admin",
+  [NOTIFICATION_ROLES.WAREHOUSE]: "Warehouse",
 });
 
 export const ROLE_TO_RECIPIENT_MODEL = Object.freeze({
@@ -47,6 +49,7 @@ export const ROLE_TO_RECIPIENT_MODEL = Object.freeze({
   [NOTIFICATION_ROLES.SELLER]: "Seller",
   [NOTIFICATION_ROLES.DELIVERY]: "Delivery",
   [NOTIFICATION_ROLES.ADMIN]: "Admin",
+  [NOTIFICATION_ROLES.WAREHOUSE]: "Warehouse",
 });
 
 export const DEFAULT_DEDUP_TTL_SECONDS = () =>
@@ -79,6 +82,7 @@ export function normalizeNotificationRole(role) {
   if (value === "seller") return NOTIFICATION_ROLES.SELLER;
   if (value === "delivery") return NOTIFICATION_ROLES.DELIVERY;
   if (value === "admin") return NOTIFICATION_ROLES.ADMIN;
+  if (value === "warehouse") return NOTIFICATION_ROLES.WAREHOUSE;
   return null;
 }
 
@@ -88,6 +92,7 @@ export function roleFromRecipientModel(recipientModel) {
   if (model === "seller") return NOTIFICATION_ROLES.SELLER;
   if (model === "delivery") return NOTIFICATION_ROLES.DELIVERY;
   if (model === "admin") return NOTIFICATION_ROLES.ADMIN;
+  if (model === "warehouse") return NOTIFICATION_ROLES.WAREHOUSE;
   return null;
 }
 

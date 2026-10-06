@@ -65,6 +65,12 @@ const PUBLIC_STATUS_STEPS = [
   { id: 3, label: "Delivered" },
 ];
 
+const RETURN_PUBLIC_STATUS_STEPS = [
+  { id: 1, label: "Assigned" },
+  { id: 2, label: "Out for Pickup" },
+  { id: 3, label: "Returned" },
+];
+
 const getPersistedRiderStep = (order) => {
   if (!order) return 1;
 
@@ -233,9 +239,9 @@ const OrderDetails = () => {
           id: 1,
           label: "Task Accepted",
           action: "NAVIGATE TO CUSTOMER",
-          color: "bg-brand-500",
-          bg: "bg-brand-50",
-          text: "text-brand-600",
+          color: "bg-primary",
+          bg: "bg-primary/10",
+          text: "text-primary",
         },
         {
           id: 2,
@@ -265,9 +271,9 @@ const OrderDetails = () => {
           id: 5,
           label: "Completed",
           action: "DONE",
-          color: "bg-brand-700",
-          bg: "bg-brand-50",
-          text: "text-brand-700",
+          color: "bg-primary",
+          bg: "bg-primary/10",
+          text: "text-primary",
         },
       ];
     }
@@ -279,8 +285,8 @@ const OrderDetails = () => {
         label: isWarehouse ? "Navigate to Warehouse" : "Navigate to Store",
         action: isWarehouse ? "ARRIVED AT WAREHOUSE" : "ARRIVED AT STORE",
         color: "bg-black ",
-        bg: "bg-brand-50",
-        text: "text-brand-600",
+        bg: "bg-primary/10",
+        text: "text-primary",
       },
       {
         id: 2,
@@ -295,16 +301,16 @@ const OrderDetails = () => {
         label: "Start Delivery",
         action: "START DELIVERY",
         color: "bg-black ",
-        bg: "bg-brand-50",
-        text: "text-brand-600",
+        bg: "bg-primary/10",
+        text: "text-primary",
       },
       {
         id: 4,
         label: "Delivering",
         action: "DELIVERED",
-        color: "bg-brand-700",
-        bg: "bg-brand-50",
-        text: "text-brand-700",
+        color: "bg-primary",
+        bg: "bg-primary/10",
+        text: "text-primary",
       },
     ];
   }, [order?.returnStatus, order?.warehouseId, order?.seller]);
@@ -558,7 +564,7 @@ const OrderDetails = () => {
     if (!isReturn) return true; // Standard orders are handled differently/already assigned to someone
 
     const returnRiderId = order.returnDeliveryBoy?._id || order.returnDeliveryBoy;
-    return String(returnRiderId) === String(user._id);
+    return String(returnRiderId) === String(user._id || user.id);
   }, [order, user, isReturn]);
 
   const isReturnWaitAccept = useMemo(() => {
@@ -801,11 +807,11 @@ const OrderDetails = () => {
               className="absolute top-1/2 left-0 h-1 bg-brand-500 -z-10 rounded-full"
               initial={{ width: "0%" }}
               animate={{
-                width: `${((publicStatusStage - 1) / (PUBLIC_STATUS_STEPS.length - 1)) * 100}%`,
+                width: `${((publicStatusStage - 1) / ((isReturn ? RETURN_PUBLIC_STATUS_STEPS : PUBLIC_STATUS_STEPS).length - 1)) * 100}%`,
               }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
             />
-            {PUBLIC_STATUS_STEPS.map(({ id, label }) => (
+            {(isReturn ? RETURN_PUBLIC_STATUS_STEPS : PUBLIC_STATUS_STEPS).map(({ id, label }) => (
               <motion.div
                 key={id}
                 initial={false}
@@ -823,7 +829,7 @@ const OrderDetails = () => {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-xs text-slate-500 font-medium px-1">
-            {PUBLIC_STATUS_STEPS.map(({ id, label }) => (
+            {(isReturn ? RETURN_PUBLIC_STATUS_STEPS : PUBLIC_STATUS_STEPS).map(({ id, label }) => (
               <span key={id} className="text-center">
                 {label}
               </span>
@@ -990,7 +996,7 @@ const OrderDetails = () => {
               <div>
                 <span>Order Items</span>
                 <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                  {order.items?.length || 0} items
+                  {(isReturn ? order.returnItems : order.items)?.length || 0} items
                 </span>
               </div>
             </div>
@@ -1021,8 +1027,12 @@ const OrderDetails = () => {
                     </div>
                   ))}
                   <div className="pt-3 mt-2 border-t border-gray-200 flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">Total Bill</span>
-                    <span className="text-lg font-bold text-gray-900">Rs.{order.pricing?.total}</span>
+                    <span className="text-gray-500 text-sm">{isReturn ? "Return Total" : "Total Bill"}</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      Rs.{isReturn 
+                        ? (order.returnRefundAmount || (order.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) || order.pricing?.subtotal || 0)
+                        : (order.pricing?.total || 0)}
+                    </span>
                   </div>
                 </div>
               </motion.div>

@@ -136,12 +136,19 @@ export class OrderReturnService {
     order.returnWindowExpiresAt = windowExpiresAt;
     order.returnDeadline = windowExpiresAt;
 
+    const refundAmount = selectedItems.reduce(
+      (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+      0
+    );
+    order.returnRefundAmount = refundAmount;
+
     await order.save();
 
     emitNotificationEvent(NOTIFICATION_EVENTS.RETURN_REQUESTED, {
       orderId: order.orderId,
       customerId: order.customer,
       sellerId: order.seller,
+      warehouseId: order.warehouseId,
       data: {
         reason: order.returnReason,
         reasonDetail: order.returnReasonDetail,
@@ -213,6 +220,7 @@ export class OrderReturnService {
     }
 
     let activeOtp = null;
+    let returnDropOtp = null;
     if (order.returnStatus === "return_pickup_assigned") {
       const otpDoc = await OrderOtp.findOne({
         orderId: order.orderId,
@@ -221,6 +229,14 @@ export class OrderReturnService {
         expiresAt: { $gt: new Date() },
       }).sort({ createdAt: -1 });
       activeOtp = otpDoc?.code || null;
+    } else if (order.returnStatus === "return_drop_pending" || order.returnStatus === "return_in_transit") {
+      const otpDoc = await OrderOtp.findOne({
+        orderId: order.orderId,
+        type: "return_drop",
+        consumedAt: null,
+        expiresAt: { $gt: new Date() },
+      }).sort({ createdAt: -1 });
+      returnDropOtp = otpDoc?.code || null;
     }
 
     return {
@@ -244,6 +260,7 @@ export class OrderReturnService {
       returnQcAt: order.returnQcAt,
       returnQcNote: order.returnQcNote,
       returnPickupOtp: activeOtp,
+      returnDropOtp: returnDropOtp,
     };
   }
 

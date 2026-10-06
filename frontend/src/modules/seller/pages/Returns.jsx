@@ -357,9 +357,18 @@ const Returns = () => {
                                                     </p>
                                                     {/* Proper Data: Rider tracking for in-transit */}
                                                     {(ret.returnStatus === "return_in_transit" || ret.returnStatus === "return_drop_pending" || ret.returnStatus === "return_pickup_assigned") && ret.returnDeliveryBoy && (
-                                                        <div className="mt-2 flex items-center gap-1.5 px-2 py-1 bg-brand-50 rounded-lg border border-brand-100 w-fit">
-                                                            <HiOutlineTruck className="h-3 w-3 text-brand-600" />
-                                                            <span className="text-[10px] font-bold text-brand-700">Rider: {ret.returnDeliveryBoy.name}</span>
+                                                        <div className="mt-2 flex flex-col gap-1.5 w-fit">
+                                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-brand-50 rounded-lg border border-brand-100 w-fit">
+                                                                <HiOutlineTruck className="h-3 w-3 text-brand-600" />
+                                                                <span className="text-[10px] font-bold text-brand-700">Rider: {ret.returnDeliveryBoy.name}</span>
+                                                            </div>
+                                                            {(activeOtps[ret.orderId]?.otp || ret.returnDropOtp) && (
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-lg border border-green-200 w-fit">
+                                                                    <span className="text-[10px] font-black text-green-700 tracking-widest">
+                                                                        OTP: {activeOtps[ret.orderId]?.otp || ret.returnDropOtp}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                     {/* Proper Data: QC Note for passed/failed */}
@@ -382,6 +391,7 @@ const Returns = () => {
                                                     <p className="text-xs font-black text-slate-900">
                                                         {"\u20B9"}
                                                         {ret.returnRefundAmount ||
+                                                            (ret.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) ||
                                                             ret.pricing?.subtotal ||
                                                             0}
                                                     </p>
@@ -657,6 +667,7 @@ const Returns = () => {
                                         <span className="font-black">
                                             {"\u20B9"}
                                             {selectedReturn.returnRefundAmount ||
+                                                (selectedReturn.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) ||
                                                 selectedReturn.pricing?.subtotal ||
                                                 0}
                                         </span>
@@ -672,13 +683,13 @@ const Returns = () => {
                                 </div>
 
                                 {/* Active OTP Display */}
-                                {activeOtps[selectedReturn.orderId] && (
+                                {(activeOtps[selectedReturn.orderId]?.otp || selectedReturn.returnDropOtp) && (
                                     <div className="bg-brand-50 border-2 border-dashed border-brand-200 rounded-3xl p-6 text-center space-y-3 animate-in fade-in zoom-in duration-500">
                                         <p className="text-[10px] font-black text-brand-600 uppercase tracking-[0.2em]">
                                             Rider Arrived - Share OTP
                                         </p>
                                         <div className="flex items-center justify-center gap-3">
-                                            {activeOtps[selectedReturn.orderId].otp.split('').map((char, i) => (
+                                            {String(activeOtps[selectedReturn.orderId]?.otp || selectedReturn.returnDropOtp).split('').map((char, i) => (
                                                 <div key={i} className="h-14 w-12 bg-white rounded-xl shadow-sm border border-brand-100 flex items-center justify-center text-3xl font-black text-slate-900 border-b-4 border-b-brand-500">
                                                     {char}
                                                 </div>

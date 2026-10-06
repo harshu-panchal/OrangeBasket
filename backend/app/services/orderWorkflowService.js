@@ -1532,6 +1532,7 @@ export async function verifyHandoffOtpAndDeliver(deliveryId, orderId, code) {
     userId: updated.customer,
     deliveryId: updated.deliveryBoy,
     sellerId: updated.seller,
+    warehouseId: updated.warehouseId,
   });
 
   return {

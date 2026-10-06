@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { sellerApi } from '@/modules/seller/services/sellerApi';
 import { adminApi } from '@/modules/admin/services/adminApi';
+import { warehouseApi } from '@/modules/warehouse/services/warehouseApi';
 import { AnimatePresence } from 'framer-motion';
 import NotificationPopup from './NotificationPopup';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ const Topbar = ({ onMenuClick }) => {
 
     const isSeller = location.pathname.startsWith('/seller');
     const isAdmin = location.pathname.startsWith('/admin');
+    const isWarehouse = location.pathname.startsWith('/warehouse');
 
     const handleSearchSubmit = (e) => {
         e?.preventDefault();
@@ -49,16 +51,21 @@ const Topbar = ({ onMenuClick }) => {
     // re-bind whenever React re-renders the topbar for unrelated reasons.
     const isSellerRef = React.useRef(isSeller);
     const isAdminRef = React.useRef(isAdmin);
+    const isWarehouseRef = React.useRef(isWarehouse);
     React.useEffect(() => { isSellerRef.current = isSeller; }, [isSeller]);
     React.useEffect(() => { isAdminRef.current = isAdmin; }, [isAdmin]);
+    React.useEffect(() => { isWarehouseRef.current = isWarehouse; }, [isWarehouse]);
 
     const fetchNotifications = React.useCallback(async () => {
         try {
             const sellerMode = isSellerRef.current;
             const adminMode = isAdminRef.current;
-            if (!sellerMode && !adminMode) return;
+            const warehouseMode = isWarehouseRef.current;
+            if (!sellerMode && !adminMode && !warehouseMode) return;
             const response = sellerMode
                 ? await sellerApi.getNotifications()
+                : warehouseMode
+                ? await warehouseApi.getNotifications()
                 : await adminApi.getNotifications();
             if (response.data.success) {
                 setNotifications(response.data.result.notifications);
@@ -76,7 +83,7 @@ const Topbar = ({ onMenuClick }) => {
     // the socket. Tab focus also triggers an immediate refresh so a
     // user returning to a backgrounded tab sees a fresh badge.
     React.useEffect(() => {
-        if (!isSeller && !isAdmin) return undefined;
+        if (!isSeller && !isAdmin && !isWarehouse) return undefined;
         fetchNotifications();
 
         const getToken = () => token;
@@ -120,7 +127,7 @@ const Topbar = ({ onMenuClick }) => {
             }
             if (typeof offNotification === 'function') offNotification();
         };
-    }, [isSeller, isAdmin, token, fetchNotifications]);
+    }, [isSeller, isAdmin, isWarehouse, token, fetchNotifications]);
 
     // Handle Click Outside
     React.useEffect(() => {
@@ -138,6 +145,7 @@ const Topbar = ({ onMenuClick }) => {
             if (!id) return;
             if (isSeller) await sellerApi.markNotificationRead(id);
             if (isAdmin) await adminApi.markNotificationRead(id);
+            if (isWarehouse) await warehouseApi.markNotificationRead(id);
             fetchNotifications();
         } catch (error) {
             toast.error("Failed to mark as read");
@@ -148,6 +156,7 @@ const Topbar = ({ onMenuClick }) => {
         try {
             if (isSeller) await sellerApi.markAllNotificationsRead();
             if (isAdmin) await adminApi.markAllNotificationsRead();
+            if (isWarehouse) await warehouseApi.markAllNotificationsRead();
             fetchNotifications();
             toast.success("All caught up!");
         } catch (error) {

@@ -1278,7 +1278,7 @@ const OrderDetailPage = () => {
 
       {/* Return Request Modal */}
       {showReturnModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1288,16 +1288,20 @@ const OrderDetailPage = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 space-y-4"
+            className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
           >
-            <h3 className="text-lg font-black text-slate-900">
-              Request Return
-            </h3>
-            <p className="text-xs text-slate-500">
-              Select the items you want to return and tell us why.
-            </p>
-            <div className="max-h-48 overflow-y-auto space-y-3">
-              {order.items.map((item, idx) => {
+            <div className="p-6 pb-4 shrink-0 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-900">
+                Request Return
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Select the items you want to return and tell us why.
+              </p>
+            </div>
+            
+            <div className="p-6 py-4 overflow-y-auto space-y-5 flex-1 min-h-0">
+              <div className="space-y-3">
+                {order.items.map((item, idx) => {
                 const checked = !!selectedReturnItems[idx];
                 return (
                   <label
@@ -1407,9 +1411,10 @@ const OrderDetailPage = () => {
                   I confirm the product is returned with proper accessories and is in good condition.
                 </span>
               </label>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="p-6 pt-4 shrink-0 border-t border-slate-100 flex justify-end gap-2">
               <button
                 onClick={() => !requestingReturn && setShowReturnModal(false)}
                 className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"

@@ -221,8 +221,10 @@ const DeliveryLayout = () => {
     });
     if (!newOrder) return;
     shownOrderIdsRef.current = new Set(shownOrderIdsRef.current).add(newOrder.orderId);
-    const total = newOrder.pricing?.total || 0;
     const isReturnPickup = newOrder.isReturnPickup || false;
+    const total = isReturnPickup
+      ? (newOrder.returnRefundAmount || (newOrder.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) || newOrder.pricing?.total || 0)
+      : (newOrder.pricing?.total || 0);
     const earnings = newOrder.returnCommission || newOrder.riderEarnings || newOrder.delivery?.riderEarning || Math.round(total * 0.1);
     setActiveOrder({
       id: newOrder.orderId,

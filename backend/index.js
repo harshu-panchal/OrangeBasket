@@ -369,6 +369,16 @@ async function startScheduler() {
     );
   }
 
+  // Fallback for Warehouse GPS Watchdog when Redis is disabled
+  if (process.env.REDIS_DISABLED === 'true' || process.env.REDIS_ENABLED === 'false') {
+    const { runGpsWatchdog } = await import("./app/services/warehouseGpsWatchdog.js");
+    registerScheduledJob(
+      'warehouseGpsWatchdogJob_Fallback',
+      60000,
+      runGpsWatchdog
+    );
+  }
+
   // Start all registered jobs
   await startScheduledJobs();
   registerSchedulerStopper(stopScheduledJobs);

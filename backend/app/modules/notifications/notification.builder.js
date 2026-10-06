@@ -121,6 +121,15 @@ function eventDefinition(eventType) {
                 : "Your order has been delivered to the customer.",
           },
           {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "Order Delivered ✅",
+            body: (payload) =>
+              payload.orderId
+                ? `Order #${payload.orderId} has been delivered to the customer.`
+                : "Your order has been delivered to the customer.",
+          },
+          {
             role: NOTIFICATION_ROLES.DELIVERY,
             recipientIds: (payload) => normalizeIdList(payload.deliveryId),
             title: () => "Delivery Completed! 🏁",
@@ -151,6 +160,16 @@ function eventDefinition(eventType) {
                 ? `Order #${payload.orderId} has been cancelled.`
                 : "An order has been cancelled."),
           },
+          {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "Order Cancelled",
+            body: (payload) =>
+              payload.sellerMessage ||
+              (payload.orderId
+                ? `Order #${payload.orderId} has been cancelled.`
+                : "An order has been cancelled."),
+          },
         ],
       };
     case NOTIFICATION_EVENTS.REFUND_INITIATED:
@@ -169,14 +188,27 @@ function eventDefinition(eventType) {
       };
     case NOTIFICATION_EVENTS.NEW_ORDER:
       return {
-        role: NOTIFICATION_ROLES.SELLER,
-        recipientIds: (payload) =>
-          normalizeIdList(payload.sellerId || payload.sellerIds),
-        title: () => "New Order",
-        body: (payload) =>
-          payload.orderId
-            ? `New order #${payload.orderId} received.`
-            : "You have received a new order.",
+        multi: true,
+        definitions: [
+          {
+            role: NOTIFICATION_ROLES.SELLER,
+            recipientIds: (payload) => normalizeIdList(payload.sellerId || payload.sellerIds),
+            title: () => "New Order",
+            body: (payload) =>
+              payload.orderId
+                ? `New order #${payload.orderId} received.`
+                : "You have received a new order.",
+          },
+          {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "New Order",
+            body: (payload) =>
+              payload.orderId
+                ? `New order #${payload.orderId} received.`
+                : "You have received a new order.",
+          },
+        ],
       };
     case NOTIFICATION_EVENTS.DELIVERY_ASSIGNED:
       return {
@@ -221,13 +253,27 @@ function eventDefinition(eventType) {
     // ── Return Workflow Events ──────────────────────────────────────────────
     case NOTIFICATION_EVENTS.RETURN_REQUESTED:
       return {
-        role: NOTIFICATION_ROLES.SELLER,
-        recipientIds: (payload) => normalizeIdList(payload.sellerId),
-        title: () => "Return Request Received",
-        body: (payload) =>
-          payload.orderId
-            ? `Customer has requested a return for order #${payload.orderId}.`
-            : "A new return request has been received.",
+        multi: true,
+        definitions: [
+          {
+            role: NOTIFICATION_ROLES.SELLER,
+            recipientIds: (payload) => normalizeIdList(payload.sellerId),
+            title: () => "Return Request Received",
+            body: (payload) =>
+              payload.orderId
+                ? `Customer has requested a return for order #${payload.orderId}.`
+                : "A new return request has been received.",
+          },
+          {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "Return Request Received",
+            body: (payload) =>
+              payload.orderId
+                ? `Customer has requested a return for order #${payload.orderId}.`
+                : "A new return request has been received.",
+          },
+        ],
       };
     case NOTIFICATION_EVENTS.RETURN_APPROVED:
       return {
@@ -286,21 +332,54 @@ function eventDefinition(eventType) {
       };
     case NOTIFICATION_EVENTS.RETURN_DROP_OTP:
       return {
-        role: NOTIFICATION_ROLES.SELLER,
-        recipientIds: (payload) => normalizeIdList(payload.sellerId),
-        title: () => "Return Drop OTP 🔐",
-        body: (payload) =>
-          payload.data?.otp
-            ? `Return drop OTP for order #${payload.orderId}: ${payload.data.otp}. Share with delivery partner.`
-            : "A return drop OTP has been generated.",
+        multi: true,
+        definitions: [
+          {
+            role: NOTIFICATION_ROLES.SELLER,
+            recipientIds: (payload) => normalizeIdList(payload.sellerId),
+            title: () => "Return Drop OTP 🔐",
+            body: (payload) =>
+              payload.data?.otp
+                ? `Return drop OTP for order #${payload.orderId}: ${payload.data.otp}. Share with delivery partner.`
+                : "A return drop OTP has been generated.",
+          },
+          {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "Return Drop OTP 🔐",
+            body: (payload) =>
+              payload.data?.otp
+                ? `Return drop OTP for order #${payload.orderId}: ${payload.data.otp}. Share with delivery partner.`
+                : "A return drop OTP has been generated.",
+          },
+        ],
       };
     case NOTIFICATION_EVENTS.RETURN_COMPLETED:
       return {
-        role: NOTIFICATION_ROLES.SELLER,
-        recipientIds: (payload) => normalizeIdList(payload.sellerId),
-        title: () => "Product Returned to Store",
-        body: (payload) =>
-          `Product for order #${payload.orderId || ""} has been returned. Admin QC is pending.`,
+        multi: true,
+        definitions: [
+          {
+            role: NOTIFICATION_ROLES.ADMIN,
+            recipientIds: (payload) => normalizeIdList(payload.adminIds),
+            title: () => "Return Delivered (QC Pending)",
+            body: (payload) =>
+              `Product for order #${payload.orderId || ""} has been returned by delivery partner. Please perform QC.`,
+          },
+          {
+            role: NOTIFICATION_ROLES.SELLER,
+            recipientIds: (payload) => normalizeIdList(payload.sellerId),
+            title: () => "Product Returned to Store",
+            body: (payload) =>
+              `Product for order #${payload.orderId || ""} has been returned. Admin QC is pending.`,
+          },
+          {
+            role: NOTIFICATION_ROLES.WAREHOUSE,
+            recipientIds: (payload) => normalizeIdList(payload.warehouseId),
+            title: () => "Product Returned to Store",
+            body: (payload) =>
+              `Product for order #${payload.orderId || ""} has been returned. Admin QC is pending.`,
+          },
+        ],
       };
     case NOTIFICATION_EVENTS.RETURN_QC_PASSED:
       return {

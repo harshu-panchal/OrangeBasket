@@ -530,6 +530,7 @@ export const updateOrderStatus = async (req, res) => {
         customerId: order.customer,
         userId: order.customer,
         sellerId: order.seller,
+        warehouseId: order.warehouseId,
       });
     }
 
@@ -548,6 +549,7 @@ export const updateOrderStatus = async (req, res) => {
         customerId: order.customer,
         userId: order.customer,
         sellerId: order.seller,
+        warehouseId: order.warehouseId,
         deliveryId: order.deliveryBoy,
       });
 

@@ -144,19 +144,6 @@ const Returns = () => {
     setIsDetailsOpen(true);
   };
 
-  const handleApprove = async (orderId) => {
-    try {
-      await adminApi.approveReturn(orderId, {});
-      showToast("Return approved", "success");
-      await fetchReturns();
-    } catch (error) {
-      console.error("Failed to approve return", error);
-      showToast(
-        error.response?.data?.message || "Failed to approve return",
-        "error",
-      );
-    }
-  };
 
   const handleReject = async () => {
     if (!actionNote.trim() || !selectedReturn) return;
@@ -251,7 +238,7 @@ const Returns = () => {
               </Badge>
             </h1>
             <p className="text-slate-600 text-sm sm:text-base mt-0.5 font-medium">
-              Review, approve, and QC customer returns.
+              Review and QC customer returns.
             </p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -693,7 +680,7 @@ const Returns = () => {
                   <p className="text-xs text-slate-700">
                     Product refund:{" "}
                     <span className="font-black">
-                      {"\u20B9"}{selectedReturn.returnRefundAmount || selectedReturn.pricing?.subtotal || 0}
+                      {"\u20B9"}{selectedReturn.returnRefundAmount || (selectedReturn.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) || selectedReturn.pricing?.subtotal || 0}
                     </span>
                   </p>
                   <p className="text-xs text-slate-700">
@@ -714,23 +701,6 @@ const Returns = () => {
                     Close
                   </button>
 
-                  {selectedReturn.returnStatus === "return_requested" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="text-xs font-bold border-rose-200 text-rose-600 hover:bg-rose-50"
-                        onClick={() => setActionModal({ open: true, mode: "reject" })}
-                      >
-                        Reject Request
-                      </Button>
-                      <Button
-                        className="text-xs font-bold bg-slate-900"
-                        onClick={() => handleApprove(selectedReturn.orderId)}
-                      >
-                        Approve Return
-                      </Button>
-                    </>
-                  )}
 
                   {selectedReturn.returnStatus === "return_approved" && (
                     <Button

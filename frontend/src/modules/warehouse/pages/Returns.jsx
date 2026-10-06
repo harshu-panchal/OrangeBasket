@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Card from "@shared/components/ui/Card";
 import Badge from "@shared/components/ui/Badge";
 import Button from "@shared/components/ui/Button";
@@ -657,6 +657,7 @@ const Returns = () => {
                                         <span className="font-black">
                                             {"\u20B9"}
                                             {selectedReturn.returnRefundAmount ||
+                                                (selectedReturn.returnItems || []).reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0) ||
                                                 selectedReturn.pricing?.subtotal ||
                                                 0}
                                         </span>
