@@ -6,6 +6,7 @@ import Topbar from './Topbar';
 import BottomNav from './BottomNav';
 import { sellerApi } from '@/modules/seller/services/sellerApi';
 import { warehouseApi } from '@/modules/warehouse/services/warehouseApi';
+import { adminApi } from '@/modules/admin/services/api/index';
 import { useAuth } from "@core/context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
 import { BellRing, Check, X, Clock, Truck, AlertTriangle, Phone, MapPin, ExternalLink } from 'lucide-react';
@@ -67,6 +68,25 @@ const DashboardLayout = ({ children, navItems, title }) => {
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [sellerEarningsData, setSellerEarningsData] = useState(defaultEarnings);
     const [earningsLoading, setEarningsLoading] = useState(false);
+    const [badgeCounts, setBadgeCounts] = useState({ orderCount: 0, returnCount: 0 });
+
+    useEffect(() => {
+        if (!['admin', 'seller', 'warehouse'].includes(role)) return;
+        const fetchBadges = async () => {
+            try {
+                const api = role === 'admin' ? adminApi : (role === 'warehouse' ? warehouseApi : sellerApi);
+                const res = await api.getBadgeCounts();
+                if (res?.data?.success) {
+                    setBadgeCounts(res.data.result || { orderCount: 0, returnCount: 0 });
+                }
+            } catch (err) {
+                console.error("Badge Fetch Error:", err);
+            }
+        };
+        fetchBadges();
+        const timer = setInterval(fetchBadges, POLL_INTERVAL_MS);
+        return () => clearInterval(timer);
+    }, [role]);
 
     const shownOrderIdsRef = useRef(new Set());
     const shownReturnOrderIdsRef = useRef(new Set());
@@ -435,6 +455,42 @@ const DashboardLayout = ({ children, navItems, title }) => {
         }
     };
 
+    const enrichedNavItems = React.useMemo(() => {
+        if (!navItems) return [];
+        return navItems.map((item) => {
+            const newItem = { ...item };
+            
+            // Add badges to top-level items
+            if (['Orders', 'New Orders'].includes(newItem.label)) {
+                newItem.badgeCount = (newItem.badgeCount || 0) + (badgeCounts.orderCount || 0);
+            }
+            if (['Returns', 'Return Requests'].includes(newItem.label)) {
+                newItem.badgeCount = (newItem.badgeCount || 0) + (badgeCounts.returnCount || 0);
+            }
+
+            // Also check children for badges
+            if (newItem.children) {
+                newItem.children = newItem.children.map(child => {
+                    const newChild = { ...child };
+                    if (['Orders', 'New Orders'].includes(newChild.label)) {
+                        newChild.badgeCount = (newChild.badgeCount || 0) + (badgeCounts.orderCount || 0);
+                    }
+                    if (['Returns', 'Return Requests'].includes(newChild.label)) {
+                        newChild.badgeCount = (newChild.badgeCount || 0) + (badgeCounts.returnCount || 0);
+                    }
+                    return newChild;
+                });
+                // Update parent badge if children have badges
+                const childrenBadges = newItem.children.reduce((sum, c) => sum + (c.badgeCount || 0), 0);
+                if (childrenBadges > 0) {
+                    newItem.badgeCount = (newItem.badgeCount || 0) + childrenBadges;
+                }
+            }
+
+            return newItem;
+        });
+    }, [navItems, badgeCounts]);
+
     return (
         <div className="min-h-screen mesh-gradient-light relative">
             {/* Background Blobs for depth */}
@@ -442,7 +498,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
             <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/5 rounded-full blur-[120px] -z-10 animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
 
             <Sidebar
-                items={navItems}
+                items={enrichedNavItems}
                 title={title}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
@@ -667,7 +723,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
                 )}
             </AnimatePresence>
 
-            {(role === "admin" || role === "seller") && <BottomNav navItems={navItems} />}
+            {(role === "admin" || role === "seller") && <BottomNav navItems={enrichedNavItems} />}
         </div>
     );
 };

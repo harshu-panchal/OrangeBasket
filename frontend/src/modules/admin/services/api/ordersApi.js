@@ -11,6 +11,7 @@ export const adminOrdersApi = {
         axiosInstance.get(`/orders/details/${orderId}`),
     updateOrderStatus: (orderId, data) =>
         axiosInstance.put(`/orders/status/${orderId}`, data),
+    getBadgeCounts: () => axiosInstance.get('/orders/badge-counts'),
 
     getReturns: (params) =>
         axiosInstance.get('/orders/seller-returns', { params }),

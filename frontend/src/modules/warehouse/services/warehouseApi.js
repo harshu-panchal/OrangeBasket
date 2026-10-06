@@ -26,6 +26,7 @@ export const warehouseApi = {
 
     // Orders (shared order endpoints)
     getOrders: (params) => axiosInstance.get('/orders/seller-orders', { params }),
+    getBadgeCounts: () => axiosInstance.get('/orders/badge-counts'),
     updateOrderStatus: (orderId, data) => axiosInstance.put(`/orders/status/${orderId}`, data),
 
     // Financials

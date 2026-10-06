@@ -1511,3 +1511,30 @@ export const uploadReturnPickupProof = async (req, res) => {
     return handleResponse(res, 500, error.message);
   }
 };
+
+export const getBadgeCounts = async (req, res) => {
+  try {
+    const role = req.user.role;
+    const userId = req.user.id;
+    let orderCount = 0;
+    let returnCount = 0;
+
+    if (role === 'admin') {
+      orderCount = await Order.countDocuments({ status: "pending" });
+      returnCount = await Order.countDocuments({ returnStatus: "returned" });
+    } else if (role === 'seller') {
+      orderCount = await Order.countDocuments({ seller: userId, workflowStatus: "SELLER_PENDING" });
+      returnCount = await Order.countDocuments({ seller: userId, returnStatus: "return_requested" });
+    } else if (role === 'warehouse') {
+      orderCount = await Order.countDocuments({ warehouseId: userId, workflowStatus: "SELLER_PENDING" });
+      returnCount = await Order.countDocuments({ warehouseId: userId, returnStatus: "return_requested" });
+    }
+
+    return handleResponse(res, 200, "Counts fetched", {
+      orderCount,
+      returnCount
+    });
+  } catch (error) {
+    return handleResponse(res, 500, error.message);
+  }
+};

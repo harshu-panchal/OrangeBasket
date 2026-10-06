@@ -20,6 +20,7 @@ import {
   rejectReturnPickup,
   updateReturnStatus,
   uploadReturnPickupProof,
+  getBadgeCounts,
 } from "../controller/orderController.js";
 import {
   createOrderWithFinancialSnapshot,
@@ -54,6 +55,14 @@ import {
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Badge counts for Sidebar
+router.get(
+  "/badge-counts",
+  verifyToken,
+  allowRoles("admin", "seller", "warehouse"),
+  getBadgeCounts
+);
 
 // Finance-aware checkout/order flow
 router.post(
