@@ -13,6 +13,7 @@ import {
   HiOutlinePhoto,
   HiOutlineArchiveBox,
   HiOutlineTag,
+  HiOutlineCurrencyDollar,
   HiOutlineScale,
   HiOutlineArrowPath,
   HiOutlineXMark,
@@ -34,6 +35,13 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { warehouseApi } from "../services/warehouseApi";
+import HighlightsToggle from "../components/products/HighlightsToggle";
+import {
+  useMarginData,
+  BrandSelect,
+  MarginPricingPanel,
+  validateMarginPricing,
+} from "../components/products/MarginPricing";
 import { toast } from "sonner";
 import Pagination from "@shared/components/ui/Pagination";
 
@@ -274,6 +282,9 @@ const ProductManagement = () => {
     description: "",
     price: "",
     salePrice: "",
+    purchasePrice: "",
+    marginType: "auto",
+    individualMargin: "",
     stock: "",
     lowStockAlert: 5,
     category: "",
@@ -283,9 +294,13 @@ const ProductManagement = () => {
     tags: "",
     weight: "",
     brand: "",
+    brandId: "",
+    marginType: "auto",
+    individualMargin: "",
     shelfLife: "",
     countryOfOrigin: "",
     fssaiLicense: "",
+    showHighlights: true,
     mainImage: null,
     galleryImages: [],
     highlights: [
@@ -295,7 +310,7 @@ const ProductManagement = () => {
       { icon: "sprout", label: "Source of Fiber" },
     ],
     variants: [
-      { id: Date.now(), name: "", price: "", salePrice: "", stock: "", sku: "" },
+      { id: Date.now(), name: "", price: "", salePrice: "", purchasePrice: "", marginType: "auto", individualMargin: "", stock: "", sku: "" },
     ],
   });
 
@@ -354,6 +369,8 @@ const ProductManagement = () => {
     return <Badge variant="success" className="text-[10px] px-2 py-0.5">Approved</Badge>;
   };
 
+  const { brands, config: marginConfig, resolvedVariants } = useMarginData(formData, setFormData);
+
   const handleSave = async () => {
     try {
       if (!formData.name || !formData.header || !formData.category || !formData.subcategory) {
@@ -370,6 +387,12 @@ const ProductManagement = () => {
       const invalidVariant = formData.variants?.find((v) => v.salePrice && Number(v.salePrice) > Number(v.price));
       if (invalidVariant) {
         toast.error(`Sale Price cannot be greater than Price for variant: ${invalidVariant.name || 'Main Variant'}`);
+        return;
+      }
+
+      const marginError = validateMarginPricing(formData, resolvedVariants);
+      if (marginError) {
+        toast.error(marginError);
         return;
       }
 
@@ -390,11 +413,13 @@ const ProductManagement = () => {
       data.append("subcategoryId", formData.subcategory);
       data.append("status", formData.status);
       data.append("brand", formData.brand);
+      data.append("brandId", formData.brandId || "");
       data.append("weight", formData.weight);
       data.append("tags", formData.tags);
       data.append("shelfLife", formData.shelfLife);
       data.append("countryOfOrigin", formData.countryOfOrigin);
       data.append("fssaiLicense", formData.fssaiLicense);
+      data.append("showHighlights", formData.showHighlights !== false ? "true" : "false");
       data.append("variants", JSON.stringify(formData.variants));
       data.append("highlights", JSON.stringify(formData.highlights || []));
 
@@ -490,6 +515,7 @@ const ProductManagement = () => {
         description: item.description || "",
         price: item.price || "",
         salePrice: item.salePrice || "",
+        purchasePrice: item.purchasePrice ?? "",
         stock: item.stock || "",
         lowStockAlert: item.lowStockAlert || 5,
         header: item.headerId?._id || item.headerId || "",
@@ -499,9 +525,13 @@ const ProductManagement = () => {
         tags: Array.isArray(item.tags) ? item.tags.join(", ") : item.tags || "",
         weight: item.weight || "",
         brand: item.brand || "",
+        brandId: item.brandId?._id || item.brandId || "",
+        marginType: item.marginType || "auto",
+        individualMargin: item.individualMargin ?? "",
         shelfLife: item.shelfLife || "",
         countryOfOrigin: item.countryOfOrigin || "",
         fssaiLicense: item.fssaiLicense || "",
+        showHighlights: item.showHighlights !== false,
         mainImage: item.mainImage || null,
         galleryImages: item.galleryImages || [],
         highlights: (Array.isArray(item.highlights) && item.highlights.length > 0)
@@ -518,6 +548,7 @@ const ProductManagement = () => {
             name: "",
             price: item.price || "",
             salePrice: item.salePrice || "",
+            purchasePrice: item.purchasePrice ?? "",
             stock: item.stock || "",
             sku: item.sku || "",
           },
@@ -535,6 +566,9 @@ const ProductManagement = () => {
         description: "",
         price: "",
         salePrice: "",
+        purchasePrice: "",
+        marginType: "auto",
+        individualMargin: "",
         stock: "",
         lowStockAlert: 5,
         category: "",
@@ -544,9 +578,13 @@ const ProductManagement = () => {
         tags: "",
         weight: "",
         brand: "",
+        brandId: "",
+        marginType: "auto",
+        individualMargin: "",
         shelfLife: "",
         countryOfOrigin: "",
         fssaiLicense: "",
+        showHighlights: true,
         mainImage: null,
         galleryImages: [],
         highlights: [
@@ -561,6 +599,9 @@ const ProductManagement = () => {
             name: "",
             price: "",
             salePrice: "",
+            purchasePrice: "",
+            marginType: "auto",
+            individualMargin: "",
             stock: "",
             sku: "",
           },
@@ -943,6 +984,11 @@ const ProductManagement = () => {
                       icon: HiOutlineFolderOpen,
                     },
                     {
+                      id: "pricing",
+                      label: "Pricing & Margin",
+                      icon: HiOutlineCurrencyDollar,
+                    },
+                    {
                       id: "highlights",
                       label: "Highlights",
                       icon: HiOutlineSparkles,
@@ -1027,22 +1073,12 @@ const ProductManagement = () => {
                             placeholder="e.g. Premium Basmati Rice"
                           />
                         </div>
-                        <div className="space-y-1.5 flex flex-col">
-                          <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                            Brand Name
-                          </label>
-                          <input
-                            value={formData.brand}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                brand: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
-                            placeholder="e.g. Amul"
-                          />
-                        </div>
+                        <BrandSelect
+                          brands={brands}
+                          formData={formData}
+                          setFormData={setFormData}
+                          className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-semibold outline-none ring-primary/5 focus:ring-2"
+                        />
                       </div>
                       <div className="space-y-1.5 flex flex-col">
                         <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
@@ -1199,6 +1235,16 @@ const ProductManagement = () => {
                     </div>
                   )}
 
+                  {modalTab === "pricing" && (
+                    <MarginPricingPanel
+                      formData={formData}
+                      setFormData={setFormData}
+                      brands={brands}
+                      config={marginConfig}
+                      resolvedVariants={resolvedVariants}
+                    />
+                  )}
+
                   {modalTab === "variants" && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                       <div className="flex items-center justify-between">
@@ -1215,6 +1261,9 @@ const ProductManagement = () => {
                                   name: "",
                                   price: "",
                                   salePrice: "",
+                                  purchasePrice: "",
+                                  marginType: "auto",
+                                  individualMargin: "",
                                   stock: "",
                                   sku: makeSku(prev.name, prev.variants.length + 1),
                                 },
@@ -1233,38 +1282,6 @@ const ProductManagement = () => {
                                 news[i].name = e.target.value;
                                 setFormData({ ...formData, variants: news });
                               }} placeholder="e.g. 1kg, 1 pack, 1 liter..." className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
-                            </div>
-                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
-                              <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Price</label>
-                              <input type="number" min="0" value={v.price} onChange={e => {
-                                const val = e.target.value;
-                                if (val !== '' && Number(val) < 0) return;
-                                
-                                if (val !== '' && v.salePrice && Number(val) < Number(v.salePrice)) {
-                                  toast.error("Regular price cannot be less than sale price");
-                                  return;
-                                }
-                                
-                                const news = [...formData.variants];
-                                news[i].price = val;
-                                setFormData({ ...formData, variants: news });
-                              }} placeholder="Price" className="w-full bg-white px-3 py-2 rounded-xl text-xs ring-1 ring-slate-100 outline-none" />
-                            </div>
-                            <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
-                              <label className="text-[8px] font-bold text-brand-400 uppercase tracking-widest ml-1">Sale Price</label>
-                              <input type="number" min="0" value={v.salePrice} onChange={e => {
-                                const val = e.target.value;
-                                if (val !== '' && Number(val) < 0) return;
-                                
-                                if (val !== '' && v.price && Number(val) > Number(v.price)) {
-                                  toast.error("Sale price cannot be greater than regular price");
-                                  return;
-                                }
-                                
-                                const news = [...formData.variants];
-                                news[i].salePrice = val;
-                                setFormData({ ...formData, variants: news });
-                              }} placeholder="Sale" className="w-full bg-brand-50/50 px-3 py-2 rounded-xl text-xs ring-1 ring-brand-100 text-brand-700 outline-none" />
                             </div>
                             <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
                               <label className="text-[8px] font-bold text-slate-600 uppercase tracking-widest ml-1">Stock</label>
@@ -1367,7 +1384,16 @@ const ProductManagement = () => {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <HighlightsToggle
+                        checked={formData.showHighlights !== false}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, showHighlights: val }))}
+                      />
+
+                      <div
+                        className={cn(
+                          "grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity",
+                          formData.showHighlights === false && "opacity-40 pointer-events-none",
+                        )}>
                         {[0, 1, 2, 3].map((slotIdx) => {
                           const currentHighlight = formData.highlights?.[slotIdx] || { icon: "leaf", label: "" };
                           return (

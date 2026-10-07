@@ -61,6 +61,17 @@ export const warehouseApi = {
     updateRack: (id, data) => axiosInstance.put(`/warehouse/racks/${id}`, data),
     deleteRack: (id) => axiosInstance.delete(`/warehouse/racks/${id}`),
 
+    // Margin management + brands
+    getMargins: () => axiosInstance.get('/warehouse/margins'),
+    setDefaultMargin: (margin) => axiosInstance.put('/warehouse/margins/default', { margin }),
+    setSubcategoryMargin: (subcategoryId, margin) => axiosInstance.put(`/warehouse/margins/subcategory/${subcategoryId}`, { margin }),
+    setBrandMargin: (brandId, margin) => axiosInstance.put(`/warehouse/margins/brand/${brandId}`, { margin }),
+    recalculatePrices: () => axiosInstance.post('/warehouse/margins/recalculate'),
+    getBrands: () => axiosInstance.get('/warehouse/brands'),
+    createBrand: (data) => axiosInstance.post('/warehouse/brands', data),
+    updateBrand: (id, data) => axiosInstance.put(`/warehouse/brands/${id}`, data),
+    deleteBrand: (id) => axiosInstance.delete(`/warehouse/brands/${id}`),
+
     // Order Processing / Scan (warehouse order fulfillment flow)
     getScanProgress: (orderId) => axiosInstance.get(`/orders/${orderId}/warehouse/scan-progress`),
     scanOrderItem: (orderId, data) => axiosInstance.post(`/orders/${orderId}/warehouse/scan`, data),

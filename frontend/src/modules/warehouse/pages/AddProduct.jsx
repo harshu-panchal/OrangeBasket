@@ -25,6 +25,13 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { warehouseApi } from "../services/warehouseApi";
+import HighlightsToggle from "../components/products/HighlightsToggle";
+import {
+  useMarginData,
+  BrandSelect,
+  MarginPricingPanel,
+  validateMarginPricing,
+} from "../components/products/MarginPricing";
 
 // Auto-generates a Code128-safe, human-scannable barcode value.
 // Mirrors the backend fallback in productController.js so the preview
@@ -77,6 +84,9 @@ const AddProduct = () => {
     description: "",
     price: "",
     salePrice: "",
+    purchasePrice: "",
+    marginType: "auto",
+    individualMargin: "",
     stock: "",
     lowStockAlert: 5,
     category: "",
@@ -86,9 +96,13 @@ const AddProduct = () => {
     tags: "",
     weight: "",
     brand: "",
+    brandId: "",
+    marginType: "auto",
+    individualMargin: "",
     shelfLife: "",
     countryOfOrigin: "",
     fssaiLicense: "",
+    showHighlights: true,
     mainImage: null,
     galleryImages: [],
     highlights: [
@@ -103,11 +117,16 @@ const AddProduct = () => {
         name: "",
         price: "",
         salePrice: "",
+        purchasePrice: "",
+        marginType: "auto",
+        individualMargin: "",
         stock: "",
         sku: "",
       },
     ],
   });
+
+  const { brands, config: marginConfig, resolvedVariants } = useMarginData(formData, setFormData);
 
   const [dbCategories, setDbCategories] = useState([]);
   const [isLoadingCats, setIsLoadingCats] = useState(true);
@@ -247,6 +266,11 @@ const AddProduct = () => {
       toast.error(`Sale Price cannot be greater than Price for variant: ${invalidVariant.name || 'Main Variant'}`);
       return;
     }
+    const marginError = validateMarginPricing(formData, resolvedVariants);
+    if (marginError) {
+      toast.error(marginError);
+      return;
+    }
     setIsSaving(true);
     try {
       const data = new FormData();
@@ -261,9 +285,11 @@ const AddProduct = () => {
       data.append("tags", formData.tags);
       data.append("weight", formData.weight);
       data.append("brand", formData.brand);
+      if (formData.brandId) data.append("brandId", formData.brandId);
       data.append("shelfLife", formData.shelfLife);
       data.append("countryOfOrigin", formData.countryOfOrigin);
       data.append("fssaiLicense", formData.fssaiLicense);
+      data.append("showHighlights", formData.showHighlights !== false ? "true" : "false");
       data.append("status", formData.status);
 
       // Map top-level price/stock from first variant for indexing/listing
@@ -372,6 +398,7 @@ const AddProduct = () => {
             { id: "general", label: "General Info", icon: HiOutlineTag },
             { id: "variants", label: "Item Variants", icon: HiOutlineSwatch },
             { id: "category", label: "Groups", icon: HiOutlineFolderOpen },
+            { id: "pricing", label: "Pricing & Margin", icon: HiOutlineCurrencyDollar },
             { id: "highlights", label: "Highlights", icon: HiOutlineSparkles },
             { id: "barcode", label: "Barcode", icon: HiOutlineQrCode },
             { id: "rack", label: "Rack Location", icon: HiOutlineBuildingStorefront },
@@ -458,19 +485,12 @@ const AddProduct = () => {
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5 flex flex-col">
-                  <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                    Brand Name
-                  </label>
-                  <input
-                    value={formData.brand}
-                    onChange={(e) =>
-                      setFormData({ ...formData, brand: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-md text-sm font-semibold outline-none ring-primary/5 focus:ring-2 transition-all"
-                    placeholder="e.g. Amul"
-                  />
-                </div>
+                <BrandSelect
+                  brands={brands}
+                  formData={formData}
+                  setFormData={setFormData}
+                  className="w-full px-4 py-2.5 bg-slate-100 border-none rounded-md text-sm font-semibold outline-none ring-primary/5 focus:ring-2 transition-all"
+                />
                 <div className="space-y-1.5 flex flex-col">
                   <label className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
                     Product Code
@@ -545,6 +565,9 @@ const AddProduct = () => {
                           name: "",
                           price: "",
                           salePrice: "",
+                          purchasePrice: "",
+                          marginType: "auto",
+                          individualMargin: "",
                           stock: "",
                           sku: makeSku(prev.name, prev.variants.length + 1),
                         },
@@ -578,66 +601,6 @@ const AddProduct = () => {
                         }}
                         placeholder="e.g. 1kg, 1 pack, 1 liter..."
                         className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/10"
-                      />
-                    </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-widest ml-1">
-                        Price
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        onKeyDown={(e) => {
-                          if (['-', '+', 'e', 'E'].includes(e.key)) {
-                            e.preventDefault();
-                          }
-                        }}
-                        value={variant.price}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val !== '' && Number(val) < 0) return;
-
-                          if (val !== '' && variant.salePrice && Number(val) < Number(variant.salePrice)) {
-                            toast.error("Regular price cannot be less than sale price");
-                            return;
-                          }
-
-                          const newVariants = [...formData.variants];
-                          newVariants[index].price = val;
-                          setFormData({ ...formData, variants: newVariants });
-                        }}
-                        placeholder="500"
-                        className="w-full px-3 py-2 bg-white ring-1 ring-slate-200 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-primary/10"
-                      />
-                    </div>
-                    <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
-                      <label className="text-[8px] font-bold text-brand-500 uppercase tracking-widest ml-1">
-                        Sale
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        onKeyDown={(e) => {
-                          if (['-', '+', 'e', 'E'].includes(e.key)) {
-                            e.preventDefault();
-                          }
-                        }}
-                        value={variant.salePrice}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val !== '' && Number(val) < 0) return;
-
-                          if (val !== '' && variant.price && Number(val) > Number(variant.price)) {
-                            toast.error("Sale price cannot be greater than regular price");
-                            return;
-                          }
-
-                          const newVariants = [...formData.variants];
-                          newVariants[index].salePrice = val;
-                          setFormData({ ...formData, variants: newVariants });
-                        }}
-                        placeholder="450"
-                        className="w-full px-3 py-2 bg-brand-50 ring-1 ring-brand-100 border-none rounded-xl text-xs font-bold text-brand-700 outline-none focus:ring-2 focus:ring-brand-200"
                       />
                     </div>
                     <div className="col-span-6 md:col-span-2 space-y-1 flex flex-col justify-end">
@@ -757,6 +720,16 @@ const AddProduct = () => {
             </div>
           )}
 
+          {modalTab === "pricing" && (
+            <MarginPricingPanel
+              formData={formData}
+              setFormData={setFormData}
+              brands={brands}
+              config={marginConfig}
+              resolvedVariants={resolvedVariants}
+            />
+          )}
+
           {modalTab === "category" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -838,7 +811,16 @@ const AddProduct = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <HighlightsToggle
+                checked={formData.showHighlights !== false}
+                onChange={(val) => setFormData((prev) => ({ ...prev, showHighlights: val }))}
+              />
+
+              <div
+                className={cn(
+                  "grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity",
+                  formData.showHighlights === false && "opacity-40 pointer-events-none",
+                )}>
                 {[0, 1, 2, 3].map((slotIdx) => {
                   const currentHighlight = formData.highlights?.[slotIdx] || { icon: "leaf", label: "" };
                   return (

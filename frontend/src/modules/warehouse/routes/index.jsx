@@ -14,6 +14,7 @@ import {
   HiOutlineCreditCard,
   HiOutlineMapPin,
   HiOutlineBuildingStorefront,
+  HiOutlineTag,
 } from "react-icons/hi2";
 
 const Dashboard = React.lazy(() => import("../pages/Dashboard"));
@@ -33,6 +34,8 @@ const MonthlyKits = React.lazy(() => import("../pages/MonthlyKits"));
 const QRManager = React.lazy(() => import("../pages/QRManager"));
 const QueueMonitor = React.lazy(() => import("../pages/QueueMonitor"));
 const RackManagement = React.lazy(() => import("../pages/RackManagement"));
+const MarginManagement = React.lazy(() => import("../pages/MarginManagement"));
+const BrandManagement = React.lazy(() => import("../pages/BrandManagement"));
 const OrderProcessing = React.lazy(() => import("../pages/OrderProcessing"));
 const KitAddonSummary = React.lazy(() => import("../pages/KitAddonSummary"));
 const KitAddonManagement = React.lazy(() => import("../pages/KitAddonManagement"));
@@ -55,6 +58,8 @@ const navItems = [
   { label: "QR Check-in", path: "/warehouse/qr-manager", icon: HiOutlineMapPin },
   { label: "Queue Monitor", path: "/warehouse/queue-monitor", icon: HiOutlineBuildingStorefront },
   { label: "Racks", path: "/warehouse/racks", icon: HiOutlineBuildingStorefront },
+  { label: "Margin Management", path: "/warehouse/margins", icon: HiOutlineCurrencyDollar },
+  { label: "Brands", path: "/warehouse/brands", icon: HiOutlineTag },
 ];
 
 const WarehouseRoutes = () => {
@@ -85,6 +90,8 @@ const WarehouseRoutes = () => {
         <Route path="/qr-manager" element={<QRManager />} />
         <Route path="/queue-monitor" element={<QueueMonitor />} />
         <Route path="/racks" element={<RackManagement />} />
+        <Route path="/margins" element={<MarginManagement />} />
+        <Route path="/brands" element={<BrandManagement />} />
         <Route path="/orders/:orderId/process" element={<OrderProcessing />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

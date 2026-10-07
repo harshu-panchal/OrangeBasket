@@ -1,3 +1,4 @@
+import { applyMarginPricing, MarginError } from "../services/marginService.js";
 import Product from "../models/product.js";
 import Order from "../models/order.js";
 import Review from "../models/review.js";
@@ -106,6 +107,49 @@ import {
   resolveProductApprovalStatus,
 } from "../services/productModerationService.js";
 import { buildSearchRegex } from "../utils/regex.js";
+
+// Warehouse margin fields: only the owning warehouse may read/write them.
+const WAREHOUSE_ONLY_FIELDS = [
+  "purchasePrice",
+  "brandId",
+  "marginType",
+  "individualMargin",
+  "appliedMargin",
+  "marginSource",
+];
+
+// Variants carry their own margin data; drop it for customer-facing output / non-warehouse input.
+function stripVariantMarginFields(variant) {
+  const rest = { ...(variant || {}) };
+  for (const field of ["purchasePrice", "marginType", "individualMargin", "appliedMargin", "marginSource"]) {
+    delete rest[field];
+  }
+  return rest;
+}
+
+function stripWarehouseOnlyInput(payload) {
+  for (const field of WAREHOUSE_ONLY_FIELDS) delete payload[field];
+  if (Array.isArray(payload.variants)) {
+    payload.variants = payload.variants.map((v) => {
+      const rest = stripVariantMarginFields(v);
+      return rest;
+    });
+  }
+}
+
+// Removes distributor purchase price + margin details from customer-facing output.
+function stripWarehouseOnlyOutput(product) {
+  if (!product) return product;
+  const out = { ...product };
+  for (const field of WAREHOUSE_ONLY_FIELDS) delete out[field];
+  if (Array.isArray(out.variants)) {
+    out.variants = out.variants.map((v) => {
+      const rest = stripVariantMarginFields(v);
+      return rest;
+    });
+  }
+  return out;
+}
 
 // Phase 3 P3-5: when search term is reasonably specific and the env flag
 // is enabled, prefer Mongo's `name + tags` text index over case-insensitive
@@ -542,7 +586,7 @@ export const getProducts = async (req, res) => {
       const [rawProducts, total] = await Promise.all([
         Product.find(finalQuery)
           .select(
-            "name slug description sku price salePrice stock brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights createdAt",
+            "name slug description sku price salePrice stock brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights showHighlights createdAt",
           )
           // No .populate() — names resolved via cache-backed entityNameCache
           .sort(sortQuery)
@@ -600,7 +644,7 @@ export const getProducts = async (req, res) => {
       }));
 
       return {
-        items: normalizeProductListModeration(products),
+        items: normalizeProductListModeration(products).map(stripWarehouseOnlyOutput),
         page,
         limit,
         total,
@@ -711,7 +755,7 @@ export const getSellerProducts = async (req, res) => {
     ] = await Promise.all([
       Product.find(query)
         .select(
-          "name slug description sku barcode rackId price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights createdAt",
+          "name slug description sku barcode rackId price salePrice purchasePrice brandId marginType individualMargin appliedMargin marginSource stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights showHighlights createdAt",
         )
         .populate("headerId", "name")
         .populate("categoryId", "name")
@@ -989,6 +1033,13 @@ export const createProduct = async (req, res) => {
       }));
     }
 
+    if (role === "warehouse") {
+      // Selling price = distributor purchase price + resolved margin (server-authoritative)
+      await applyMarginPricing(productData, req.user.id);
+    } else {
+      stripWarehouseOnlyInput(productData);
+    }
+
     let moderationUpdate = {};
     let successMessage = "Product created successfully";
 
@@ -1031,6 +1082,9 @@ export const createProduct = async (req, res) => {
       normalizeProductDocumentModeration(product?.toObject?.() || product),
     );
   } catch (error) {
+    if (error instanceof MarginError) {
+      return handleResponse(res, 400, error.message);
+    }
     logger.error("Create Product Error", { scope: "createProduct", error });
     if (error.code === 11000) {
       return handleResponse(res, 400, "Slug or SKU already exists");
@@ -1228,6 +1282,12 @@ export const updateProduct = async (req, res) => {
       }));
     }
 
+    if (role === "warehouse") {
+      await applyMarginPricing(productData, sellerId, product);
+    } else {
+      stripWarehouseOnlyInput(productData);
+    }
+
     let moderationUpdate = {};
     let successMessage = "Product updated successfully";
 
@@ -1272,6 +1332,9 @@ export const updateProduct = async (req, res) => {
       normalizeProductDocumentModeration(updatedProduct?.toObject?.() || updatedProduct),
     );
   } catch (error) {
+    if (error instanceof MarginError) {
+      return handleResponse(res, 400, error.message);
+    }
     logger.error("Update Product Error", { scope: "updateProduct", error });
     if (error.name === "ValidationError") {
       return handleResponse(
@@ -1362,7 +1425,7 @@ export const getProductById = async (req, res) => {
         const query = isObjectId ? { _id: id } : { slug: id };
         return Product.findOne(query)
           .select(
-            "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId isMonthlyKit status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights createdAt",
+            "name slug description sku price salePrice purchasePrice brandId marginType individualMargin appliedMargin marginSource stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId isMonthlyKit status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights showHighlights createdAt",
           )
           .populate("headerId", "name")
           .populate("categoryId", "name")
@@ -1414,7 +1477,13 @@ export const getProductById = async (req, res) => {
       }
     }
 
-    const payload = normalizeProductDocumentModeration(product);
+    const requesterRole = String(req.user?.role || "").toLowerCase();
+    const productWarehouseId = String(product?.warehouseId?._id || product?.warehouseId || "");
+    const isOwnerWarehouse =
+      requesterRole === "warehouse" && productWarehouseId && productWarehouseId === String(req.user.id);
+    const normalized = normalizeProductDocumentModeration(product);
+    const payload =
+      isOwnerWarehouse || requesterRole === "admin" ? normalized : stripWarehouseOnlyOutput(normalized);
 
     if (req.user) {
       const userId = req.user.id;
@@ -1525,7 +1594,7 @@ export const getModerationProducts = async (req, res) => {
       await Promise.all([
         Product.find(moderatedQuery)
           .select(
-            "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights createdAt",
+            "name slug description sku price salePrice stock lowStockAlert brand weight shelfLife countryOfOrigin fssaiLicense mainImage galleryImages headerId categoryId subcategoryId sellerId status approvalStatus approvalRequestedAt approvalReviewedAt approvalReviewedBy approvalNote lastSubmittedByRole isFeatured variants tags highlights showHighlights createdAt",
           )
           .populate("headerId", "name")
           .populate("categoryId", "name")

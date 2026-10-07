@@ -15,9 +15,28 @@ const CUSTOMER_VISIBLE_PRODUCT_MATCH = {
   ...getApprovedOrLegacyFilter(),
 };
 
+// Warehouse-only per-variant pricing/margin data must never reach customers
+function stripVariantMarginFields(variant) {
+  const rest = { ...(variant || {}) };
+  for (const field of ["purchasePrice", "marginType", "individualMargin", "appliedMargin", "marginSource"]) {
+    delete rest[field];
+  }
+  return rest;
+}
+
 function sanitizeCartItems(cart) {
   if (!cart || !Array.isArray(cart.items)) return cart;
   cart.items = cart.items.filter((item) => Boolean(item?.productId));
+  // Never expose the warehouse's distributor purchase price to customers
+  for (const item of cart.items) {
+    const variants = item.productId?.variants;
+    if (Array.isArray(variants)) {
+      item.productId.variants = variants.map((v) => {
+        const rest = stripVariantMarginFields(v);
+        return rest;
+      });
+    }
+  }
   return cart;
 }
 

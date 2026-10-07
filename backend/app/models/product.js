@@ -58,6 +58,36 @@ const productSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        // Warehouse margin system (warehouse-only fields, never exposed to customers)
+        brandId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Brand",
+            default: null,
+        },
+        purchasePrice: {
+            type: Number,
+            default: null,
+            min: 0,
+        },
+        marginType: {
+            type: String,
+            enum: ["auto", "default", "brand", "subcategory", "individual"],
+            default: "auto",
+        },
+        individualMargin: {
+            type: Number,
+            default: null,
+            min: 0,
+        },
+        appliedMargin: {
+            type: Number,
+            default: null,
+        },
+        marginSource: {
+            type: String,
+            enum: ["individual", "brand", "subcategory", "default", null],
+            default: null,
+        },
         weight: {
             type: String,
             trim: true,
@@ -174,11 +204,20 @@ const productSchema = new mongoose.Schema(
                 name: String,
                 price: Number,
                 salePrice: Number,
+                purchasePrice: { type: Number, default: null, min: 0 }, // warehouse-only
+                marginType: { type: String, enum: ["auto", "default", "brand", "subcategory", "individual"], default: "auto" }, // warehouse-only
+                individualMargin: { type: Number, default: null, min: 0 }, // warehouse-only
+                appliedMargin: { type: Number, default: null }, // warehouse-only
+                marginSource: { type: String, enum: ["individual", "brand", "subcategory", "default", null], default: null }, // warehouse-only
                 stock: Number,
                 sku: String,
                 images: [{ type: String }], // Array of Cloudinary URLs for variant specific images
             }
         ],
+        showHighlights: {
+            type: Boolean,
+            default: true,
+        },
         isFeatured: {
             type: Boolean,
             default: false,

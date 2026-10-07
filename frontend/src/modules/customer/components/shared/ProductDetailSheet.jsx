@@ -1248,6 +1248,7 @@ const ProductDetailSheet = () => {
                                 </div>
 
                                 {/* Key Feature Highlights Row (Dynamic Seller Badges) */}
+                                {selectedProduct.showHighlights !== false && (
                                 <div className="grid grid-cols-4 gap-2 pt-2 pb-1 border-t border-b border-slate-100/80 my-2">
                                     {displayHighlights.map((hl, idx) => {
                                         const iconConfig = HIGHLIGHT_ICON_MAP[hl.icon] || HIGHLIGHT_ICON_MAP.leaf;
@@ -1263,6 +1264,7 @@ const ProductDetailSheet = () => {
                                         );
                                     })}
                                 </div>
+                                )}
 
                                 {isExpanded ? (
                                     <>

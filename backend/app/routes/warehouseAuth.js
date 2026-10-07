@@ -32,6 +32,18 @@ import {
   updateRack,
   deleteRack,
 } from "../controller/rackController.js";
+import {
+  getMargins,
+  setDefaultMargin,
+  setSubcategoryMargin,
+  setBrandMargin,
+  previewMargin,
+  recalculatePrices,
+  listBrands,
+  createBrand,
+  updateBrand,
+  deleteBrand,
+} from "../controller/marginController.js";
 import { verifyToken, allowRoles } from "../middleware/authMiddleware.js";
 import {
     authRouteRateLimiter,
@@ -110,5 +122,17 @@ router.get("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), getRackB
 router.post("/racks", verifyToken, allowRoles("warehouse", "admin"), createRack);
 router.put("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), updateRack);
 router.delete("/racks/:id", verifyToken, allowRoles("warehouse", "admin"), deleteRack);
+
+// Margin management + brands (warehouse panel only)
+router.get("/margins", verifyToken, allowRoles("warehouse"), getMargins);
+router.put("/margins/default", verifyToken, allowRoles("warehouse"), setDefaultMargin);
+router.put("/margins/subcategory/:subcategoryId", verifyToken, allowRoles("warehouse"), setSubcategoryMargin);
+router.put("/margins/brand/:brandId", verifyToken, allowRoles("warehouse"), setBrandMargin);
+router.post("/margins/resolve", verifyToken, allowRoles("warehouse"), previewMargin);
+router.post("/margins/recalculate", verifyToken, allowRoles("warehouse"), recalculatePrices);
+router.get("/brands", verifyToken, allowRoles("warehouse"), listBrands);
+router.post("/brands", verifyToken, allowRoles("warehouse"), createBrand);
+router.put("/brands/:id", verifyToken, allowRoles("warehouse"), updateBrand);
+router.delete("/brands/:id", verifyToken, allowRoles("warehouse"), deleteBrand);
 
 export default router;
