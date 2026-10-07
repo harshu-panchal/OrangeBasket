@@ -97,8 +97,6 @@ const AddProduct = () => {
     weight: "",
     brand: "",
     brandId: "",
-    marginType: "auto",
-    individualMargin: "",
     shelfLife: "",
     countryOfOrigin: "",
     fssaiLicense: "",
