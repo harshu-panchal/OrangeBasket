@@ -128,7 +128,7 @@ const getTrackingRoutePhase = (order) => {
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
-    if (window.Razorpay) {
+    if (window['Razorpay']) {
       resolve(true);
       return;
     }
@@ -815,7 +815,7 @@ const OrderDetailPage = () => {
         },
       };
 
-      const rzp = new window.Razorpay(options);
+      const rzp = new window['Razorpay'](options);
       rzp.on("payment.failed", function (response) {
         toast.error(response.error.description || "Payment failed");
       });

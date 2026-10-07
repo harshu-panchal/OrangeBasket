@@ -20,6 +20,26 @@ const emptyBannerItem = () => ({
   isUploading: false,
 });
 
+const emptyPromotionalBannerItem = () => ({
+  imageUrl: "",
+  title: "",
+  subtitle: "",
+  discountPrefix: "",
+  discountBadge: "",
+  originalPrice: "",
+  offerPrice: "",
+  ctaText: "",
+  icon: "",
+  cardSize: "square",
+  bgColor: "",
+  textColor: "",
+  prefixBgColor: "",
+  badgeBgColor: "",
+  linkType: "none",
+  linkValue: "",
+  isUploading: false,
+});
+
 export default function HeroCategoriesPerPage() {
   const { showToast } = useToast();
   const [headers, setHeaders] = useState([]);
@@ -30,6 +50,9 @@ export default function HeroCategoriesPerPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [formBanners, setFormBanners] = useState([emptyBannerItem()]);
+  const [formBannerType, setFormBannerType] = useState("standard");
+  const [formPromotionalBanners, setFormPromotionalBanners] = useState([emptyPromotionalBannerItem()]);
+  const [formPromotionalBgColor, setFormPromotionalBgColor] = useState("");
   const [formCategoryIds, setFormCategoryIds] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +74,8 @@ export default function HeroCategoriesPerPage() {
         const homeRes = await adminApi.getHeroConfig({ pageType: "home" });
         const homeResult = homeRes.data?.result || homeRes.data || {};
         const homeBanners = homeResult.banners?.items || [];
+        const homePromo = homeResult.promotionalBanners?.items || [];
+        const homeType = homeResult.bannerType || "standard";
         const homeCatIds = homeResult.categoryIds || [];
 
         const rows = [
@@ -59,7 +84,8 @@ export default function HeroCategoriesPerPage() {
             label: "Home",
             pageType: "home",
             headerId: null,
-            bannerCount: homeBanners.length,
+            bannerType: homeType,
+            bannerCount: homeType === "promotional" ? homePromo.length : homeBanners.length,
             categoryCount: homeCatIds.length,
           },
         ];
@@ -73,13 +99,16 @@ export default function HeroCategoriesPerPage() {
             if (cancelled) return;
             const result = res.data?.result || res.data || {};
             const items = result.banners?.items || [];
+            const promoItems = result.promotionalBanners?.items || [];
+            const bannerType = result.bannerType || "standard";
             const catIds = result.categoryIds || [];
             rows.push({
               id: h._id,
               label: h.name || "Unnamed",
               pageType: "header",
               headerId: h._id,
-              bannerCount: items.length,
+              bannerType,
+              bannerCount: bannerType === "promotional" ? promoItems.length : items.length,
               categoryCount: catIds.length,
             });
           })
@@ -102,6 +131,8 @@ export default function HeroCategoriesPerPage() {
     setEditingRow(row);
     setFormCategoryIds([]);
     setFormBanners([emptyBannerItem()]);
+    setFormBannerType("standard");
+    setFormPromotionalBanners([emptyPromotionalBannerItem()]);
     try {
       const res = await adminApi.getHeroConfig({
         pageType: row.pageType,
@@ -110,10 +141,19 @@ export default function HeroCategoriesPerPage() {
       const result = res.data?.result || res.data || {};
       const items = result.banners?.items || [];
       const catIds = result.categoryIds || [];
+      const promoItems = result.promotionalBanners?.items || [];
+      
+      setFormBannerType(result.bannerType || "standard");
+      setFormPromotionalBgColor(result.promotionalBanners?.bgColor || "");
       setFormBanners(
         items.length
           ? items.map((b) => ({ ...b, isUploading: false }))
           : [emptyBannerItem()]
+      );
+      setFormPromotionalBanners(
+        promoItems.length
+          ? promoItems.map((b, i) => i === 4 ? { ...b, subtitle: "", discountPrefix: "", discountBadge: "", originalPrice: "", offerPrice: "", isUploading: false } : { ...b, isUploading: false })
+          : [emptyPromotionalBannerItem()]
       );
       setFormCategoryIds(Array.isArray(catIds) ? catIds : []);
     } catch (e) {
@@ -156,6 +196,44 @@ export default function HeroCategoriesPerPage() {
     }
   };
 
+  const updatePromoBannerItem = (idx, changes) => {
+    setFormPromotionalBanners((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...changes };
+      return next;
+    });
+  };
+
+  const addPromoBannerItem = () => {
+    if (formPromotionalBanners.length >= 7) {
+      showToast("Maximum layout capacity (7 items) reached.", "error");
+      return;
+    }
+    setFormPromotionalBanners((prev) => [...prev, emptyPromotionalBannerItem()]);
+  };
+
+  const removePromoBannerItem = (idx) => {
+    setFormPromotionalBanners((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handlePromoBannerFileChange = async (idx, file) => {
+    if (!file) return;
+    updatePromoBannerItem(idx, { isUploading: true });
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await adminApi.uploadExperienceBanner(fd);
+      const url = res.data?.result?.url || res.data?.url;
+      if (!url) throw new Error("Upload failed");
+      updatePromoBannerItem(idx, { imageUrl: url, isUploading: false });
+      showToast("Promotional banner image uploaded", "success");
+    } catch (e) {
+      console.error(e);
+      updatePromoBannerItem(idx, { isUploading: false });
+      showToast("Failed to upload image", "error");
+    }
+  };
+
   const toggleCategory = (catId) => {
     setFormCategoryIds((prev) =>
       prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
@@ -172,13 +250,59 @@ export default function HeroCategoriesPerPage() {
       status: b.status || "active",
     }));
 
+    const promoItems = formPromotionalBanners
+      .filter((b) => b.title || b.imageUrl || b.ctaText || b.subtitle || b.discountBadge || b.discountPrefix)
+      .map((b, idx) => {
+        if (idx === 4) {
+          return {
+            imageUrl: b.imageUrl || "",
+            title: b.title || "",
+            subtitle: "",
+            discountPrefix: "",
+            discountBadge: "",
+            originalPrice: 0,
+            offerPrice: 0,
+            ctaText: b.ctaText || "",
+            icon: b.icon || "",
+            cardSize: b.cardSize || "square",
+            bgColor: b.bgColor || "",
+            textColor: b.textColor || "",
+            badgeBgColor: b.badgeBgColor || "",
+            linkType: b.linkType || "none",
+            linkValue: b.linkValue || "",
+            status: b.status || "active",
+          };
+        }
+        return {
+          imageUrl: b.imageUrl || "",
+          title: b.title || "",
+          subtitle: b.subtitle || "",
+          discountPrefix: b.discountPrefix || "",
+          discountBadge: b.discountBadge || "",
+          originalPrice: Number(b.originalPrice) || 0,
+          offerPrice: Number(b.offerPrice) || 0,
+          ctaText: b.ctaText || "",
+          icon: b.icon || "",
+          cardSize: b.cardSize || "square",
+          bgColor: b.bgColor || "",
+          textColor: b.textColor || "",
+          prefixBgColor: b.prefixBgColor || "",
+          badgeBgColor: b.badgeBgColor || "",
+          linkType: b.linkType || "none",
+          linkValue: b.linkValue || "",
+          status: b.status || "active",
+        };
+      });
+
     if (!editingRow) return;
     setSaving(true);
     try {
       await adminApi.setHeroConfig({
         pageType: editingRow.pageType,
         headerId: editingRow.headerId || undefined,
+        bannerType: formBannerType,
         banners: { items },
+        promotionalBanners: { items: promoItems, bgColor: formPromotionalBgColor },
         categoryIds: formCategoryIds,
       });
       showToast("Hero config saved", "success");
@@ -187,7 +311,8 @@ export default function HeroCategoriesPerPage() {
           p.id === editingRow.id
             ? {
                 ...p,
-                bannerCount: items.length,
+                bannerType: formBannerType,
+                bannerCount: formBannerType === "promotional" ? promoItems.length : items.length,
                 categoryCount: formCategoryIds.length,
               }
             : p
@@ -320,83 +445,515 @@ export default function HeroCategoriesPerPage() {
       >
         {editingRow && (
           <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Hero banners
-                </label>
-                <button
-                  type="button"
-                  onClick={addBannerItem}
-                  className="flex items-center gap-1 text-[10px] font-bold text-primary"
-                >
-                  <HiOutlinePlus className="h-3 w-3" />
-                  Add banner
-                </button>
-              </div>
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                {formBanners.map((item, idx) => (
-                  <Card key={idx} className="p-3 bg-white border-slate-100">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                            {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={item.title || `Banner ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <HiOutlinePhoto className="h-6 w-6 text-slate-300" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id={`hero-banner-file-${idx}`}
-                              onChange={(e) => handleBannerFileChange(idx, e.target.files?.[0])}
-                            />
-                            <div className="flex items-center gap-2">
-                              <label
-                                htmlFor={`hero-banner-file-${idx}`}
-                                className="inline-block px-2 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer hover:bg-slate-200"
-                              >
-                                {item.isUploading ? "Uploading…" : item.imageUrl ? "Change" : "Upload"}
-                              </label>
-                              <span className="text-[10px] font-semibold text-slate-400">(1920 × 1080 px)</span>
+            <div className="flex gap-4 p-2 bg-slate-50 rounded-xl mb-4">
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                  formBannerType === "standard"
+                    ? "bg-white shadow-sm text-primary"
+                    : "text-slate-500 hover:bg-slate-100"
+                )}
+                onClick={() => setFormBannerType("standard")}
+              >
+                Standard Slider
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                  formBannerType === "promotional"
+                    ? "bg-white shadow-sm text-primary"
+                    : "text-slate-500 hover:bg-slate-100"
+                )}
+                onClick={() => setFormBannerType("promotional")}
+              >
+                Promotional Bento Grid
+              </button>
+            </div>
+
+            {formBannerType === "standard" ? (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Hero banners
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addBannerItem}
+                    className="flex items-center gap-1 text-[10px] font-bold text-primary"
+                  >
+                    <HiOutlinePlus className="h-3 w-3" />
+                    Add banner
+                  </button>
+                </div>
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                  {formBanners.map((item, idx) => (
+                    <Card key={idx} className="p-3 bg-white border-slate-100">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.title || `Banner ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <HiOutlinePhoto className="h-6 w-6 text-slate-300" />
+                              )}
                             </div>
-                            <input
-                              value={item.title || ""}
-                              onChange={(e) => updateBannerItem(idx, { title: e.target.value })}
-                              className="w-full p-2 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
-                              placeholder="Title (optional)"
-                            />
-                            <input
-                              value={item.subtitle || ""}
-                              onChange={(e) => updateBannerItem(idx, { subtitle: e.target.value })}
-                              className="w-full p-2 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
-                              placeholder="Subtitle (optional)"
-                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id={`hero-banner-file-${idx}`}
+                                onChange={(e) => handleBannerFileChange(idx, e.target.files?.[0])}
+                              />
+                              <div className="flex items-center gap-2">
+                                <label
+                                  htmlFor={`hero-banner-file-${idx}`}
+                                  className="inline-block px-2 py-1 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer hover:bg-slate-200"
+                                >
+                                  {item.isUploading ? "Uploading…" : item.imageUrl ? "Change" : "Upload"}
+                                </label>
+                                <span className="text-[10px] font-semibold text-slate-400">(1920 × 1080 px)</span>
+                              </div>
+                              <input
+                                value={item.title || ""}
+                                onChange={(e) => updateBannerItem(idx, { title: e.target.value })}
+                                className="w-full p-2 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
+                                placeholder="Title (optional)"
+                              />
+                              <input
+                                value={item.subtitle || ""}
+                                onChange={(e) => updateBannerItem(idx, { subtitle: e.target.value })}
+                                className="w-full p-2 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none"
+                                placeholder="Subtitle (optional)"
+                              />
+                            </div>
                           </div>
                         </div>
+                        {formBanners.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeBannerItem(idx)}
+                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                          >
+                            <HiOutlineXMark className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                      {formBanners.length > 1 && (
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-4">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Promotional Deals
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-500">Wrapper BG:</span>
+                      <input
+                        type="color"
+                        value={formPromotionalBgColor || "#ffffff"}
+                        onChange={(e) => setFormPromotionalBgColor(e.target.value)}
+                        className="w-5 h-5 rounded border border-slate-200 cursor-pointer p-0 bg-white"
+                      />
+                      {formPromotionalBgColor && (
                         <button
                           type="button"
-                          onClick={() => removeBannerItem(idx)}
-                          className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                          onClick={() => setFormPromotionalBgColor("")}
+                          className="text-[9px] text-primary hover:underline font-semibold"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addPromoBannerItem}
+                    disabled={formPromotionalBanners.length >= 7}
+                    className="flex items-center gap-1 text-[10px] font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <HiOutlinePlus className="h-3 w-3" />
+                    Add deal card
+                  </button>
+                </div>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                  {formPromotionalBanners.map((item, idx) => {
+                    return (
+                    <Card key={idx} className="p-4 bg-slate-50/50 border-slate-100 relative">
+                      {formPromotionalBanners.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePromoBannerItem(idx)}
+                          className="absolute top-3 right-3 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                         >
                           <HiOutlineXMark className="w-4 h-4" />
                         </button>
                       )}
-                    </div>
-                  </Card>
-                ))}
+                      
+                      <div className="flex flex-col md:flex-row gap-4 mb-4 pr-8">
+                        <div className="w-24 h-24 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt="Deal image"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <HiOutlinePhoto className="h-8 w-8 text-slate-300" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id={`promo-banner-file-${idx}`}
+                            onChange={(e) => handlePromoBannerFileChange(idx, e.target.files?.[0])}
+                          />
+                          <div className="flex items-center gap-2 mb-3">
+                            <label
+                              htmlFor={`promo-banner-file-${idx}`}
+                              className="inline-block px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-50"
+                            >
+                              {item.isUploading ? "Uploading…" : item.imageUrl ? "Change Image" : "Upload Image"}
+                            </label>
+                            {item.imageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { imageUrl: "" })}
+                                className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600 cursor-pointer hover:bg-rose-100"
+                              >
+                                Remove Image
+                              </button>
+                            )}
+                          </div>
+                          {idx !== 4 && (
+                            <div className={`grid gap-3 ${idx === 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                              <input
+                                value={item.title || ""}
+                                onChange={(e) => updatePromoBannerItem(idx, { title: e.target.value })}
+                                className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                placeholder="Title (e.g. Tote Bag)"
+                              />
+                              {idx === 0 && (
+                                <input
+                                  value={item.subtitle || ""}
+                                  onChange={(e) => updatePromoBannerItem(idx, { subtitle: e.target.value })}
+                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                  placeholder="Subtitle (e.g. TOP DEALS)"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {(idx === 0 || (idx >= 1 && idx <= 3)) && (
+                        <div className="grid gap-3 grid-cols-2 mt-3">
+                          {idx >= 1 && idx <= 3 && (
+                            <>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-[10px] font-bold text-slate-500">Badge Prefix</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="color"
+                                      value={item.prefixBgColor || "#3d3d3d"}
+                                      onChange={(e) => updatePromoBannerItem(idx, { prefixBgColor: e.target.value })}
+                                      className="w-4 h-4 rounded border border-slate-200 cursor-pointer p-0 bg-white"
+                                      title="Prefix Color"
+                                    />
+                                    {item.prefixBgColor && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updatePromoBannerItem(idx, { prefixBgColor: "" })}
+                                        className="text-[9px] text-slate-400 hover:text-slate-600"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <input
+                                  value={item.discountPrefix || ""}
+                                  onChange={(e) => updatePromoBannerItem(idx, { discountPrefix: e.target.value })}
+                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                  placeholder="e.g. Up to"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-[10px] font-bold text-slate-500">Discount Badge</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="color"
+                                      value={item.badgeBgColor || "#ba9686"}
+                                      onChange={(e) => updatePromoBannerItem(idx, { badgeBgColor: e.target.value })}
+                                      className="w-4 h-4 rounded border border-slate-200 cursor-pointer p-0 bg-white"
+                                      title="Badge Color"
+                                    />
+                                    {item.badgeBgColor && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updatePromoBannerItem(idx, { badgeBgColor: "" })}
+                                        className="text-[9px] text-slate-400 hover:text-slate-600"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <input
+                                  value={item.discountBadge || ""}
+                                  onChange={(e) => updatePromoBannerItem(idx, { discountBadge: e.target.value })}
+                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                  placeholder="e.g. 65% OFF"
+                                />
+                              </div>
+                            </>
+                          )}
+                          {idx === 0 && (
+                            <>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500">Orig. Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={item.originalPrice || ""}
+                                  onChange={(e) => updatePromoBannerItem(idx, { originalPrice: e.target.value })}
+                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                  placeholder="5499"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500">Offer Price (₹)</label>
+                                <input
+                                  type="number"
+                                  value={item.offerPrice || ""}
+                                  onChange={(e) => updatePromoBannerItem(idx, { offerPrice: e.target.value })}
+                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                                  placeholder="1469"
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {idx >= 5 && (
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                           <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500">CTA Text (for strips)</label>
+                            <input
+                              value={item.ctaText || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { ctaText: e.target.value })}
+                              className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder="e.g. BUY 2 AT ₹489"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500">CTA Subtext</label>
+                            <input
+                              value={item.icon || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { icon: e.target.value })}
+                              className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder="e.g. on Jewellery"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-1 md:grid-cols-2 gap-3">
+                         <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500">Redirection Type</label>
+                          <select
+                            value={item.linkType || "none"}
+                            onChange={(e) => updatePromoBannerItem(idx, { linkType: e.target.value })}
+                            className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                          >
+                            <option value="none">None</option>
+                            <option value="category">Category</option>
+                            <option value="subcategory">Subcategory</option>
+                            <option value="product">Product ID</option>
+                            <option value="url">External URL</option>
+                          </select>
+                        </div>
+                        {item.linkType && item.linkType !== "none" && (
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500">
+                              {item.linkType === "category" ? "Category Slug/ID" :
+                               item.linkType === "subcategory" ? "Subcategory Slug/ID" :
+                               item.linkType === "product" ? "Product ID" : "External URL"}
+                            </label>
+                            <input
+                              value={item.linkValue || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { linkValue: e.target.value })}
+                              className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder={
+                                item.linkType === "category" ? "e.g. grocery or 60d5ec..." :
+                                item.linkType === "subcategory" ? "e.g. fresh-fruits or 60d5ec..." :
+                                item.linkType === "product" ? "e.g. 60d5ec..." :
+                                "e.g. https://google.com"
+                              }
+                            />
+                            <p className="text-[9px] text-slate-400 mt-0.5">
+                              {item.linkType === "category" && "Enter the exact category slug or MongoDB ID."}
+                              {item.linkType === "subcategory" && "Enter the exact subcategory slug or MongoDB ID."}
+                              {item.linkType === "product" && "Enter the exact Product ID."}
+                              {item.linkType === "url" && "Enter the full URL starting with https://"}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Color Options */}
+                      <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 flex items-center justify-between">
+                            <span>Card Background</span>
+                            {item.bgColor && (
+                              <button
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { bgColor: "" })}
+                                className="text-[9px] text-primary hover:underline font-semibold"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={item.bgColor || "#f1e5df"}
+                              onChange={(e) => updatePromoBannerItem(idx, { bgColor: e.target.value })}
+                              className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              value={item.bgColor || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { bgColor: e.target.value })}
+                              className="w-full p-1.5 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder="Default / #HEX"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            {["#f1e5df", "#ffe5d9", "#d8f3dc", "#f3e8ff", "#ffe5ec", "#ffffff", "#1e293b"].map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { bgColor: preset })}
+                                style={{ backgroundColor: preset }}
+                                title={preset}
+                                className={cn(
+                                  "w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform shadow-xs",
+                                  item.bgColor === preset && "ring-2 ring-primary ring-offset-1"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 flex items-center justify-between">
+                            <span>Text Color</span>
+                            {item.textColor && (
+                              <button
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { textColor: "" })}
+                                className="text-[9px] text-primary hover:underline font-semibold"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={item.textColor || "#0f172a"}
+                              onChange={(e) => updatePromoBannerItem(idx, { textColor: e.target.value })}
+                              className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              value={item.textColor || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { textColor: e.target.value })}
+                              className="w-full p-1.5 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder="Default text / #HEX"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            {["#0f172a", "#692934", "#1e3a8a", "#064e3b", "#ffffff"].map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { textColor: preset })}
+                                style={{ backgroundColor: preset }}
+                                title={preset}
+                                className={cn(
+                                  "w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform shadow-xs",
+                                  item.textColor === preset && "ring-2 ring-primary ring-offset-1"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 flex items-center justify-between">
+                            <span>Badge Color</span>
+                            {item.badgeBgColor && (
+                              <button
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { badgeBgColor: "" })}
+                                className="text-[9px] text-primary hover:underline font-semibold"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={item.badgeBgColor || "#3d3d3d"}
+                              onChange={(e) => updatePromoBannerItem(idx, { badgeBgColor: e.target.value })}
+                              className="w-7 h-7 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              value={item.badgeBgColor || ""}
+                              onChange={(e) => updatePromoBannerItem(idx, { badgeBgColor: e.target.value })}
+                              className="w-full p-1.5 bg-white rounded-lg text-xs border border-slate-200 outline-none"
+                              placeholder="Default badge / #HEX"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            {["#3d3d3d", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed"].map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => updatePromoBannerItem(idx, { badgeBgColor: preset })}
+                                style={{ backgroundColor: preset }}
+                                title={preset}
+                                className={cn(
+                                  "w-4 h-4 rounded-full border border-slate-300 hover:scale-110 transition-transform shadow-xs",
+                                  item.badgeBgColor === preset && "ring-2 ring-primary ring-offset-1"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">

@@ -21,7 +21,8 @@ import { VirtuosoGrid } from 'react-virtuoso';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const CategoryProductsPage = () => {
-    const { categoryName: catId } = useParams();
+    const { categoryName, subcategoryId: routeSubId } = useParams();
+    const catId = categoryName || routeSubId;
     const navigate = useNavigate();
     const location = useLocation();
     const { currentLocation } = useAppLocation();
@@ -56,16 +57,26 @@ const CategoryProductsPage = () => {
                 if (catRes.data.success) {
                     const tree = catRes.data.results || catRes.data.result || [];
                     for (const header of tree) {
-                        if (header._id === catId || header.id === catId) {
+                        if (header._id === catId || header.id === catId || header.slug === catId) {
                             currentCat = header;
                             qk = 'headerId';
                             break;
                         }
-                        const found = (header.children || []).find(c => c._id === catId || c.id === catId);
-                        if (found) {
-                            currentCat = found;
+                        const foundCat = (header.children || []).find(c => c._id === catId || c.id === catId || c.slug === catId);
+                        if (foundCat) {
+                            currentCat = foundCat;
                             break;
                         }
+                        // Search in subcategories
+                        for (const cat of (header.children || [])) {
+                            const foundSub = (cat.children || []).find(s => s._id === catId || s.id === catId || s.slug === catId);
+                            if (foundSub) {
+                                currentCat = cat;
+                                setSelectedSubCategory(foundSub._id || foundSub.id);
+                                break;
+                            }
+                        }
+                        if (currentCat) break;
                     }
 
                     if (currentCat) {
@@ -157,11 +168,12 @@ const CategoryProductsPage = () => {
         },
         enabled: !!queryKey && hasValidLocation,
         staleTime: 5 * 60 * 1000, // cache for 5 minutes
+        initialPageParam: 1,
     });
 
     const serviceUnavailable = !hasValidLocation || infiniteData?.pages[0]?.error === "NO_SERVICE";
     const products = infiniteData ? infiniteData.pages.flatMap(page => page.items) : [];
-    const observer = React.useRef(); // Kept for reference but not needed if using Virtuoso
+    const observer = React.useRef(null); // Kept for reference but not needed if using Virtuoso
     
     const loadMoreProducts = React.useCallback(() => {
         if (hasMore && !isFetchingMore && !isLoading) {
@@ -193,6 +205,26 @@ const CategoryProductsPage = () => {
                     {category?.name || catId}
                 </h1>
             </header>
+
+            {/* Horizontal Tabs */}
+            {subCategories && subCategories.length > 0 && (
+                <div className="sticky top-14 z-40 bg-white border-b border-gray-100 shadow-sm px-4 py-2.5 flex overflow-x-auto hide-scrollbar gap-3 w-full">
+                    {subCategories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedSubCategory(cat.id)}
+                            className={cn(
+                                "flex items-center px-5 py-2 rounded-xl whitespace-nowrap font-bold text-sm transition-all duration-200",
+                                selectedSubCategory === cat.id
+                                    ? "bg-slate-800 text-white shadow-md shadow-slate-200 scale-[1.02]"
+                                    : "bg-gray-100/80 text-gray-600 hover:bg-gray-200"
+                            )}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {(safeProducts.length === 0 && !isLoading) ? (
                 serviceUnavailable ? (
@@ -231,24 +263,7 @@ const CategoryProductsPage = () => {
                     </div>
                 )
             ) : (
-                <div>
-                    {/* Horizontal Tabs */}
-                    <div className="sticky top-14 z-40 bg-white border-b border-gray-100 shadow-sm px-4 py-2.5 flex overflow-x-auto hide-scrollbar gap-3 w-full">
-                                {subCategories.map((cat) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setSelectedSubCategory(cat.id)}
-                                        className={cn(
-                                            "flex items-center px-5 py-2 rounded-xl whitespace-nowrap font-bold text-sm transition-all duration-200",
-                                            selectedSubCategory === cat.id
-                                                ? "bg-slate-800 text-white shadow-md shadow-slate-200 scale-[1.02]"
-                                                : "bg-gray-100/80 text-gray-600 hover:bg-gray-200"
-                                        )}
-                                    >
-                                        {cat.name}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="w-full">
 
                     {/* Products Grid */}
                     <div className="pt-4 w-full h-[600px] md:h-[800px] flex flex-col">

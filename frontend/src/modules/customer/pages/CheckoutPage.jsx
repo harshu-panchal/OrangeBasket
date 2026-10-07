@@ -72,7 +72,7 @@ import CheckoutOrderSuccess from "./checkout/components/CheckoutOrderSuccess";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
-    if (window.Razorpay) {
+    if (window['Razorpay']) {
       resolve(true);
       return;
     }
@@ -309,7 +309,7 @@ const CheckoutPage = () => {
       };
     }
 
-    const addrLoc = currentAddress?.location;
+    const addrLoc = currentAddress?.['location'];
     const hasAddrLoc =
       addrLoc &&
       typeof addrLoc.lat === "number" &&
@@ -380,7 +380,7 @@ const CheckoutPage = () => {
         e?.message ||
         null;
       const err = new Error(serverMsg || "Could not geocode address");
-      err.__serverMsg = serverMsg;
+      err['__serverMsg'] = serverMsg;
       throw err;
     }
 
@@ -877,7 +877,7 @@ const CheckoutPage = () => {
                 }
               };
 
-              const rzp = new window.Razorpay(options);
+              const rzp = new window['Razorpay'](options);
               
               rzp.on('payment.failed', function (response){
                 setIsPlacingOrder(false);
@@ -1177,7 +1177,10 @@ const CheckoutPage = () => {
       </div>
 
       {/* Sticky Footer — Mobile Only */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-50 rounded-t-3xl">
+      <div 
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 pt-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-50 rounded-t-3xl"
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 24px))" }}
+      >
         <div className="max-w-4xl mx-auto">
           <SlideToPay
             amount={finalAmountToPay}
@@ -1206,12 +1209,12 @@ const CheckoutPage = () => {
                 onClick={() => handleSelectSavedAddress(addr)}
                 disabled={isResolvingAddressCoords}
                 className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
-                  currentAddress.id === addr.id
+                  currentAddress?.['id'] === addr.id
                     ? "border-primary bg-brand-50 shadow-sm"
                     : "border-slate-100 bg-white hover:border-slate-200"
                 }`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-full ${currentAddress.id === addr.id ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-500"}`}>
+                  <div className={`p-2 rounded-full ${currentAddress?.['id'] === addr.id ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-500"}`}>
                     <MapPin size={16} />
                   </div>
                   <span className="font-black text-slate-800 uppercase tracking-widest text-[10px]">{addr.label}</span>

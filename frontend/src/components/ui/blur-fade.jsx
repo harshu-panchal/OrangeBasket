@@ -3,8 +3,8 @@ import { AnimatePresence, motion, useInView } from "framer-motion";
 
 export function BlurFade({
     children,
-    className,
-    variant,
+    className = "",
+    variant = null,
     duration = 0.4,
     delay = 0,
     yOffset = 6,

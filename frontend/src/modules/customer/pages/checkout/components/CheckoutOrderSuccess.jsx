@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
  * CheckoutOrderSuccess
  *
  * Props:
- *   orderId – string order ID (last 6 chars shown)
- *   show    – boolean — controls visibility via AnimatePresence
+ *   orderId â€“ string order ID (last 6 chars shown)
+ *   show    â€“ boolean â€” controls visibility via AnimatePresence
  */
-const CheckoutOrderSuccess = React.memo(function CheckoutOrderSuccess({ orderId, show }) {
+const CheckoutOrderSuccess = function CheckoutOrderSuccess({ orderId, show }) {
   return (
     <AnimatePresence>
       {show && (
@@ -37,10 +37,10 @@ const CheckoutOrderSuccess = React.memo(function CheckoutOrderSuccess({ orderId,
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
             className="text-slate-500 font-medium mb-8">
-            #{orderId?.slice(-6)} — waiting for the seller to accept (60s). If
+            #{orderId?.slice(-6)} â€” waiting for the seller to accept (60s). If
             they don&apos;t, the order will cancel automatically.
             <br />
-            Redirecting to order details…
+            Redirecting to order detailsâ€¦
           </motion.p>
           <motion.div
             initial={{ width: 0 }}
@@ -53,6 +53,7 @@ const CheckoutOrderSuccess = React.memo(function CheckoutOrderSuccess({ orderId,
       )}
     </AnimatePresence>
   );
-});
+};
 
-export default CheckoutOrderSuccess;
+export default React.memo(CheckoutOrderSuccess);
+

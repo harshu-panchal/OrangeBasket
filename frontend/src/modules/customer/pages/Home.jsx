@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import CardBanner from "@/assets/CardBanner.jpg";
 import SectionRenderer from "../components/experience/SectionRenderer";
 import ExperienceBannerCarousel from "../components/experience/ExperienceBannerCarousel";
+import PromotionalBentoBanner from "../components/home/PromotionalBentoBanner";
 import { useLocation } from "../context/LocationContext";
 import { useSettings } from "@core/context/SettingsContext";
 import Lottie from "lottie-react";
@@ -160,6 +161,8 @@ const ALL_CATEGORY = {
 const EMPTY_HERO_CONFIG = {
   banners: { items: [] },
   categoryIds: [],
+  bannerType: "standard",
+  promotionalBanners: { items: [] },
 };
 
 const homePageDataCache = new Map();
@@ -519,8 +522,15 @@ const Home = () => {
         if (heroConfigCache.current[cacheKey]) { setHeroConfig(heroConfigCache.current[cacheKey]); return; }
         let payload = null;
         if (isHeader) { const res = await customerApi.getHeroConfig({ pageType: "header", headerId: activeCategory._id }); if (res.data?.success && res.data?.result) payload = res.data.result; }
-        if (!payload || (payload.banners?.items?.length === 0 && !payload.categoryIds?.length)) { const homeRes = await customerApi.getHeroConfig({ pageType: "home" }); if (homeRes.data?.success && homeRes.data?.result) payload = homeRes.data.result; }
-        const resolved = payload && (payload.banners?.items?.length > 0 || payload.categoryIds?.length > 0) ? { banners: payload.banners || { items: [] }, categoryIds: payload.categoryIds || [] } : { banners: { items: [] }, categoryIds: [] };
+        if (!payload || (payload.banners?.items?.length === 0 && !payload.categoryIds?.length && !payload.promotionalBanners?.items?.length)) { const homeRes = await customerApi.getHeroConfig({ pageType: "home" }); if (homeRes.data?.success && homeRes.data?.result) payload = homeRes.data.result; }
+        const resolved = payload && (payload.banners?.items?.length > 0 || payload.categoryIds?.length > 0 || payload.promotionalBanners?.items?.length > 0)
+          ? {
+              banners: payload.banners || { items: [] },
+              categoryIds: payload.categoryIds || [],
+              bannerType: payload.bannerType || "standard",
+              promotionalBanners: payload.promotionalBanners || { items: [] },
+            }
+          : EMPTY_HERO_CONFIG;
         heroConfigCache.current[cacheKey] = resolved;
         if (cacheKey === "__home__") { const homeCacheKey = getHomePageDataCacheKey(currentLocation); const cachedHomeData = homePageDataCache.get(homeCacheKey); if (cachedHomeData) homePageDataCache.set(homeCacheKey, { ...cachedHomeData, heroConfig: resolved }); }
         setHeroConfig(resolved);
@@ -602,14 +612,24 @@ const Home = () => {
   const isClosed = settings?.storeStatus?.isClosed === true;
 
   return (
-    <div className={cn("min-h-screen bg-white", isClosed ? "pt-[285px] md:pt-[295px]" : "pt-[210px] md:pt-[220px]")}>
-      <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} />
+    <div className={cn("min-h-screen bg-white", isClosed ? "pt-[290px] md:pt-[220px]" : "pt-[250px] md:pt-[180px]")}>
+      <MainLocationHeader categories={displayCategories} activeCategory={activeCategory} onCategorySelect={setActiveCategory} heroConfig={heroConfig} />
 
       <>
         {(() => {
           const isAllCategory = !activeCategory || activeCategory._id === "all" || activeCategory.id === "all";
           const hasVideo = settings?.homeVideoBanner?.isVisible && settings.homeVideoBanner.videoUrl && isAllCategory;
           const hasBanners = heroConfig.banners?.items?.length > 0;
+          const hasPromoBanners = heroConfig.promotionalBanners?.items?.length > 0;
+          
+          if (heroConfig.bannerType === 'promotional' && hasPromoBanners) {
+            return (
+              <motion.div ref={heroRef} className="will-change-transform pt-2 md:pt-3 mt-0" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
+                <PromotionalBentoBanner banners={heroConfig.promotionalBanners} />
+              </motion.div>
+            );
+          }
+
           if (!hasVideo && !hasBanners) return null;
 
           const combinedItems = [];
@@ -625,7 +645,7 @@ const Home = () => {
 
           return (
             <motion.div ref={heroRef} className="block md:hidden will-change-transform pt-2" style={isMobile ? { opacity: 1 } : { opacity, y, scale, pointerEvents }}>
-              <div className="mx-4 mt-12 mb-1 relative overflow-hidden rounded-[24px] shadow-md z-20">
+              <div className="mx-4 mt-4 mb-1 relative overflow-hidden rounded-[24px] shadow-md z-20">
                 <ExperienceBannerCarousel section={{ title: "" }} items={combinedItems} fullWidth edgeToEdge />
               </div>
             </motion.div>

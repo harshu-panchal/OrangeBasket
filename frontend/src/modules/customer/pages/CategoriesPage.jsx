@@ -284,9 +284,6 @@ const CategoriesPage = () => {
                                             <span className="font-bold text-[12px] leading-[1.1] text-slate-800 line-clamp-2 min-h-[26px] flex items-center justify-center">
                                                 {category.name}
                                             </span>
-                                            <span className="text-[10px] font-medium text-slate-500 mt-1 whitespace-nowrap">
-                                                {category.productCount || 0}+ Items
-                                            </span>
                                         </div>
                                         
                                         <div className="mt-2 pb-1">

@@ -56,7 +56,7 @@ function App() {
                         <SettingsProvider>
                             <SeoHead />
                             <ToastProvider>
-                                <Suspense fallback={<Loader fullScreen />}>
+                                <Suspense fallback={<Loader fullScreen className="" />}>
                                     <SupportUnreadProvider>
                                         <LenisScroll />
                                         <SplashScreen>

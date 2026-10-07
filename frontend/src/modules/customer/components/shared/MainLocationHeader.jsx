@@ -159,6 +159,7 @@ const MainLocationHeader = ({
   categories = [],
   activeCategory,
   onCategorySelect,
+  heroConfig,
 }) => {
   const { scrollY } = useScroll();
   const { t, language, setLanguage, languages } = useTranslation();
@@ -385,6 +386,10 @@ const MainLocationHeader = ({
   const weatherEnabled = settings?.weather?.isEnabled !== false;
   const ActiveWeatherIcon = settings?.weather?.icon ? WeatherIconMap[settings.weather.icon] : CloudRain;
 
+  const dynamicBgColor = heroConfig?.bannerType === "promotional" && heroConfig?.promotionalBanners?.bgColor
+    ? heroConfig.promotionalBanners.bgColor
+    : null;
+
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-[200] flex flex-col pointer-events-auto">
@@ -397,9 +402,12 @@ const MainLocationHeader = ({
             borderBottomLeftRadius: headerRoundness,
             borderBottomRightRadius: headerRoundness,
             opacity: bgOpacity,
-            background: "linear-gradient(to bottom, color-mix(in srgb, var(--primary) 8%, white) 0%, white 60%, white 100%)",
+            background: dynamicBgColor || "linear-gradient(to bottom, color-mix(in srgb, var(--primary) 8%, white) 0%, white 60%, white 100%)",
           }}
-          className="px-4 overflow-visible transform-gpu will-change-transform border-b border-slate-100/60 shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
+          className={cn(
+            "px-4 overflow-visible transform-gpu will-change-transform border-none shadow-none",
+            !dynamicBgColor && "border-b border-slate-100/60 shadow-[0_2px_15px_rgba(0,0,0,0.015)]"
+          )}>
           {/* Subtle Glow Overlay */}
           <div className="absolute inset-0 bg-white/8 pointer-events-none" />
 

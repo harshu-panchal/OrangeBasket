@@ -544,6 +544,7 @@ const ContentManager = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title={editingItem ? "Edit Section" : "Create Section"}
+                footer={null}
             >
                 <div className="space-y-6">
                     {/* Display type & status */}
@@ -717,7 +718,7 @@ const ContentManager = () => {
                                         type="number"
                                         min={1}
                                         value={formData.maxCategories ?? ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, maxCategories: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, maxCategories: e.target.value === '' ? 0 : Number(e.target.value) }))}
                                         className="w-full p-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none"
                                     />
                                 </div>
@@ -729,7 +730,7 @@ const ContentManager = () => {
                                         type="number"
                                         min={1}
                                         value={formData.categoryRows ?? ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, categoryRows: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, categoryRows: e.target.value === '' ? 0 : Number(e.target.value) }))}
                                         className="w-full p-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none"
                                     />
                                 </div>
@@ -867,7 +868,7 @@ const ContentManager = () => {
                                     type="number"
                                     min={1}
                                     value={formData.subCategoryRows ?? ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, subCategoryRows: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, subCategoryRows: e.target.value === '' ? 0 : Number(e.target.value) }))}
                                     className="w-full p-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none"
                                 />
                             </div>
@@ -886,7 +887,7 @@ const ContentManager = () => {
                                         min={1}
                                         disabled={formData.singleRowScrollable}
                                         value={formData.productRows ?? ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, productRows: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, productRows: e.target.value === '' ? 0 : Number(e.target.value) }))}
                                         className="w-full p-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none"
                                     />
                                 </div>
@@ -898,7 +899,7 @@ const ContentManager = () => {
                                         type="number"
                                         min={1}
                                         value={formData.productColumns ?? ''}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, productColumns: e.target.value === '' ? '' : Number(e.target.value) }))}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, productColumns: e.target.value === '' ? 0 : Number(e.target.value) }))}
                                         className="w-full p-3 bg-slate-50 rounded-2xl text-xs font-bold border-none outline-none"
                                     />
                                 </div>

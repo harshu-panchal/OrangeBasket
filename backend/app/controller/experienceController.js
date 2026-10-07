@@ -452,8 +452,10 @@ export const getPublicHeroConfig = async (req, res) => {
       ? {
           banners: config.banners || { items: [] },
           categoryIds: config.categoryIds || [],
+          bannerType: config.bannerType || "standard",
+          promotionalBanners: config.promotionalBanners || { items: [] },
         }
-      : { banners: { items: [] }, categoryIds: [] };
+      : { banners: { items: [] }, categoryIds: [], bannerType: "standard", promotionalBanners: { items: [] } };
 
     return handleResponse(res, 200, "Hero config fetched", payload);
   } catch (error) {
@@ -482,7 +484,7 @@ export const getAdminHeroConfig = async (req, res) => {
       res,
       200,
       "Hero config fetched",
-      config || { banners: { items: [] }, categoryIds: [] }
+      config || { banners: { items: [] }, categoryIds: [], bannerType: "standard", promotionalBanners: { items: [] } }
     );
   } catch (error) {
     return handleResponse(res, 500, error.message);
@@ -491,7 +493,7 @@ export const getAdminHeroConfig = async (req, res) => {
 
 export const upsertHeroConfig = async (req, res) => {
   try {
-    const { pageType, headerId, banners, categoryIds } = req.body;
+    const { pageType, headerId, banners, categoryIds, bannerType, promotionalBanners } = req.body;
 
     if (!["home", "header", "monthly_basket"].includes(pageType)) {
       return handleResponse(res, 400, "Invalid pageType");
@@ -521,6 +523,28 @@ export const upsertHeroConfig = async (req, res) => {
         }))
       : [];
 
+    const promoBannerItems = Array.isArray(promotionalBanners?.items)
+      ? promotionalBanners.items.map((b) => ({
+          imageUrl: b.imageUrl || "",
+          title: b.title || "",
+          subtitle: b.subtitle || "",
+          discountPrefix: b.discountPrefix || "",
+          discountBadge: b.discountBadge || "",
+          originalPrice: b.originalPrice,
+          offerPrice: b.offerPrice,
+          ctaText: b.ctaText || "",
+          icon: b.icon || "",
+          cardSize: b.cardSize || "square",
+          bgColor: b.bgColor || "",
+          textColor: b.textColor || "",
+          prefixBgColor: b.prefixBgColor || "",
+          badgeBgColor: b.badgeBgColor || "",
+          linkType: b.linkType || "none",
+          linkValue: b.linkValue || "",
+          status: b.status || "active",
+        }))
+      : [];
+
     const ids = Array.isArray(categoryIds) ? categoryIds.filter(Boolean) : [];
 
     const filter = {
@@ -532,6 +556,13 @@ export const upsertHeroConfig = async (req, res) => {
       banners: { items: bannerItems },
       categoryIds: ids,
     };
+    if (bannerType !== undefined) update.bannerType = bannerType;
+    if (promotionalBanners) {
+      update.promotionalBanners = { 
+        items: promoBannerItems,
+        bgColor: promotionalBanners.bgColor || "",
+      };
+    }
 
     const config = await HeroConfig.findOneAndUpdate(
       filter,

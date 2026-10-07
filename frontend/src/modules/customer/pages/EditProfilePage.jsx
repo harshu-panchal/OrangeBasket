@@ -38,8 +38,8 @@ const EditProfilePage = () => {
 
     const handleImageClick = async () => {
         try {
-            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
-                const result = await window.flutter_inappwebview.callHandler('openCamera');
+            if (window['flutter_inappwebview'] && window['flutter_inappwebview'].callHandler) {
+                const result = await window['flutter_inappwebview'].callHandler('openCamera');
                 if (result && result.success) {
                     const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
                     setPreviewImage(fileUrl);
@@ -53,7 +53,7 @@ const EditProfilePage = () => {
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.onchange = (e) => {
-                    const file = e.target.files[0];
+                    const file = e.target['files'][0];
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = (event) => {
@@ -73,8 +73,8 @@ const EditProfilePage = () => {
 
     const handleGalleryClick = async () => {
         try {
-            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
-                const result = await window.flutter_inappwebview.callHandler('openGallery');
+            if (window['flutter_inappwebview'] && window['flutter_inappwebview'].callHandler) {
+                const result = await window['flutter_inappwebview'].callHandler('openGallery');
                 if (result && result.success) {
                     const fileUrl = `data:${result.mimeType};base64,${result.base64}`;
                     setPreviewImage(fileUrl);
@@ -88,7 +88,7 @@ const EditProfilePage = () => {
                 input.type = 'file';
                 input.accept = 'image/*';
                 input.onchange = (e) => {
-                    const file = e.target.files[0];
+                    const file = e.target['files'][0];
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = (event) => {
@@ -232,7 +232,7 @@ const EditProfilePage = () => {
                                     name="bio"
                                     value={formData.bio}
                                     onChange={handleChange}
-                                    rows="3"
+                                    rows={3}
                                     className="w-full bg-transparent outline-none text-slate-800 font-medium text-sm resize-none"
                                     placeholder="Tell us about yourself..."
                                 ></textarea>
