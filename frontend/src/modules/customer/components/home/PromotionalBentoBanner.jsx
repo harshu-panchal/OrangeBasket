@@ -187,13 +187,25 @@ export default function PromotionalBentoBanner({ banners }) {
     }
   };
 
+  const getGradientStyle = (color) => {
+    if (!color) return undefined;
+    const clean = color.startsWith("#") ? color.slice(1) : color;
+    if (clean.length === 6) {
+      return `linear-gradient(180deg, #${clean} 0%, #${clean} 55%, #${clean}d0 78%, #${clean}60 92%, rgba(255,255,255,0) 100%)`;
+    }
+    return `linear-gradient(180deg, ${color} 0%, ${color} 60%, rgba(255,255,255,0) 100%)`;
+  };
+
   return (
-    <div className="px-4 pb-8 pt-6 md:pt-8 relative mb-8">
+    <div className="px-4 pb-12 pt-6 md:pt-8 relative mb-8">
       {bgColor ? (
-        <div 
-          className="absolute -top-72 inset-x-0 bottom-0 pointer-events-none z-0" 
-          style={{ background: `linear-gradient(180deg, ${bgColor} 0%, ${bgColor} 50%, rgba(255,255,255,0) 100%)` }} 
-        />
+        <>
+          <div 
+            className="absolute -top-72 inset-x-0 -bottom-32 pointer-events-none z-0" 
+            style={{ background: getGradientStyle(bgColor) }} 
+          />
+          <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[85%] h-[75%] bg-white/30 blur-3xl rounded-full pointer-events-none z-0" />
+        </>
       ) : (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-[80%] h-24 bg-[#faebd7]/30 blur-2xl rounded-full pointer-events-none" />
       )}
