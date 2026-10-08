@@ -86,6 +86,7 @@ const Hero = () => {
                                 <LazyImage
                                     src={banner.image}
                                     alt={banner.title}
+                                    priority={index === 0}
                                     className={`w-full h-full object-cover transition-transform duration-[5000ms] ${index === current ? 'scale-110' : 'scale-100'}`}
                                 />
 

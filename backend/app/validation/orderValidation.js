@@ -36,6 +36,7 @@ export const updateOrderStatusSchema = Joi.object({
       "out_for_delivery",
       "delivered",
       "cancelled",
+      "returned",
     )
     .required(),
   reason: trimmedString.max(500).optional(),

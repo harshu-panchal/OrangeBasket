@@ -432,6 +432,7 @@ const OrdersList = () => {
                                                 <option value="out_for_delivery">Out for Delivery</option>
                                                 <option value="delivered">Delivered</option>
                                                 <option value="cancelled">Cancelled</option>
+                                                <option value="returned">Returned</option>
                                             </select>
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none opacity-60" />
                                         </div>
