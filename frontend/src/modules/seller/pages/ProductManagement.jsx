@@ -49,12 +49,19 @@ const ProductManagement = () => {
   const fetchProducts = async (requestedPage = 1) => {
     setIsLoading(true);
     try {
-      const res = await sellerApi.getProducts({
+      const params = {
         page: requestedPage,
         limit: pageSize,
         sort: sortBy,
         approvalStatus: filterApproval,
-      });
+      };
+      if (searchTerm) params.search = searchTerm;
+      if (filterCategory !== "all") params.category = filterCategory;
+      if (filterStatus !== "All") params.status = filterStatus;
+      if (priceMin) params.minPrice = priceMin;
+      if (priceMax) params.maxPrice = priceMax;
+
+      const res = await sellerApi.getProducts(params);
       if (res.data.success) {
         // Backend returns handleResponse(..., { items, page, limit, total, totalPages })
         const payload = res.data.result || {};

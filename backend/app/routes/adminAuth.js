@@ -49,6 +49,8 @@ import {
     getDeliverySettingsController,
     processAdminFinancePayoutsController,
     updateDeliverySettingsController,
+    getAdminFinanceOutstandingBalances,
+    settleOutstandingBalance,
 } from "../controller/adminFinanceController.js";
 import {
     getSOSAlerts,
@@ -129,6 +131,18 @@ router.post(
     verifyToken,
     allowRoles("admin"),
     processAdminFinancePayoutsController,
+);
+router.get(
+    "/finance/outstanding-balances",
+    verifyToken,
+    allowRoles("admin"),
+    getAdminFinanceOutstandingBalances,
+);
+router.post(
+    "/finance/settle-balance",
+    verifyToken,
+    allowRoles("admin"),
+    settleOutstandingBalance,
 );
 router.get(
     "/finance/export-statement",

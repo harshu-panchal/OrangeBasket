@@ -42,6 +42,7 @@ const Pagination = ({
                     </select>
                 )}
                 <button
+                    type="button"
                     disabled={page <= 1 || loading}
                     onClick={() => onPageChange(page - 1)}
                     className={cn(
@@ -57,6 +58,7 @@ const Pagination = ({
                     Page {page} {totalPages > 0 && `of ${totalPages}`}
                 </span>
                 <button
+                    type="button"
                     disabled={page >= totalPages || loading}
                     onClick={() => onPageChange(page + 1)}
                     className={cn(

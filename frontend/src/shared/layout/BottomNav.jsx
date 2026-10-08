@@ -24,6 +24,11 @@ const BottomNav = ({ navItems }) => {
         { label: 'Orders', path: '/admin/orders/all', icon: ClipboardList },
         { label: 'Products', path: '/admin/products', icon: Box },
         { label: 'Wallet', path: '/admin/wallet', icon: Wallet },
+    ] : role === 'warehouse' ? [
+        { label: 'Dashboard', path: '/warehouse', icon: LayoutDashboard, end: true },
+        { label: 'Orders', path: '/warehouse/orders', icon: ClipboardList },
+        { label: 'Products', path: '/warehouse/products', icon: Box },
+        { label: 'Earnings', path: '/warehouse/earnings', icon: Wallet },
     ] : [
         { label: 'Dashboard', path: '/seller', icon: LayoutDashboard, end: true },
         { label: 'Orders', path: '/seller/orders', icon: ClipboardList },

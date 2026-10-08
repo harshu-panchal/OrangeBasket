@@ -2,8 +2,9 @@ import Payout from "../models/payout.js";
 import Wallet from "../models/wallet.js";
 import Seller from "../models/seller.js";
 import Delivery from "../models/delivery.js";
+import Warehouse from "../models/warehouse.js";
 import handleResponse from "../utils/helper.js";
-import { getAdminFinanceSummary } from "../services/finance/walletService.js";
+import { getAdminFinanceSummary, debitWallet } from "../services/finance/walletService.js";
 import { getLedgerEntries } from "../services/finance/ledgerService.js";
 import { bulkProcessPayouts } from "../services/finance/payoutService.js";
 import { exportFinanceStatement } from "../services/finance/statementService.js";
@@ -137,6 +138,117 @@ export const processAdminFinancePayoutsController = async (req, res) => {
     return handleResponse(res, 200, "Payout processing completed", result);
   } catch (error) {
     return handleResponse(res, 500, error.message);
+  }
+};
+
+export const getAdminFinanceOutstandingBalances = async (req, res) => {
+  try {
+    const { role, page = 1, limit = 20 } = req.query;
+
+    const query = { availableBalance: { $gt: 0 } };
+
+    if (role && role !== "all") {
+      const roleMap = {
+        seller: "SELLER",
+        delivery: "DELIVERY_PARTNER",
+        warehouse: "WAREHOUSE",
+      };
+      if (roleMap[role]) {
+        query.ownerType = roleMap[role];
+      }
+    } else {
+      query.ownerType = { $in: ["SELLER", "DELIVERY_PARTNER", "WAREHOUSE"] };
+    }
+
+    const safePage = Math.max(parseInt(page, 10) || 1, 1);
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [wallets, total] = await Promise.all([
+      Wallet.find(query).sort({ availableBalance: -1 }).skip(skip).limit(safeLimit).lean(),
+      Wallet.countDocuments(query),
+    ]);
+
+    const sellerIds = [];
+    const deliveryIds = [];
+    const warehouseIds = [];
+
+    wallets.forEach((w) => {
+      if (w.ownerType === "SELLER") sellerIds.push(w.ownerId);
+      else if (w.ownerType === "DELIVERY_PARTNER") deliveryIds.push(w.ownerId);
+      else if (w.ownerType === "WAREHOUSE") warehouseIds.push(w.ownerId);
+    });
+
+    const [sellers, deliveries, warehouses] = await Promise.all([
+      Seller.find({ _id: { $in: sellerIds } }).select("name phone shopName email bankDetails").lean(),
+      Delivery.find({ _id: { $in: deliveryIds } }).select("name phone email vehicleType bankDetails").lean(),
+      Warehouse.find({ _id: { $in: warehouseIds } }).select("name phone email warehouseName bankDetails").lean(),
+    ]);
+
+    const sellerMap = new Map(sellers.map((s) => [String(s._id), s]));
+    const deliveryMap = new Map(deliveries.map((d) => [String(d._id), d]));
+    const warehouseMap = new Map(warehouses.map((w) => [String(w._id), w]));
+
+    const items = wallets.map((w) => {
+      let userDetails = null;
+      if (w.ownerType === "SELLER") userDetails = sellerMap.get(String(w.ownerId));
+      else if (w.ownerType === "DELIVERY_PARTNER") userDetails = deliveryMap.get(String(w.ownerId));
+      else if (w.ownerType === "WAREHOUSE") userDetails = warehouseMap.get(String(w.ownerId));
+
+      return {
+        walletId: w._id,
+        ownerId: w.ownerId,
+        ownerType: w.ownerType,
+        availableBalance: w.availableBalance,
+        pendingBalance: w.pendingBalance,
+        userDetails: userDetails || { name: "Unknown", phone: "N/A" },
+      };
+    });
+
+    const summaryAgg = await Wallet.aggregate([
+      { $match: { ownerType: { $in: ["SELLER", "DELIVERY_PARTNER", "WAREHOUSE"] } } },
+      { $group: { _id: "$ownerType", totalAvailable: { $sum: "$availableBalance" } } },
+    ]);
+    
+    const summary = { SELLER: 0, DELIVERY_PARTNER: 0, WAREHOUSE: 0, TOTAL: 0 };
+    summaryAgg.forEach((s) => {
+      summary[s._id] = s.totalAvailable;
+      summary.TOTAL += s.totalAvailable;
+    });
+
+    return handleResponse(res, 200, "Outstanding balances fetched", {
+      items,
+      summary,
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.ceil(total / safeLimit) || 1,
+    });
+  } catch (error) {
+    return handleResponse(res, 500, error.message);
+  }
+};
+
+export const settleOutstandingBalance = async (req, res) => {
+  try {
+    const { ownerType, ownerId, amount, remarks } = req.body;
+    
+    if (!ownerType || !ownerId || !amount) {
+      return handleResponse(res, 400, "Missing required fields");
+    }
+
+    const { wallet, ledgerEntry } = await debitWallet({
+      ownerType,
+      ownerId,
+      amount: Number(amount),
+      bucket: "available",
+      ledgerType: "WITHDRAWAL",
+      ledgerDescription: remarks || "Manual Admin Settlement",
+    });
+
+    return handleResponse(res, 200, "Balance settled successfully", { wallet, ledgerEntry });
+  } catch (error) {
+    return handleResponse(res, 400, error.message);
   }
 };
 

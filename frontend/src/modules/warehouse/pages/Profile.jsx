@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -13,6 +13,7 @@ import {
   Globe,
   MapPin,
   CheckCircle,
+  Building,
 } from "lucide-react";
 import { warehouseApi } from "../services/warehouseApi";
 import { toast } from "sonner";
@@ -35,6 +36,13 @@ const SellerProfile = () => {
     lng: null,
     radius: 5,
     address: "",
+    bankDetails: {
+      accountName: "",
+      accountNumber: "",
+      ifscCode: "",
+      bankName: "",
+      upiId: "",
+    },
   });
 
   useEffect(() => {
@@ -55,6 +63,13 @@ const SellerProfile = () => {
         lng: data.location?.coordinates[0] || null,
         radius: data.serviceRadius || 5,
         address: data.address || "",
+        bankDetails: data.bankDetails || {
+          accountName: "",
+          accountNumber: "",
+          ifscCode: "",
+          bankName: "",
+          upiId: "",
+        },
       });
     } catch (error) {
       toast.error("Failed to fetch profile");
@@ -89,6 +104,17 @@ const SellerProfile = () => {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+  };
+
+  const handleBankChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      bankDetails: {
+        ...prev.bankDetails,
+        [name]: value
+      }
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -314,6 +340,118 @@ const SellerProfile = () => {
                       onChange={handleChange}
                       disabled={!isEditing}
                       className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70"
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </Card>
+
+          {/* Bank Details Card */}
+          <Card className="p-8 border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-lg">
+            <div className="flex justify-between items-center mb-8 border-b border-slate-50 pb-4">
+              <h3 className="text-xl font-black text-slate-900">
+                Bank & Payment Details
+              </h3>
+            </div>
+            <form className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-600 ml-1">
+                    Account Holder Name
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors">
+                      <User size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      name="accountName"
+                      value={formData.bankDetails?.accountName || ""}
+                      onChange={handleBankChange}
+                      disabled={!isEditing}
+                      className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70"
+                      placeholder="Name on Bank Account"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-600 ml-1">
+                    Account Number
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors">
+                      <Building size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      name="accountNumber"
+                      value={formData.bankDetails?.accountNumber || ""}
+                      onChange={handleBankChange}
+                      disabled={!isEditing}
+                      className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70"
+                      placeholder="Bank Account Number"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-600 ml-1">
+                    IFSC Code
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors">
+                      <Shield size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      name="ifscCode"
+                      value={formData.bankDetails?.ifscCode || ""}
+                      onChange={handleBankChange}
+                      disabled={!isEditing}
+                      className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70 uppercase"
+                      placeholder="Bank IFSC Code"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-600 ml-1">
+                    Bank Name
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors">
+                      <Building size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      name="bankName"
+                      value={formData.bankDetails?.bankName || ""}
+                      onChange={handleBankChange}
+                      disabled={!isEditing}
+                      className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70"
+                      placeholder="e.g. State Bank of India"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3 md:col-span-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-600 ml-1">
+                    UPI ID (Optional)
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-900 transition-colors">
+                      <Phone size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      name="upiId"
+                      value={formData.bankDetails?.upiId || ""}
+                      onChange={handleBankChange}
+                      disabled={!isEditing}
+                      className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-lg text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-slate-100 transition-all disabled:opacity-70"
+                      placeholder="e.g. 9876543210@upi"
                     />
                   </div>
                 </div>

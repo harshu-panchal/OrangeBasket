@@ -72,7 +72,9 @@ export const signupWarehouse = async (req, res) => {
             emailVerificationToken, phoneVerificationToken,
             warehouseName, shopName, category, description,
             address, locality, pincode, city, state,
-            documents, lat, lng, radius
+            documents, lat, lng, radius,
+            bankAccountName, bankAccountNumber, bankIfscCode,
+            bankName: bankBankName, bankUpiId
         } = req.body || {};
 
         const resolvedWarehouseName = warehouseName || shopName;
@@ -144,6 +146,13 @@ export const signupWarehouse = async (req, res) => {
             emailVerified: true,
             phoneVerified: true,
             isActive: false,
+            bankDetails: {
+                accountName: bankAccountName || "",
+                accountNumber: bankAccountNumber || "",
+                ifscCode: bankIfscCode || "",
+                bankName: bankBankName || "",
+                upiId: bankUpiId || ""
+            }
         };
 
         if (parsedLat !== undefined && parsedLng !== undefined) {

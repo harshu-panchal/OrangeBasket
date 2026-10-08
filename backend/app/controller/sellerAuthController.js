@@ -99,7 +99,12 @@ export const signupSeller = async (req, res) => {
             documents,
             lat,
             lng,
-            radius
+            radius,
+            bankAccountName,
+            bankAccountNumber,
+            bankIfscCode,
+            bankName: bankBankName, // Alias bankName to avoid collision with owner name
+            bankUpiId
         } = req.body || {};
 
         // 1. Handle file uploads if they exist in req.files (multipart form)
@@ -200,6 +205,13 @@ export const signupSeller = async (req, res) => {
             emailVerified: true,
             phoneVerified: true,
             isActive: false,
+            bankDetails: {
+                accountName: bankAccountName || "",
+                accountNumber: bankAccountNumber || "",
+                ifscCode: bankIfscCode || "",
+                bankName: bankBankName || "",
+                upiId: bankUpiId || ""
+            }
         };
 
         if (parsedLat !== undefined && parsedLng !== undefined) {

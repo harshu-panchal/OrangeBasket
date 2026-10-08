@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Card from "@shared/components/ui/Card";
 import Badge from "@shared/components/ui/Badge";
 import {
@@ -79,13 +79,13 @@ const DeliveryTracking = () => {
               name: order.deliveryBoy.name,
               phone: order.deliveryBoy.phone,
               avatar: order.deliveryBoy.name?.charAt(0) || "?",
-              image: order.deliveryBoy.image || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+              image: order.deliveryBoy.profileImage || order.deliveryBoy.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(order.deliveryBoy.name || 'DB')}&background=f8fafc&color=0f172a`,
               rating: order.deliveryBoy.rating || 4.5,
             } : {
               name: "Not Assigned",
               phone: "N/A",
               avatar: "?",
-              image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+              image: "https://ui-avatars.com/api/?name=NA&background=f1f5f9&color=94a3b8",
               rating: 0,
             },
             location: order.status === 'delivered' && order.updatedAt

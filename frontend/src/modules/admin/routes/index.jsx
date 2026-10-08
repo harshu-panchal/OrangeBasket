@@ -61,6 +61,7 @@ const AdminWallet = React.lazy(() => import("../pages/AdminWallet"));
 const WithdrawalRequests = React.lazy(
   () => import("../pages/WithdrawalRequests"),
 );
+const PayoutsManagement = React.lazy(() => import("../pages/PayoutsManagement"));
 const SellerTransactions = React.lazy(
   () => import("../pages/SellerTransactions"),
 );
@@ -199,6 +200,12 @@ const navItems = [
     color: "cyan",
   },
   {
+    label: "Settlements & Dues",
+    path: "/admin/payouts",
+    icon: Receipt,
+    color: "indigo",
+  },
+  {
     label: "Seller Payments",
     path: "/admin/seller-transactions",
     icon: Receipt,
@@ -321,6 +328,7 @@ const AdminRoutes = () => {
         <Route path="/sos-alerts" element={<SOSAlerts />} />
         <Route path="/wallet" element={<AdminWallet />} />
         <Route path="/withdrawals" element={<WithdrawalRequests />} />
+        <Route path="/payouts" element={<PayoutsManagement />} />
         <Route path="/seller-transactions" element={<SellerTransactions />} />
         <Route path="/cash-collection" element={<CashCollection />} />
         <Route path="/employees" element={<EmployeeManagement />} />

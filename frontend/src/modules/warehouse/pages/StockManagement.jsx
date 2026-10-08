@@ -112,21 +112,17 @@ const StockManagement = () => {
 
     useEffect(() => {
         if (activeView === 'inventory') {
-            let stockStatusParam;
-            if (filterStatus === 'In Stock') stockStatusParam = 'in';
-            else if (filterStatus === 'Out of Stock') stockStatusParam = 'out';
-            else stockStatusParam = undefined; // All / Low Stock -> no backend filter
-            fetchInventory(false, stockStatusParam);
+            fetchInventory(false); // Fetch ALL inventory once to keep stats accurate
         } else {
             fetchHistory();
         }
-    }, [activeView, filterStatus]);
+    }, [activeView]);
 
     const stats = useMemo(() => [
-        { label: 'Total Inventory', value: inventory.reduce((acc, item) => acc + item.stock, 0), icon: HiOutlineCube, color: 'text-brand-600', bg: 'bg-brand-50', status: 'All' },
-        { label: 'Low Stock Items', value: inventory.filter(i => i.stock > 0 && i.stock <= i.threshold).length, icon: HiOutlineExclamationTriangle, color: 'text-amber-600', bg: 'bg-amber-50', status: 'Low Stock' },
-        { label: 'Out of Stock', value: inventory.filter(i => i.stock === 0).length, icon: HiOutlineArchiveBoxXMark, color: 'text-rose-600', bg: 'bg-rose-50', status: 'Out of Stock' },
-        { label: 'Stock Valuation', value: `₹${inventory.reduce((acc, item) => acc + (item.stock * item.price), 0).toLocaleString()}`, icon: HiOutlineArrowsUpDown, color: 'text-brand-600', bg: 'bg-brand-50', status: 'In Stock' }
+        { label: 'Total Inventory', value: inventory.reduce((acc, item) => acc + (Number(item.stock) || 0), 0), icon: HiOutlineCube, color: 'text-brand-600', bg: 'bg-brand-50', status: 'All' },
+        { label: 'Low Stock Items', value: inventory.filter(i => (Number(i.stock) || 0) > 0 && (Number(i.stock) || 0) <= (Number(i.threshold) || 5)).length, icon: HiOutlineExclamationTriangle, color: 'text-amber-600', bg: 'bg-amber-50', status: 'Low Stock' },
+        { label: 'Out of Stock', value: inventory.filter(i => (Number(i.stock) || 0) === 0).length, icon: HiOutlineArchiveBoxXMark, color: 'text-rose-600', bg: 'bg-rose-50', status: 'Out of Stock' },
+        { label: 'Stock Valuation', value: `₹${inventory.reduce((acc, item) => acc + ((Number(item.stock) || 0) * (Number(item.price) || 0)), 0).toLocaleString()}`, icon: HiOutlineArrowsUpDown, color: 'text-brand-600', bg: 'bg-brand-50', status: 'In Stock' }
     ], [inventory]);
 
     const filteredInventory = useMemo(() => {
@@ -418,10 +414,14 @@ const StockManagement = () => {
                             totalPages={Math.ceil(filteredInventory.length / pageSize) || 1}
                             total={filteredInventory.length}
                             pageSize={pageSize}
-                            onPageChange={(p) => setPage(p)}
+                            onPageChange={(p) => {
+                                setPage(p);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
                             onPageSizeChange={(newSize) => {
                                 setPageSize(newSize);
                                 setPage(1);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             loading={isLoading}
                         />

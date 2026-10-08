@@ -40,6 +40,7 @@ const SidebarItem = ({
   isHovered,
   onMouseEnter,
   onMouseLeave,
+  onClose,
 }) => {
   const location = useLocation();
   const badgeCount = Number(item?.badgeCount || 0);
@@ -125,6 +126,7 @@ const SidebarItem = ({
                 key={child.path}
                 to={child.path}
                 end={child.end !== undefined ? child.end : false}
+                onClick={onClose}
                 className={({ isActive }) =>
                   cn(
                     "block text-xs py-1.5 px-2.5 rounded-lg transition-all duration-300 relative",
@@ -162,6 +164,7 @@ const SidebarItem = ({
       end={item.end !== undefined ? item.end : false}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={onClose}
       className={({ isActive }) =>
         cn(
           "flex items-center space-x-2.5 rounded-lg px-3 py-2.5 transition-all duration-300 group relative overflow-hidden",
@@ -277,6 +280,7 @@ const SidebarContent = ({ items, title, onClose, openMenu, handleToggle, hovered
                 setHoveredIdx(idx);
               }}
               onMouseLeave={() => { }} // Handle in nav container
+              onClose={onClose}
             />
           ))}
         </AnimatePresence>
@@ -336,7 +340,7 @@ const Sidebar = ({ items, title, isOpen, onClose }) => {
       {/* Desktop Sidebar */}
       <aside className={cn(
         "fixed left-0 inset-y-0 w-72 bg-[#0a0c10] text-gray-400 border-r border-white/5 shadow-[20px_0_60px_rgba(0,0,0,0.4)] md:flex flex-col z-50 transition-all duration-300",
-        (role === "admin" || role === "seller") ? "hidden md:flex" : "flex",
+        "hidden md:flex"
       )}>
         <SidebarContent {...commonProps} />
       </aside>

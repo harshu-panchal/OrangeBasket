@@ -112,7 +112,7 @@ export const getWarehouseProfile = async (req, res) => {
 ================================ */
 export const updateWarehouseProfile = async (req, res) => {
   try {
-    const { name, warehouseName, shopName, phone, address, locality, pincode, city, state, lat, lng, radius } = req.body;
+    const { name, warehouseName, shopName, phone, address, locality, pincode, city, state, lat, lng, radius, bankDetails } = req.body;
 
     const warehouse = await Warehouse.findById(req.user.id);
     if (!warehouse) {
@@ -128,6 +128,13 @@ export const updateWarehouseProfile = async (req, res) => {
     if (pincode !== undefined) warehouse.pincode = pincode;
     if (city !== undefined) warehouse.city = city;
     if (state !== undefined) warehouse.state = state;
+
+    if (bankDetails !== undefined) {
+      warehouse.bankDetails = {
+        ...warehouse.bankDetails,
+        ...bankDetails,
+      };
+    }
 
     if (lat !== undefined && lng !== undefined) {
       if (lat < -90 || lat > 90) return handleResponse(res, 400, "Invalid latitude");

@@ -232,7 +232,10 @@ const StockManagement = () => {
                                             placeholder="Search by product name or SKU..."
                                             className="pl-10 pr-4 py-2.5 rounded-2xl border-none ring-1 ring-slate-200 bg-white focus:ring-2 focus:ring-primary/20 transition-all text-xs font-semibold"
                                             value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value);
+                                                setPage(1);
+                                            }}
                                         />
                                     </div>
                                     <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-sm">

@@ -173,13 +173,13 @@ const Topbar = ({ onMenuClick }) => {
             <div className="flex items-center flex-1 mr-4 overflow-hidden">
                 <button
                     onClick={onMenuClick}
-                    className="p-2.5 mr-3 bg-gray-100/80 hover:bg-white rounded-xl text-gray-600 hover:text-primary transition-all duration-300 md:hidden border border-transparent hover:border-primary/20 shadow-sm"
+                    className="flex-shrink-0 p-2.5 mr-3 bg-gray-100/80 hover:bg-white rounded-xl text-gray-600 hover:text-primary transition-all duration-300 md:hidden border border-transparent hover:border-primary/20 shadow-sm"
                 >
                     <HiOutlineMenu className="h-5 w-5" />
                 </button>
 
                 {/* Mobile Logo */}
-                <div className="flex items-center space-x-2 mr-4 md:hidden">
+                <div className="flex-shrink-0 flex items-center space-x-2 mr-4 md:hidden">
                     {logoUrl ? (
                         <div className="h-8 w-8 rounded-lg overflow-hidden shadow-md shadow-primary/10 border border-gray-100">
                             <img src={logoUrl} alt={appName} className="h-full w-full object-contain" />
@@ -206,7 +206,7 @@ const Topbar = ({ onMenuClick }) => {
                 )}
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
                 <div className="relative" ref={notificationRef}>
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
@@ -233,7 +233,7 @@ const Topbar = ({ onMenuClick }) => {
                     </AnimatePresence>
                 </div>
 
-                <div className="h-8 w-px bg-gray-100 mx-1"></div>
+                <div className="hidden sm:block h-8 w-px bg-gray-100 mx-1"></div>
                 <button
                     onClick={() => {
                         if (location.pathname.startsWith('/admin')) {
@@ -248,13 +248,13 @@ const Topbar = ({ onMenuClick }) => {
                             navigate('/profile');
                         }
                     }}
-                    className="flex items-center space-x-2.5 p-1 pr-3 hover:bg-gray-50 rounded-xl transition-all duration-300 group ring-1 ring-transparent hover:ring-gray-100 shadow-sm hover:shadow-md"
+                    className="flex items-center space-x-2.5 p-1 pr-1 sm:pr-3 hover:bg-gray-50 rounded-xl transition-all duration-300 group ring-1 ring-transparent hover:ring-gray-100 shadow-sm hover:shadow-md"
                 >
-                    <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:scale-105 transition-transform">
+                    <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:scale-105 transition-transform">
                         {user?.name?.[0] || 'A'}
                     </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-900 leading-tight">{user?.name || 'Demo User'}</p>
+                    <div className="hidden sm:block text-left">
+                        <p className="text-xs font-bold text-gray-900 leading-tight truncate max-w-[120px]">{user?.name || 'Demo User'}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{user?.role || 'Member'}</p>
                     </div>
                 </button>

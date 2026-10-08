@@ -33,6 +33,9 @@ export const adjustStock = async (req, res) => {
 
         // 1. Update Product Stock
         product.stock = finalStock;
+        if (product.variants && product.variants.length > 0) {
+            product.variants[0].stock = finalStock;
+        }
         await product.save();
 
         // 2. Create History Entry

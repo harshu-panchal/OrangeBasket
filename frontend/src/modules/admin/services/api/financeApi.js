@@ -20,6 +20,10 @@ export const adminFinanceApi = {
             params,
             responseType: 'blob',
         }),
+    getOutstandingBalances: (params) =>
+        axiosInstance.get('/admin/finance/outstanding-balances', { params }),
+    settleOutstandingBalance: (data) =>
+        axiosInstance.post('/admin/finance/settle-balance', data),
 
     // Delivery payouts / funds
     getDeliveryTransactions: (params) =>

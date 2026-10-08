@@ -75,6 +75,14 @@ const sellerSchema = new mongoose.Schema(
       other: { type: String, trim: true },
     },
 
+    bankDetails: {
+      accountName: { type: String, trim: true },
+      accountNumber: { type: String, trim: true },
+      ifscCode: { type: String, trim: true },
+      bankName: { type: String, trim: true },
+      upiId: { type: String, trim: true },
+    },
+
     role: {
       type: String,
       default: "seller",
