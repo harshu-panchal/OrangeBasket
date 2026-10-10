@@ -76,8 +76,14 @@ const PayoutsManagement = () => {
 
     const handleSettleSubmit = async (e) => {
         e.preventDefault();
+        if (!selectedUser?.hasPendingRequest || !selectedUser?.pendingBalance) {
+            return toast.error("Settlement cannot be processed without an active withdrawal request from the partner.");
+        }
         if (!settleAmount || Number(settleAmount) <= 0) {
-            return toast.error("Please enter a valid amount");
+            return toast.error("Please enter a valid positive amount");
+        }
+        if (Number(settleAmount) > selectedUser.pendingBalance) {
+            return toast.error(`Settlement amount cannot exceed requested withdrawal amount (₹${selectedUser.pendingBalance})`);
         }
         if (Number(settleAmount) > selectedUser.availableBalance) {
             return toast.error("Amount cannot exceed the available balance");
@@ -92,7 +98,7 @@ const PayoutsManagement = () => {
                 remarks
             });
             if (res.data.success) {
-                toast.success('Balance settled successfully');
+                toast.success('Withdrawal request settled successfully');
                 setIsSettleModalOpen(false);
                 setSettleAmount('');
                 setRemarks('');
@@ -141,35 +147,35 @@ const PayoutsManagement = () => {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <SummaryCard
-                    title="Total Outstanding"
+                    title="Total Available Dues"
                     amount={data.summary?.TOTAL}
                     icon={AlertCircle}
                     gradientClass="bg-gradient-to-br from-red-500 to-rose-600"
                 />
                 <SummaryCard
-                    title="Seller Dues"
-                    amount={data.summary?.SELLER}
+                    title="Total Requested Dues"
+                    amount={data.summary?.TOTAL_REQUESTED}
+                    icon={IndianRupee}
+                    gradientClass="bg-gradient-to-br from-amber-500 to-orange-600"
+                />
+                <SummaryCard
+                    title="Seller Requested Dues"
+                    amount={data.summary?.REQUESTED_SELLER}
                     icon={Store}
                     gradientClass="bg-gradient-to-br from-blue-500 to-indigo-600"
                 />
                 <SummaryCard
-                    title="Delivery Dues"
-                    amount={data.summary?.DELIVERY_PARTNER}
+                    title="Rider & WH Requested Dues"
+                    amount={(data.summary?.REQUESTED_DELIVERY || 0) + (data.summary?.REQUESTED_WAREHOUSE || 0)}
                     icon={Bike}
                     gradientClass="bg-gradient-to-br from-purple-500 to-fuchsia-600"
-                />
-                <SummaryCard
-                    title="Warehouse Dues"
-                    amount={data.summary?.WAREHOUSE}
-                    icon={WarehouseIcon}
-                    gradientClass="bg-gradient-to-br from-orange-500 to-amber-600"
                 />
             </div>
 
             <Card 
                 className="shadow-sm border-slate-200 overflow-hidden"
                 contentClassName="p-0"
-                title="Outstanding Balances"
+                title="Outstanding Balances & Withdrawal Requests"
                 headerAction={
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <div className="relative flex-1 sm:flex-none sm:min-w-[200px]">
@@ -180,7 +186,7 @@ const PayoutsManagement = () => {
                                     setFilterRole(e.target.value);
                                     setPage(1);
                                 }}
-                                className="w-full pl-9 pr-8 py-2 text-sm rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none outline-none transition-all"
+                                className="w-full pl-9 pr-8 py-2 text-sm rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none outline-none transition-all font-medium"
                             >
                                 <option value="all">All Roles</option>
                                 <option value="seller">Sellers Only</option>
@@ -198,8 +204,8 @@ const PayoutsManagement = () => {
                             <tr>
                                 <th className="px-6 py-4">User Type</th>
                                 <th className="px-6 py-4">Partner Details</th>
-                                <th className="px-6 py-4 text-right">Outstanding Amount</th>
-                                <th className="px-6 py-4 text-right">Pending Amount</th>
+                                <th className="px-6 py-4 text-right">Available Balance</th>
+                                <th className="px-6 py-4 text-right">Requested Withdrawal</th>
                                 <th className="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
@@ -236,27 +242,50 @@ const PayoutsManagement = () => {
                                             <p className="text-xs text-slate-500 mt-1">{item.userDetails?.phone}</p>
                                         </td>
                                         <td className="px-6 py-4 text-right align-top">
-                                            <span className="inline-block font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-lg">
-                                                ₹{item.availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            <span className="inline-block font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">
+                                                ₹{item.availableBalance?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right align-top">
-                                            <span className="inline-block font-medium text-amber-600">
-                                                ₹{item.pendingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                            </span>
+                                            {item.hasPendingRequest ? (
+                                                <div className="flex flex-col items-end">
+                                                    <span className="inline-block font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg">
+                                                        ₹{item.pendingBalance?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                    <span className="text-[10px] text-amber-600 font-semibold mt-1">Pending Request</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-end">
+                                                    <span className="inline-block font-medium text-slate-400 bg-slate-50 px-3 py-1 rounded-lg">
+                                                        ₹0.00
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-medium mt-1">No Request</span>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center align-top">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedUser(item);
-                                                    setSettleAmount(item.availableBalance);
-                                                    setRemarks('');
-                                                    setIsSettleModalOpen(true);
-                                                }}
-                                                className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg shadow-sm transition-colors"
-                                            >
-                                                Settle Now
-                                            </button>
+                                            {item.hasPendingRequest ? (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedUser(item);
+                                                        setSettleAmount(item.pendingBalance);
+                                                        setRemarks('');
+                                                        setIsSettleModalOpen(true);
+                                                    }}
+                                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 mx-auto active:scale-95"
+                                                >
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    Settle Request
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    disabled
+                                                    title="Partner must submit a withdrawal request before settlement"
+                                                    className="px-3 py-1.5 bg-slate-100 text-slate-400 text-xs font-semibold rounded-xl border border-slate-200 cursor-not-allowed mx-auto"
+                                                >
+                                                    No Withdrawal Request
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -298,15 +327,23 @@ const PayoutsManagement = () => {
                             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
                         >
                             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                                <h3 className="text-xl font-bold text-slate-800">Settle Outstanding Balance</h3>
-                                <p className="text-sm text-slate-500 mt-1">Clear dues for {selectedUser.userDetails?.name}</p>
+                                <h3 className="text-xl font-bold text-slate-800">Settle Withdrawal Request</h3>
+                                <p className="text-sm text-slate-500 mt-1">Clear requested payout for {selectedUser.userDetails?.name}</p>
                             </div>
                             
                             <form onSubmit={handleSettleSubmit} className="p-6 space-y-5">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Available Balance</label>
-                                    <div className="w-full px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-700 font-bold text-lg">
-                                        ₹{selectedUser.availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Available Balance</label>
+                                        <div className="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-bold text-base">
+                                            ₹{selectedUser.availableBalance?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">Requested Amount</label>
+                                        <div className="w-full px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 font-bold text-base">
+                                            ₹{selectedUser.pendingBalance?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -315,7 +352,7 @@ const PayoutsManagement = () => {
                                     <input
                                         type="number"
                                         min="1"
-                                        max={selectedUser.availableBalance}
+                                        max={Math.min(selectedUser.availableBalance, selectedUser.pendingBalance)}
                                         step="0.01"
                                         value={settleAmount}
                                         onChange={(e) => setSettleAmount(e.target.value)}
@@ -323,11 +360,11 @@ const PayoutsManagement = () => {
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-semibold"
                                         placeholder="Enter amount to pay"
                                     />
-                                    <p className="text-[11px] text-slate-500 mt-1.5">You can settle partially or the full amount.</p>
+                                    <p className="text-[11px] text-slate-500 mt-1.5">Default set to partner's pending requested withdrawal amount.</p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Remarks / Transaction Ref</label>
+                                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Remarks / Transaction Ref / UTR</label>
                                     <input
                                         type="text"
                                         value={remarks}
@@ -352,7 +389,7 @@ const PayoutsManagement = () => {
                                         className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 shadow-sm transition-all disabled:opacity-50"
                                     >
                                         {isSettling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                        {isSettling ? 'Processing...' : 'Confirm Payment'}
+                                        {isSettling ? 'Processing...' : 'Settle Withdrawal'}
                                     </button>
                                 </div>
                             </form>

@@ -1790,11 +1790,18 @@ export const getSearchSuggestions = async (req, res) => {
       brand: regex
     });
 
-    const formattedProducts = products.map(p => ({
-        ...p,
-        id: p._id,
-        image: p.mainImage || (p.variants?.[0]?.images?.[0]) || p.image || p.images?.[0] || ""
-    }));
+    const formattedProducts = products.map(p => {
+        const variant0 = p.variants?.[0];
+        const mrp = p.price ?? variant0?.price ?? 0;
+        const sale = (p.salePrice && p.salePrice > 0) ? p.salePrice : (variant0?.salePrice && variant0.salePrice > 0 ? variant0.salePrice : mrp);
+        return {
+            ...p,
+            id: p._id,
+            image: p.mainImage || (variant0?.images?.[0]) || p.image || p.images?.[0] || "",
+            price: mrp,
+            salePrice: sale
+        };
+    });
 
     return handleResponse(res, 200, "Success", {
       products: formattedProducts,

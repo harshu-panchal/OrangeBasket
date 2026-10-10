@@ -453,19 +453,31 @@ const SearchPage = () => {
                                             {suggestions.products?.length > 0 && (
                                                 <div>
                                                     <div className="text-xs font-black text-slate-400 uppercase tracking-wider px-3 mb-2">Products</div>
-                                                    {suggestions.products.map(prod => (
-                                                        <div 
-                                                            key={prod.id} 
-                                                            className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
-                                                            onClick={() => { setQuery(prod.name); setShowSuggestions(false); }}
-                                                        >
-                                                            <img src={prod.image} alt={prod.name} className="w-10 h-10 object-contain rounded-md bg-white border border-slate-100" />
-                                                            <div>
-                                                                <div className="font-bold text-slate-800 text-sm">{prod.name}</div>
-                                                                <div className="font-semibold text-slate-500 text-xs">₹{prod.price}</div>
+                                                    {suggestions.products.map(prod => {
+                                                        const mrp = prod.price || (prod.variants?.[0]?.price > 0 ? prod.variants[0].price : 0);
+                                                        const rawSale = prod.salePrice || (prod.variants?.[0]?.salePrice > 0 ? prod.variants[0].salePrice : null);
+                                                        const effectiveSalePrice = rawSale && rawSale < mrp ? rawSale : mrp;
+                                                        const hasDiscount = rawSale && mrp && rawSale < mrp;
+
+                                                        return (
+                                                            <div 
+                                                                key={prod.id || prod._id} 
+                                                                className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
+                                                                onClick={() => { setQuery(prod.name); setShowSuggestions(false); }}
+                                                            >
+                                                                <img src={prod.image} alt={prod.name} className="w-10 h-10 object-contain rounded-md bg-white border border-slate-100" />
+                                                                <div>
+                                                                    <div className="font-bold text-slate-800 text-sm">{prod.name}</div>
+                                                                    <div className="flex items-center gap-1.5 font-semibold text-xs">
+                                                                        <span className="text-slate-900 font-bold">₹{effectiveSalePrice}</span>
+                                                                        {hasDiscount && (
+                                                                            <span className="text-slate-400 line-through text-[11px]">₹{mrp}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                             {!suggestions.products?.length && !suggestions.categories?.length && !suggestions.brands?.length && (

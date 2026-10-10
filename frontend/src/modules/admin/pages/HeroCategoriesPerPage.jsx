@@ -519,7 +519,9 @@ export default function HeroCategoriesPerPage() {
                                 >
                                   {item.isUploading ? "Uploading…" : item.imageUrl ? "Change" : "Upload"}
                                 </label>
-                                <span className="text-[10px] font-semibold text-slate-400">(1920 × 1080 px)</span>
+                                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                  Recommended: 1200 × 500 px (2.4:1 ratio)
+                                </span>
                               </div>
                               <input
                                 value={item.title || ""}
@@ -586,6 +588,27 @@ export default function HeroCategoriesPerPage() {
                     Add deal card
                   </button>
                 </div>
+                {/* Image Size Guidance Box */}
+                <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl mb-4 text-xs text-amber-900 space-y-1 font-medium">
+                  <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                    <span>💡 Recommended Image Sizes (to prevent cropping):</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                    <div className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                      <span className="font-bold block text-slate-800">Card 1 (Left Tall Card)</span>
+                      <span className="text-amber-800 font-semibold">400 × 600 px</span> (Portrait 2:3 or Transparent PNG)
+                    </div>
+                    <div className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                      <span className="font-bold block text-slate-800">Cards 2–5 (Square Grid)</span>
+                      <span className="text-amber-800 font-semibold">400 × 400 px</span> (Square 1:1 or Transparent PNG)
+                    </div>
+                    <div className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                      <span className="font-bold block text-slate-800">Cards 6+ (Bottom Strips)</span>
+                      <span className="text-amber-800 font-semibold">1200 × 300 px</span> (Wide Strip 4:1)
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                   {formPromotionalBanners.map((item, idx) => {
                     return (
@@ -606,7 +629,7 @@ export default function HeroCategoriesPerPage() {
                             <img
                               src={item.imageUrl}
                               alt="Deal image"
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain p-1"
                             />
                           ) : (
                             <HiOutlinePhoto className="h-8 w-8 text-slate-300" />
@@ -620,10 +643,10 @@ export default function HeroCategoriesPerPage() {
                             id={`promo-banner-file-${idx}`}
                             onChange={(e) => handlePromoBannerFileChange(idx, e.target.files?.[0])}
                           />
-                          <div className="flex items-center gap-2 mb-3">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
                             <label
                               htmlFor={`promo-banner-file-${idx}`}
-                              className="inline-block px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-50"
+                              className="inline-block px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-50 shadow-xs"
                             >
                               {item.isUploading ? "Uploading…" : item.imageUrl ? "Change Image" : "Upload Image"}
                             </label>
@@ -636,6 +659,13 @@ export default function HeroCategoriesPerPage() {
                                 Remove Image
                               </button>
                             )}
+                            <span className="text-[10px] font-bold text-slate-600 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-1 rounded-md">
+                              {idx === 0 
+                                ? "Size: 400 × 600 px (Portrait 2:3)" 
+                                : idx >= 1 && idx <= 4 
+                                ? "Size: 400 × 400 px (Square 1:1)" 
+                                : "Size: 1200 × 300 px (Strip 4:1)"}
+                            </span>
                           </div>
                           {idx !== 4 && (
                             <div className={`grid gap-3 ${idx === 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>

@@ -150,11 +150,11 @@ const BentoCard = ({ item, colSpan, rowSpan, onClick }) => {
 
       {/* Image */}
       {hasImage && (
-        <div className={cn("z-0 w-full flex items-end justify-center", isLarge ? "relative flex-1 mt-4" : "absolute inset-x-0 bottom-0 h-[55%]")}>
+        <div className={cn("z-0 w-full flex items-end justify-center p-1", isLarge ? "relative flex-1 mt-2" : "absolute inset-x-0 bottom-0 h-[55%]")}>
           <img 
             src={item.imageUrl} 
             alt={item.title || "Deal"} 
-            className="w-full h-full object-cover object-bottom group-hover:scale-105 transition-transform duration-500"
+            className="max-w-full max-h-full object-contain object-bottom group-hover:scale-105 transition-transform duration-500 drop-shadow-sm"
           />
         </div>
       )}
