@@ -4,6 +4,18 @@ import { getOrderSocket } from "@core/services/orderSocket";
 import { createSocketTokenReader } from "@core/utils/authStorage";
 import { STORAGE_KEYS } from "@core/utils/storageKeys";
 import { toast } from "sonner";
+import {
+  Building2,
+  Users,
+  Clock,
+  Send,
+  Truck,
+  RefreshCw,
+  Package,
+  MapPin,
+  Smartphone,
+  Navigation
+} from "lucide-react";
 
 /* ── API ──────────────────────────────────────────────────────────────────── */
 const api = {
@@ -13,20 +25,24 @@ const api = {
 
 /* ── Status badge ──────────────────────────────────────────────────────────── */
 const STATUS = {
-  waiting:       { bg: "rgba(59,130,246,0.12)",  text: "#60a5fa",  label: "Waiting" },
-  order_offered: { bg: "rgba(245,158,11,0.12)",  text: "#f59e0b",  label: "Offer Sent" },
-  order_assigned:{ bg: "rgba(168,85,247,0.12)",  text: "#c084fc",  label: "Assigned" },
-  delivering:    { bg: "rgba(34,197,94,0.12)",   text: "#22c55e",  label: "Delivering" },
-  offline:       { bg: "rgba(100,116,139,0.12)", text: "#94a3b8",  label: "Offline" },
+  waiting: { bg: "bg-blue-50 text-blue-700 border-blue-200", label: "Waiting" },
+  order_offered: { bg: "bg-amber-50 text-amber-700 border-amber-200", label: "Offer Sent" },
+  order_assigned: { bg: "bg-purple-50 text-purple-700 border-purple-200", label: "Assigned" },
+  delivering: { bg: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Delivering" },
+  offline: { bg: "bg-gray-100 text-gray-600 border-gray-200", label: "Offline" },
 };
 
 const Badge = ({ status }) => {
   const c = STATUS[status] || STATUS.waiting;
-  return <span style={{ ...BS.badge, background: c.bg, color: c.text }}>{c.label}</span>;
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${c.bg} inline-flex items-center gap-1 shadow-2xs`}>
+      {c.label}
+    </span>
+  );
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   WarehouseQueueDashboard — Admin panel page
+   WarehouseQueueDashboard — Admin Panel (Light Theme)
    ════════════════════════════════════════════════════════════════════════════ */
 const WarehouseQueueDashboard = () => {
   const [snapshots, setSnapshots] = useState([]);
@@ -37,14 +53,19 @@ const WarehouseQueueDashboard = () => {
   const fetchAll = useCallback(async () => {
     try {
       const res = await api.getAllQueues();
-      setSnapshots(res.data?.results || res.data?.result || res.data?.data || []);
+      const list = res.data?.results || res.data?.result || res.data?.data || [];
+      setSnapshots(list);
       setLastRefresh(new Date());
+      // Default select first warehouse if none selected
+      if (!selectedWh && list.length > 0) {
+        setSelectedWh(list[0].warehouseId);
+      }
     } catch {
       toast.error("Failed to load warehouse queues");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedWh]);
 
   useEffect(() => {
     fetchAll();
@@ -76,45 +97,87 @@ const WarehouseQueueDashboard = () => {
       offered: acc.offered + (s.stats?.offered || 0),
       delivering: acc.delivering + (s.stats?.delivering || 0),
     }),
-    { riders: 0, waiting: 0, offered: 0, delivering: 0 },
+    { riders: 0, waiting: 0, offered: 0, delivering: 0 }
   );
 
   const activeWarehouse = snapshots.find((s) => String(s.warehouseId) === String(selectedWh));
 
   return (
-    <div style={S.page}>
-      {/* Page title */}
-      <div style={S.headerBar}>
+    <div className="p-6 bg-gray-50/50 min-h-screen text-gray-900 font-sans">
+      {/* Page Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 style={S.title}>Warehouse Queue Dashboard</h1>
-          <p style={S.sub}>
-            {snapshots.length} warehouses · {lastRefresh ? `Updated ${lastRefresh.toLocaleTimeString()}` : "Loading…"}
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Warehouse Queue Monitor</h1>
+          <p className="text-xs font-semibold text-gray-500 mt-1 flex items-center gap-2">
+            <span>{snapshots.length} Warehouses Active</span>
+            <span>•</span>
+            <span>{lastRefresh ? `Last updated ${lastRefresh.toLocaleTimeString()}` : "Loading…"}</span>
           </p>
         </div>
-        <button style={S.refreshBtn} onClick={fetchAll}>↻ Refresh</button>
+        <button
+          onClick={fetchAll}
+          className="self-start sm:self-auto px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:text-primary transition-all shadow-xs flex items-center gap-2 active:scale-95"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+          Refresh
+        </button>
       </div>
 
-      {/* Global stats */}
-      <div style={S.statsRow}>
-        <GlobalStat icon="🏭" label="Warehouses" value={snapshots.length} color="#60a5fa" />
-        <GlobalStat icon="👥" label="Total Riders" value={totals.riders} color="#a78bfa" />
-        <GlobalStat icon="⏳" label="Waiting" value={totals.waiting} color="#94a3b8" />
-        <GlobalStat icon="📬" label="Offers Active" value={totals.offered} color="#f59e0b" />
-        <GlobalStat icon="🚀" label="Delivering" value={totals.delivering} color="#22c55e" />
+      {/* Global Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <GlobalStat
+          icon={<Building2 className="w-5 h-5 text-blue-600" />}
+          iconBg="bg-blue-50 border-blue-100"
+          label="Warehouses"
+          value={snapshots.length}
+          textColor="text-blue-700"
+        />
+        <GlobalStat
+          icon={<Users className="w-5 h-5 text-purple-600" />}
+          iconBg="bg-purple-50 border-purple-100"
+          label="Total Riders"
+          value={totals.riders}
+          textColor="text-purple-700"
+        />
+        <GlobalStat
+          icon={<Clock className="w-5 h-5 text-sky-600" />}
+          iconBg="bg-sky-50 border-sky-100"
+          label="Waiting"
+          value={totals.waiting}
+          textColor="text-sky-700"
+        />
+        <GlobalStat
+          icon={<Send className="w-5 h-5 text-amber-600" />}
+          iconBg="bg-amber-50 border-amber-100"
+          label="Offers Active"
+          value={totals.offered}
+          textColor="text-amber-700"
+        />
+        <GlobalStat
+          icon={<Truck className="w-5 h-5 text-emerald-600" />}
+          iconBg="bg-emerald-50 border-emerald-100"
+          label="Delivering"
+          value={totals.delivering}
+          textColor="text-emerald-700"
+        />
       </div>
 
       {loading ? (
-        <div style={S.loadingWrap}>
-          <div style={S.spinner} />
-          <p style={{ color: "#64748b", marginTop: 12 }}>Loading queues…</p>
+        <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-xs">
+          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-bold text-gray-500">Loading queue status…</p>
         </div>
       ) : (
-        <div style={S.mainGrid}>
-          {/* Left: Warehouse list */}
-          <div style={S.warehouseList}>
-            <h2 style={S.sectionTitle}>Warehouses</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Warehouse List */}
+          <div className="lg:col-span-4 flex flex-col gap-3">
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
+              Warehouses List
+            </h2>
             {snapshots.length === 0 ? (
-              <p style={{ color: "#64748b", padding: 16 }}>No active warehouses</p>
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-xs font-semibold text-gray-400">
+                No active warehouses found
+              </div>
             ) : (
               snapshots.map((s) => (
                 <WarehouseCard
@@ -127,16 +190,18 @@ const WarehouseQueueDashboard = () => {
             )}
           </div>
 
-          {/* Right: Selected warehouse detail */}
-          <div style={S.detail}>
-            {!activeWarehouse ? (
-              <div style={S.selectPrompt}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
-                <p style={{ color: "#64748b" }}>Select a warehouse to view its queue</p>
-              </div>
-            ) : (
-              <WarehouseDetail snapshot={activeWarehouse} />
-            )}
+          {/* Right Column: Selected Warehouse Detail */}
+          <div className="lg:col-span-8">
+            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 min-h-[480px]">
+              {!activeWarehouse ? (
+                <div className="text-center py-24">
+                  <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm font-bold text-gray-500">Select a warehouse from the left panel to inspect queue details</p>
+                </div>
+              ) : (
+                <WarehouseDetail snapshot={activeWarehouse} />
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -146,49 +211,57 @@ const WarehouseQueueDashboard = () => {
 
 /* ── Sub-components ─────────────────────────────────────────────────────── */
 
-const GlobalStat = ({ icon, label, value, color }) => (
-  <div style={S.statCard}>
-    <span style={{ fontSize: 20 }}>{icon}</span>
-    <div style={{ fontSize: 22, fontWeight: 800, color, margin: "4px 0 2px" }}>{value}</div>
-    <div style={{ fontSize: 11, color: "#64748b" }}>{label}</div>
+const GlobalStat = ({ icon, iconBg, label, value, textColor }) => (
+  <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow flex items-center gap-3.5">
+    <div className={`p-2.5 rounded-xl border ${iconBg} flex items-center justify-center shrink-0`}>
+      {icon}
+    </div>
+    <div>
+      <div className={`text-xl font-black ${textColor} leading-tight`}>{value}</div>
+      <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{label}</div>
+    </div>
   </div>
 );
 
 const WarehouseCard = ({ snapshot, selected, onClick }) => (
   <div
-    style={{
-      ...S.whCard,
-      borderColor: selected ? "rgba(59,130,246,0.4)" : "rgba(255,255,255,0.06)",
-      background: selected ? "rgba(59,130,246,0.08)" : "rgba(15,23,42,0.8)",
-    }}
     onClick={onClick}
+    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+      selected
+        ? "bg-primary/5 border-primary shadow-sm ring-1 ring-primary/20"
+        : "bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 shadow-2xs"
+    }`}
   >
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div className="flex items-start justify-between gap-2">
       <div>
-        <p style={S.whName}>{snapshot.warehouseName}</p>
-        <p style={S.whSub}>{snapshot.stats?.total ?? 0} rider{snapshot.stats?.total !== 1 ? "s" : ""} in queue</p>
+        <h3 className="font-bold text-gray-900 text-sm">{snapshot.warehouseName}</h3>
+        <p className="text-xs font-medium text-gray-500 mt-0.5">
+          {snapshot.stats?.total ?? 0} rider{snapshot.stats?.total !== 1 ? "s" : ""} in queue
+        </p>
       </div>
-      <div style={{ textAlign: "right" }}>
-        {snapshot.stats?.offering > 0 && <Badge status="order_offered" />}
+      <div className="text-right shrink-0">
+        {snapshot.stats?.offered > 0 && <Badge status="order_offered" />}
         {snapshot.stats?.delivering > 0 && (
-          <div style={{ fontSize: 11, color: "#22c55e", marginTop: 4 }}>
+          <div className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center justify-end gap-1">
+            <Truck className="w-3 h-3" />
             {snapshot.stats.delivering} delivering
           </div>
         )}
       </div>
     </div>
-    <div style={S.whMiniBar}>
-      <MiniStat label="Wait" value={snapshot.stats?.waiting ?? 0} color="#60a5fa" />
-      <MiniStat label="Offer" value={snapshot.stats?.offered ?? 0} color="#f59e0b" />
-      <MiniStat label="Active" value={snapshot.stats?.delivering ?? 0} color="#22c55e" />
+
+    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100/80 text-center">
+      <MiniStat label="Wait" value={snapshot.stats?.waiting ?? 0} textColor="text-sky-600" />
+      <MiniStat label="Offer" value={snapshot.stats?.offered ?? 0} textColor="text-amber-600" />
+      <MiniStat label="Active" value={snapshot.stats?.delivering ?? 0} textColor="text-emerald-600" />
     </div>
   </div>
 );
 
-const MiniStat = ({ label, value, color }) => (
-  <div style={{ textAlign: "center" }}>
-    <div style={{ fontSize: 14, fontWeight: 700, color }}>{value}</div>
-    <div style={{ fontSize: 10, color: "#475569" }}>{label}</div>
+const MiniStat = ({ label, value, textColor }) => (
+  <div className="bg-gray-50/60 rounded-lg py-1 px-1.5 border border-gray-100/60">
+    <div className={`text-xs font-black ${textColor}`}>{value}</div>
+    <div className="text-[9px] font-bold text-gray-400 uppercase">{label}</div>
   </div>
 );
 
@@ -197,46 +270,92 @@ const WarehouseDetail = ({ snapshot }) => {
 
   return (
     <div>
-      <div style={S.detailHeader}>
-        <h2 style={S.detailTitle}>{warehouseName}</h2>
-        <div style={S.detailStats}>
-          <span style={{ color: "#60a5fa" }}>{stats.total} Total</span>
-          <span style={{ color: "#f59e0b" }}>{stats.offered} Offered</span>
-          <span style={{ color: "#22c55e" }}>{stats.delivering} Delivering</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-5 border-b border-gray-100">
+        <div>
+          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            {warehouseName}
+          </h2>
+          <p className="text-xs text-gray-400 font-medium mt-0.5">Real-time rider assignment & status overview</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-3 py-1 bg-sky-50 text-sky-700 border border-sky-100 font-bold text-xs rounded-xl">
+            {stats.total || 0} Total
+          </span>
+          <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-100 font-bold text-xs rounded-xl">
+            {stats.offered || 0} Offered
+          </span>
+          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-xs rounded-xl">
+            {stats.delivering || 0} Delivering
+          </span>
         </div>
       </div>
 
       {queue.length === 0 ? (
-        <div style={S.emptyDetail}>
-          <div style={{ fontSize: 36 }}>🏁</div>
-          <p style={{ color: "#64748b", marginTop: 8 }}>No riders in queue</p>
+        <div className="text-center py-16 bg-gray-50/50 border border-dashed border-gray-200 rounded-2xl">
+          <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm font-bold text-gray-600">No riders currently checked into this queue</p>
+          <p className="text-xs text-gray-400 mt-1">Checked-in delivery partners will appear here automatically</p>
         </div>
       ) : (
-        <div style={S.riderList}>
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1 mb-2">
+            Rider Queue ({queue.length})
+          </div>
           {queue.map((entry) => {
             const r = entry.rider || {};
             const since = entry.checkinTime
               ? Math.round((Date.now() - new Date(entry.checkinTime).getTime()) / 60000)
               : null;
             return (
-              <div key={entry.checkinId} style={S.riderRow}>
-                <div style={S.posCircle}>{entry.queuePosition}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{r.name || "—"}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>
-                    {r.vehicleType} · {r.phone}
-                    {since !== null ? ` · ${since}m in queue` : ""}
+              <div
+                key={entry.checkinId}
+                className="bg-gray-50/70 hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-all"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-sm text-primary shrink-0">
+                    #{entry.queuePosition}
                   </div>
-                  {entry.currentOrder && (
-                    <div style={{ fontSize: 11, color: "#a78bfa", marginTop: 3 }}>
-                      📦 {entry.currentOrder.orderId} — {entry.currentOrder.dropAddress}
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      {r.name || "Unknown Rider"}
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-medium mt-0.5">
+                      {r.vehicleType && <span className="capitalize">{r.vehicleType}</span>}
+                      {r.phone && (
+                        <span className="flex items-center gap-1">
+                          <Smartphone className="w-3 h-3 text-gray-400" />
+                          {r.phone}
+                        </span>
+                      )}
+                      {since !== null && (
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <Clock className="w-3 h-3" />
+                          {since}m in queue
+                        </span>
+                      )}
                     </div>
-                  )}
+
+                    {entry.currentOrder && (
+                      <div className="mt-2 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <Package className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                        <span>Order #{entry.currentOrder.orderId || entry.currentOrder._id}</span>
+                        {entry.currentOrder.dropAddress && (
+                          <span className="text-purple-600/80 truncate max-w-[240px] flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {entry.currentOrder.dropAddress}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <Badge status={r.queueStatus || "waiting"} />
+
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                  <Badge status={r.queueStatus || entry.status || "waiting"} />
                   {entry.gpsStatus?.lastVerifiedAt && (
-                    <div style={{ fontSize: 10, color: "#475569", marginTop: 4 }}>
+                    <div className="text-[10px] font-bold text-gray-400 flex items-center gap-1 mt-1">
+                      <Navigation className="w-2.5 h-2.5 text-emerald-500" />
                       GPS {new Date(entry.gpsStatus.lastVerifiedAt).toLocaleTimeString()}
                     </div>
                   )}
@@ -248,41 +367,6 @@ const WarehouseDetail = ({ snapshot }) => {
       )}
     </div>
   );
-};
-
-/* ── Styles ─────────────────────────────────────────────────────────────── */
-/** @type {Object<string, React.CSSProperties>} */
-const S = {
-  page: { padding: "24px", fontFamily: "system-ui,sans-serif", color: "#f1f5f9", minHeight: "100vh" },
-  headerBar: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: 800, margin: 0, color: "#f1f5f9" },
-  sub: { color: "#64748b", fontSize: 13, marginTop: 4 },
-  refreshBtn: { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 13 },
-  statsRow: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 24 },
-  statCard: { background: "linear-gradient(145deg,#0f172a,#1e293b)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "14px", textAlign: "center" },
-  mainGrid: { display: "grid", gridTemplateColumns: "320px 1fr", gap: 20 },
-  warehouseList: { display: "flex", flexDirection: "column", gap: 10 },
-  sectionTitle: { fontSize: 14, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", margin: "0 0 12px" },
-  whCard: { border: "1px solid", borderRadius: 14, padding: "14px 16px", cursor: "pointer", transition: "all 0.2s" },
-  whName: { fontSize: 14, fontWeight: 700, margin: 0, color: "#f1f5f9" },
-  whSub: { fontSize: 12, color: "#64748b", margin: "2px 0 10px" },
-  whMiniBar: { display: "flex", gap: 20 },
-  detail: { background: "linear-gradient(145deg,#0f172a,#1e293b)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: "20px", minHeight: 400 },
-  selectPrompt: { textAlign: "center", padding: "80px 0" },
-  detailHeader: { marginBottom: 20 },
-  detailTitle: { fontSize: 18, fontWeight: 800, margin: 0, color: "#f1f5f9" },
-  detailStats: { display: "flex", gap: 16, marginTop: 6, fontSize: 13, fontWeight: 600 },
-  emptyDetail: { textAlign: "center", padding: "40px 0" },
-  riderList: { display: "flex", flexDirection: "column", gap: 10 },
-  riderRow: { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 },
-  posCircle: { width: 32, height: 32, borderRadius: "50%", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#60a5fa", flexShrink: 0 },
-  loadingWrap: { textAlign: "center", padding: "80px 0" },
-  spinner: { width: 32, height: 32, border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" },
-};
-
-/** @type {Object<string, React.CSSProperties>} */
-const BS = {
-  badge: { borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700, display: "inline-block" },
 };
 
 export default WarehouseQueueDashboard;

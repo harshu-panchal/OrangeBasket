@@ -5,6 +5,17 @@ import { createSocketTokenReader } from "@core/utils/authStorage";
 import { STORAGE_KEYS } from "@core/utils/storageKeys";
 import { toast } from "sonner";
 import { useAuth } from "@core/context/AuthContext";
+import {
+  Users,
+  Clock,
+  Send,
+  Truck,
+  RefreshCw,
+  Package,
+  AlertCircle,
+  Building2,
+  Smartphone
+} from "lucide-react";
 
 /* ── API ──────────────────────────────────────────────────────────────────── */
 const api = {
@@ -13,24 +24,24 @@ const api = {
 
 /* ── Status badge colors ──────────────────────────────────────────────────── */
 const STATUS_COLORS = {
-  waiting: { bg: "rgba(59,130,246,0.12)", text: "#60a5fa", label: "Waiting" },
-  order_offered: { bg: "rgba(245,158,11,0.12)", text: "#f59e0b", label: "Offer Sent" },
-  order_assigned: { bg: "rgba(168,85,247,0.12)", text: "#c084fc", label: "Assigned" },
-  delivering: { bg: "rgba(34,197,94,0.12)", text: "#22c55e", label: "Delivering" },
-  offline: { bg: "rgba(100,116,139,0.12)", text: "#94a3b8", label: "Offline" },
+  waiting: { bg: "bg-blue-50 text-blue-700 border-blue-200", label: "Waiting" },
+  order_offered: { bg: "bg-amber-50 text-amber-700 border-amber-200", label: "Offer Sent" },
+  order_assigned: { bg: "bg-purple-50 text-purple-700 border-purple-200", label: "Assigned" },
+  delivering: { bg: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Delivering" },
+  offline: { bg: "bg-gray-100 text-gray-600 border-gray-200", label: "Offline" },
 };
 
 const StatusBadge = ({ status }) => {
   const c = STATUS_COLORS[status] || STATUS_COLORS.waiting;
   return (
-    <span style={{ background: c.bg, color: c.text, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${c.bg} inline-flex items-center gap-1 shadow-2xs`}>
       {c.label}
     </span>
   );
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
-   QueueMonitor — Warehouse panel page
+   QueueMonitor — Warehouse panel page (Light Theme)
    ════════════════════════════════════════════════════════════════════════════ */
 const QueueMonitor = ({ warehouseId: propId }) => {
   const [snapshot, setSnapshot] = useState(null);
@@ -81,19 +92,19 @@ const QueueMonitor = ({ warehouseId: propId }) => {
   }, [warehouseId, fetchQueue]);
 
   if (!warehouseId) return (
-    <div style={S.page}>
-      <div style={S.empty}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-        <p style={{ color: "#64748b" }}>Warehouse ID not available. Please log in again.</p>
+    <div className="p-6 bg-gray-50/50 min-h-screen text-gray-900 font-sans">
+      <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-xs">
+        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+        <p className="text-sm font-bold text-gray-700">Warehouse ID not available. Please log in again.</p>
       </div>
     </div>
   );
 
   if (loading) return (
-    <div style={S.page}>
-      <div style={S.empty}>
-        <div style={S.spinner} />
-        <p style={{ color: "#64748b", marginTop: 12 }}>Loading queue…</p>
+    <div className="p-6 bg-gray-50/50 min-h-screen text-gray-900 font-sans">
+      <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-xs">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm font-bold text-gray-500">Loading queue snapshot…</p>
       </div>
     </div>
   );
@@ -101,35 +112,76 @@ const QueueMonitor = ({ warehouseId: propId }) => {
   const { queue = [], stats = {}, warehouseName } = snapshot || {};
 
   return (
-    <div style={S.page}>
+    <div className="p-6 bg-gray-50/50 min-h-screen text-gray-900 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 style={S.title}>Queue Monitor</h1>
-          <p style={S.sub}>{warehouseName} · {lastRefresh ? `Updated ${lastRefresh.toLocaleTimeString()}` : ""}</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-primary" />
+            Queue Monitor
+          </h1>
+          <p className="text-xs font-semibold text-gray-500 mt-1">
+            {warehouseName || "Warehouse"} {lastRefresh ? `• Last updated ${lastRefresh.toLocaleTimeString()}` : ""}
+          </p>
         </div>
-        <button style={S.refreshBtn} onClick={fetchQueue}>↻ Refresh</button>
+        <button
+          onClick={fetchQueue}
+          className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:text-primary transition-all shadow-xs flex items-center gap-2 active:scale-95"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
       </div>
 
-      {/* Stats row */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatCard icon="👥" label="Total in Queue" value={stats.total ?? 0} color="#60a5fa" />
-        <StatCard icon="⏳" label="Waiting" value={stats.waiting ?? 0} color="#94a3b8" />
-        <StatCard icon="📬" label="Offer Sent" value={stats.offered ?? 0} color="#f59e0b" />
-        <StatCard icon="🚀" label="Delivering" value={stats.delivering ?? 0} color="#22c55e" />
+        <StatCard
+          icon={<Users className="w-5 h-5 text-purple-600" />}
+          iconBg="bg-purple-50 border-purple-100"
+          label="Total in Queue"
+          value={stats.total ?? 0}
+          textColor="text-purple-700"
+        />
+        <StatCard
+          icon={<Clock className="w-5 h-5 text-sky-600" />}
+          iconBg="bg-sky-50 border-sky-100"
+          label="Waiting"
+          value={stats.waiting ?? 0}
+          textColor="text-sky-700"
+        />
+        <StatCard
+          icon={<Send className="w-5 h-5 text-amber-600" />}
+          iconBg="bg-amber-50 border-amber-100"
+          label="Offer Sent"
+          value={stats.offered ?? 0}
+          textColor="text-amber-700"
+        />
+        <StatCard
+          icon={<Truck className="w-5 h-5 text-emerald-600" />}
+          iconBg="bg-emerald-50 border-emerald-100"
+          label="Delivering"
+          value={stats.delivering ?? 0}
+          textColor="text-emerald-700"
+        />
       </div>
 
       {/* Queue list */}
       {queue.length === 0 ? (
-        <div style={S.empty}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🏁</div>
-          <p style={{ color: "#64748b" }}>No riders in queue right now</p>
+        <div className="bg-white border border-gray-100 rounded-2xl p-16 text-center shadow-xs">
+          <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-bold text-gray-600">No riders currently checked into queue</p>
+          <p className="text-xs text-gray-400 mt-1">Delivery partners will appear here in real time when they scan the QR code</p>
         </div>
       ) : (
-        <div style={S.queueList}>
-          {queue.map((entry, idx) => (
-            <RiderRow key={entry.checkinId} entry={entry} pos={idx + 1} />
-          ))}
+        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6">
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+            Riders Queue List ({queue.length})
+          </h2>
+          <div className="space-y-3">
+            {queue.map((entry, idx) => (
+              <RiderRow key={entry.checkinId || idx} entry={entry} pos={idx + 1} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -138,11 +190,15 @@ const QueueMonitor = ({ warehouseId: propId }) => {
 
 /* ── Sub-components ─────────────────────────────────────────────────────── */
 
-const StatCard = ({ icon, label, value, color }) => (
-  <div style={S.statCard}>
-    <div style={{ fontSize: 20, marginBottom: 6 }}>{icon}</div>
-    <div style={{ fontSize: 24, fontWeight: 800, color, marginBottom: 2 }}>{value}</div>
-    <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>{label}</div>
+const StatCard = ({ icon, iconBg, label, value, textColor }) => (
+  <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-2xs flex items-center gap-3.5">
+    <div className={`p-2.5 rounded-xl border ${iconBg} flex items-center justify-center shrink-0`}>
+      {icon}
+    </div>
+    <div>
+      <div className={`text-xl font-black ${textColor} leading-tight`}>{value}</div>
+      <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{label}</div>
+    </div>
   </div>
 );
 
@@ -151,44 +207,41 @@ const RiderRow = ({ entry, pos }) => {
   const sinceCheckin = entry.checkinTime ? Math.round((Date.now() - new Date(entry.checkinTime).getTime()) / 60000) : null;
 
   return (
-    <div style={S.riderRow}>
-      <div style={S.posNum}>#{pos}</div>
-      <div style={S.riderInfo}>
-        <div style={S.riderName}>{r.name || "Unknown Rider"}</div>
-        <div style={S.riderMeta}>
-          {r.vehicleType && <span>{r.vehicleType}</span>}
-          {sinceCheckin !== null && <span>· {sinceCheckin}m in queue</span>}
-          {r.phone && <span>· {r.phone}</span>}
+    <div className="bg-gray-50/70 hover:bg-white border border-gray-100 hover:border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4 shadow-2xs hover:shadow-xs transition-all">
+      <div className="flex items-center gap-3.5">
+        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-sm text-primary shrink-0">
+          #{pos}
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-gray-900">{r.name || "Unknown Rider"}</h4>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-medium mt-0.5">
+            {r.vehicleType && <span className="capitalize">{r.vehicleType}</span>}
+            {sinceCheckin !== null && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-gray-400" />
+                {sinceCheckin}m in queue
+              </span>
+            )}
+            {r.phone && (
+              <span className="flex items-center gap-1">
+                <Smartphone className="w-3 h-3 text-gray-400" />
+                {r.phone}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-      <div style={{ textAlign: "right" }}>
+      <div className="text-right">
         <StatusBadge status={r.queueStatus || "waiting"} />
         {entry.currentOrder && (
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>📦 {entry.currentOrder.orderId}</div>
+          <div className="text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-md mt-1.5 flex items-center justify-end gap-1">
+            <Package className="w-3 h-3 text-purple-500" />
+            #{entry.currentOrder.orderId || entry.currentOrder._id}
+          </div>
         )}
       </div>
     </div>
   );
-};
-
-/* ── Styles ─────────────────────────────────────────────────────────────── */
-/** @type {Record<string, import('react').CSSProperties>} */
-const S = {
-  page: { padding: "24px", fontFamily: "system-ui,sans-serif", color: "#f1f5f9", minHeight: "100vh" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: 800, margin: 0, color: "#f1f5f9" },
-  sub: { color: "#64748b", fontSize: 13, margin: "4px 0 0" },
-  refreshBtn: { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#94a3b8", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 13 },
-  statsRow: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 },
-  statCard: { background: "linear-gradient(145deg,#0f172a,#1e293b)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "14px", textAlign: "center" },
-  queueList: { display: "flex", flexDirection: "column", gap: 10 },
-  riderRow: { background: "linear-gradient(145deg,#0f172a,#1e293b)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 },
-  posNum: { fontSize: 20, fontWeight: 800, color: "#475569", minWidth: 36 },
-  riderInfo: { flex: 1 },
-  riderName: { fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 2 },
-  riderMeta: { fontSize: 12, color: "#64748b", display: "flex", gap: 6, flexWrap: "wrap" },
-  empty: { textAlign: "center", padding: "60px 0" },
-  spinner: { width: 32, height: 32, border: "3px solid rgba(255,255,255,0.1)", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" },
 };
 
 export default QueueMonitor;

@@ -106,7 +106,7 @@ const CustomerManagement = () => {
         if (!date) return 'Never';
         const now = new Date();
         const past = new Date(date);
-        const diffInMs = now - past;
+        const diffInMs = now.getTime() - past.getTime(); 
         const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
         if (diffInHours < 1) return 'Recently';
@@ -151,6 +151,10 @@ const CustomerManagement = () => {
                     icon={Users}
                     color="text-brand-600"
                     bg="bg-brand-50"
+                    trend=""
+                    description=""
+                    onClick={() => {}}
+                    className=""
                 />
                 <StatCard
                     label="Active Users"
@@ -158,6 +162,10 @@ const CustomerManagement = () => {
                     icon={Activity}
                     color="text-brand-600"
                     bg="bg-brand-50"
+                    trend=""
+                    description=""
+                    onClick={() => {}}
+                    className=""
                 />
                 <StatCard
                     label="New Today"
@@ -165,6 +173,10 @@ const CustomerManagement = () => {
                     icon={UserPlus}
                     color="text-brand-600"
                     bg="bg-brand-50"
+                    trend=""
+                    description=""
+                    onClick={() => {}}
+                    className=""
                 />
             </div>
 
@@ -172,13 +184,13 @@ const CustomerManagement = () => {
             <Card className="ds-card-compact">
                 <div className="flex flex-col lg:flex-row gap-3">
                     <div className="flex-1 relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 ds-icon-sm text-gray-400 group-focus-within:text-primary transition-colors" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 ds-icon-sm text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
                         <input
                             type="text"
                             placeholder="Search by name, email or phone..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="ds-input pl-9"
+                            className="ds-input w-full !pl-10"
                         />
                     </div>
 
@@ -226,7 +238,7 @@ const CustomerManagement = () => {
                         <tbody>
                             {!loading && filteredCustomers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center">
+                                    <td colSpan={5} className="px-6 py-20 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="p-4 bg-gray-50 rounded-full">
                                                 <Users className="h-8 w-8 text-gray-300" />
@@ -301,6 +313,7 @@ const CustomerManagement = () => {
                 </div>
                 <div className="px-6 py-3 border-t border-gray-100">
                     <Pagination
+                        className=""
                         page={page}
                         totalPages={Math.ceil(total / pageSize) || 1}
                         total={total}
