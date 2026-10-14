@@ -757,22 +757,40 @@ const CheckoutPage = () => {
       setRecommendedProducts([]);
       return;
     }
-    const categoryId = cart[0]?.categoryId?._id || cart[0]?.categoryId;
-    if (!categoryId) return;
+    const hasValidLocation =
+      Number.isFinite(currentLocation?.latitude) &&
+      Number.isFinite(currentLocation?.longitude);
+    if (!hasValidLocation) return;
 
-    const cartIds = new Set(cart.map((i) => i.id || i._id));
+    // Related to everything in the cart (same brand / subcategory / category)
+    const cartIds = new Set(cart.map((i) => String(i.id || i._id)));
+    let cancelled = false;
     customerApi
-      .getProducts({ categoryId, limit: 10 })
+      .getRelatedProducts({
+        ids: [...cartIds].slice(0, 50).join(","),
+        lat: currentLocation.latitude,
+        lng: currentLocation.longitude,
+        limit: 12,
+      })
       .then((res) => {
-        if (res.data?.success) {
-          const items = (res.data.result?.items || [])
-            .map((p) => ({ ...p, id: p._id }))
-            .filter((p) => !cartIds.has(p.id));
-          setRecommendedProducts(items.slice(0, 8));
-        }
+        if (cancelled || !res.data?.success) return;
+        const items = (res.data.result?.items || [])
+          .map((p) => ({
+            ...p,
+            id: p._id,
+            image: p.mainImage || p.image,
+            price: p.salePrice || p.price,
+            originalPrice: p.price,
+            weight: p.weight || "1 unit",
+          }))
+          .filter((p) => !cartIds.has(String(p.id)));
+        setRecommendedProducts(items);
       })
       .catch(() => {});
-  }, [cartProductIdKey]);
+    return () => {
+      cancelled = true;
+    };
+  }, [cartProductIdKey, currentLocation?.latitude, currentLocation?.longitude]);
 
   const handlePlaceOrder = async () => {
     const orderAddress = buildAddressForOrder();
