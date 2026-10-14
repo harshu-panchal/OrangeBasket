@@ -34,6 +34,8 @@ const {
   fetchAvailableOrdersForDelivery,
 } = await import("../app/services/orderQueryService.js");
 
+const SELLER_ID = "64b7f0c2a1b2c3d4e5f60718";
+
 function makeOrderQueryChain(result) {
   return {
     sort: jest.fn().mockReturnThis(),
@@ -58,13 +60,13 @@ describe("orderQueryService", () => {
   test("buildSellerOrdersQuery maps sidebar status values and date range", () => {
     const query = buildSellerOrdersQuery({
       role: "seller",
-      userId: "seller-1",
+      userId: SELLER_ID,
       statusParam: "processed",
       startDate: "2026-03-01",
       endDate: "2026-03-29",
     });
 
-    expect(query.seller).toBe("seller-1");
+    expect(String(query.seller)).toBe(SELLER_ID);
     expect(query.status).toEqual({ $in: ["confirmed", "packed"] });
     expect(query.createdAt.$gte).toEqual(new Date("2026-03-01"));
     expect(query.createdAt.$lte.getFullYear()).toBe(2026);
@@ -106,6 +108,10 @@ describe("orderQueryService", () => {
     );
 
     mockOrderFind.mockImplementation((query) => {
+      if (query.pendingDeliveryBoy) {
+        // pending queue offers for this rider: none
+        return makeOrderQueryChain([]);
+      }
       if (query.workflowStatus) {
         return makeOrderQueryChain([
           {

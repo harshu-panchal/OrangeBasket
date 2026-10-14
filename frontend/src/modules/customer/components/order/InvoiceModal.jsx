@@ -7,7 +7,6 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
     const { settings } = useSettings();
     const appName = settings?.appName || 'App';
     const primaryColor = settings?.primaryColor || 'var(--primary)';
-    if (!order) return null;
 
     useEffect(() => {
         if (isOpen) {
@@ -23,6 +22,8 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
     const handlePrint = () => {
         window.print();
     };
+
+    if (!order) return null;
 
     return (
         <AnimatePresence>

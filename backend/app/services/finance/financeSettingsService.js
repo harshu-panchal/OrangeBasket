@@ -100,7 +100,11 @@ export async function getOrCreateFinanceSettings({ session } = {}) {
 }
 
 export async function updateDeliveryFinanceSettings(payload, { session } = {}) {
-  const normalized = normalizeFinanceSettings(payload || {});
+  // Merge over the stored settings so a partial payload doesn't reset the
+  // untouched fields to defaults.
+  const existing = await Setting.findOne({}, null, session ? { session } : {});
+  const current = existing ? existing.toObject?.() || existing : {};
+  const normalized = normalizeFinanceSettings({ ...current, ...(payload || {}) });
   const query = {};
   const options = { upsert: true, new: true };
   if (session) options.session = session;

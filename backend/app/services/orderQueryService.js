@@ -284,6 +284,13 @@ export async function fetchAvailableOrdersForDelivery({
   const deliveryPartner = await Delivery.findById(userId);
   const hasLocation = deliveryPartner && deliveryPartner.location && Array.isArray(deliveryPartner.location.coordinates);
 
+  // Delivery offers are radius-filtered around the rider, so they need a
+  // location. Without one, only return pickups (below) can be shown.
+  if (showDeliveries && !hasLocation && !showReturns) {
+    return { requiresLocation: true, orders: [], limit };
+  }
+  const canShowDeliveries = showDeliveries && hasLocation;
+
   let sellerIds = [];
   let usedFallback = false;
 
@@ -300,7 +307,7 @@ export async function fetchAvailableOrdersForDelivery({
 
   let pendingOffers = [];
   let v2Orders = [];
-  if (showDeliveries) {
+  if (canShowDeliveries) {
     const now = new Date();
     // 1. Fetch any pending queue assignment for this specific rider
     const pendingOffersRaw = await Order.find({
@@ -341,7 +348,7 @@ export async function fetchAvailableOrdersForDelivery({
   }
 
   let legacyOrders = [];
-  if (showDeliveries) {
+  if (canShowDeliveries) {
     legacyOrders = await Order.find({
       $or: [
         { workflowVersion: { $exists: false } },

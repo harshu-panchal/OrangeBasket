@@ -90,7 +90,9 @@ export class RazorpayAdapter extends PaymentProviderPort {
       .update(rawBody)
       .digest("hex");
 
-    return expectedSignature === authorization;
+    const provided = Buffer.from(String(authorization || ""));
+    const expected = Buffer.from(expectedSignature);
+    return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
   }
 
   async decodeWebhookPayload({ rawBody }) {

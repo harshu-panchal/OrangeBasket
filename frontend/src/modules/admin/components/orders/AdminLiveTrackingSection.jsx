@@ -226,8 +226,6 @@ const AdminLiveTrackingSection = ({ orderId, order }) => {
     };
   }, [activeRoutePolyline?.distanceMeters, activeRoutePolyline?.duration, liveLocation, order, routePhase, sellerLocation, status, clockTick, destinationLocation]);
 
-  if (status === "cancelled") return null;
-
   const mapStatus = useMemo(() => {
     if (!order) return status;
     const ws = String(order?.workflowStatus || "").toUpperCase();
@@ -250,6 +248,9 @@ const AdminLiveTrackingSection = ({ orderId, order }) => {
       ? "seller_pending"
       : status;
   }, [order, status]);
+
+  // Must stay below every hook above (rules of hooks).
+  if (status === "cancelled") return null;
 
   const hasRider = Boolean(order?.deliveryBoy);
   const isDelivered = status === "delivered";

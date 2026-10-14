@@ -12,9 +12,14 @@ import { isMobileOrWebView } from "@/core/utils/deviceUtils";
 
 const BANNER_CHUNK_SIZE = 20;
 
-const ExperienceBannerCarousel = ({ section, items, fullWidth = false, slideGap = 0, edgeToEdge = false }) => {
-  if (!items.length) return null;
+// Split so the hooks below never run for an empty list; `items` can go from
+// empty to populated once data loads, which would change the hook count.
+const ExperienceBannerCarousel = (props) => {
+  if (!props.items?.length) return null;
+  return <ExperienceBannerCarouselContent {...props} />;
+};
 
+const ExperienceBannerCarouselContent = ({ section, items, fullWidth = false, slideGap = 0, edgeToEdge = false }) => {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [visibleCount, setVisibleCount] = React.useState(() =>

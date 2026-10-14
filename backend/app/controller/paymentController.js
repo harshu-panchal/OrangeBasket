@@ -105,6 +105,7 @@ export const handleRazorpayWebhook = async (req, res) => {
     const result = await processGatewayWebhook({
       rawBody,
       authorization,
+      providerEventId: req.headers["x-razorpay-event-id"] || null,
       correlationId: req.correlationId || null,
     });
 

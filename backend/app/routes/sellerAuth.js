@@ -48,6 +48,23 @@ router.post(
     signupSeller
 );
 router.post("/check-exists", checkSellerExists);
+
+// Forgot password
+router.post(
+    "/forgot-password/send-otp",
+    authRouteRateLimiter,
+    otpRouteRateLimiter,
+    sellerOtpPayloadGuard,
+    sendSellerResetOtp
+);
+router.post(
+    "/forgot-password/verify-otp",
+    authRouteRateLimiter,
+    otpRouteRateLimiter,
+    sellerOtpPayloadGuard,
+    verifySellerResetOtp
+);
+router.post("/reset-password", authRouteRateLimiter, resetSellerPassword);
 router.post("/login", loginSeller);
 router.get("/nearby", getNearbySellers);
 

@@ -392,10 +392,11 @@ export const resetSellerPassword = async (req, res) => {
         }
 
         // Verify the token
-        verifySellerVerificationToken({ channel, rawValue, token, purpose: "seller_reset" });
+        const verified = verifySellerVerificationToken({ channel, rawValue, token, purpose: "seller_reset" });
 
-        // Find the seller
-        const query = channel === "email" ? { email: rawValue.toLowerCase() } : { phone: rawValue };
+        // Find the seller by the normalized target the OTP was issued for
+        // (raw input may be formatted differently, e.g. "+91 98765 43210").
+        const query = verified.channel === "email" ? { email: verified.target } : { phone: verified.target };
         const seller = await Seller.findOne(query);
 
         if (!seller) {

@@ -49,6 +49,7 @@ function makeOrder(overrides = {}) {
       reconciledAt: null,
     },
     save: jest.fn().mockResolvedValue(undefined),
+    markModified: jest.fn(),
     ...overrides,
   };
 }

@@ -59,6 +59,33 @@ jest.unstable_mockModule("mongoose", () => ({
   },
 }));
 
+jest.unstable_mockModule("../app/models/product.js", () => ({
+  default: {
+    findById: jest.fn(() => ({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    })),
+  },
+}));
+
+jest.unstable_mockModule("../app/models/ledgerEntry.js", () => ({
+  default: { findOne: jest.fn().mockResolvedValue(null) },
+}));
+
+jest.unstable_mockModule("../app/services/finance/walletService.js", () => ({
+  creditWallet: jest.fn(),
+  debitWallet: jest.fn(),
+  getCustomerBalance: jest.fn().mockResolvedValue(0),
+  getOrCreateWallet: jest.fn(),
+}));
+
+jest.unstable_mockModule("../app/services/finance/couponService.js", () => ({
+  incrementCouponUsage: jest.fn(),
+}));
+
+jest.unstable_mockModule("../app/services/lowStockAlertService.js", () => ({
+  isLowStockAlertsEnabled: jest.fn(() => false),
+}));
+
 jest.unstable_mockModule("../app/models/customer.js", () => ({
   default: {
     findById: mockCustomerFindById,

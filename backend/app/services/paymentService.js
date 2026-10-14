@@ -630,6 +630,7 @@ export async function verifyPaymentGatewayStatus({
 export async function processGatewayWebhook({
   rawBody,
   authorization,
+  providerEventId = null,
   correlationId = null,
 }) {
   const provider = getActivePaymentProvider();
@@ -643,11 +644,19 @@ export async function processGatewayWebhook({
 
   const decoded = await provider.decodeWebhookPayload({ rawBody });
 
-  const eventId = decoded.eventId;
+  // Event types we don't act on (e.g. refund.*, payment.authorized): ack so
+  // the gateway stops retrying, but don't record or look up anything.
+  if (!decoded.merchantOrderId) {
+    return { accepted: true, ignored: true, reason: "Unsupported webhook event" };
+  }
+
   const payloadHash = crypto
     .createHash("sha256")
     .update(JSON.stringify(decoded.raw))
     .digest("hex");
+  // `eventId` is required + unique on PaymentWebhookEvent. Fall back to the
+  // payload hash so a retried delivery is still de-duplicated.
+  const eventId = decoded.eventId || providerEventId || payloadHash;
   const eventType = decoded.state || "unknown";
 
   try {

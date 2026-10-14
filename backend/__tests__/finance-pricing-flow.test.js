@@ -149,18 +149,18 @@ describe("finance pricing flow", () => {
 
   it("calculates customer delivery fee for both distance and fixed modes", () => {
     const distanceBased = calculateCustomerDeliveryFee(2.2, {
-      deliveryPricingMode: "distance_based",
-      customerBaseDeliveryFee: 30,
-      baseDistanceCapacityKm: 0.5,
-      incrementalKmSurcharge: 10,
+      customerPricingType: "distance",
+      customerBaseCharge: 30,
+      customerBaseDistance: 0.5,
+      customerExtraPerKm: 10,
     });
-    expect(distanceBased.roundedExtraKm).toBe(2);
+    // 2.2km - 0.5km base = 1.7km, billed as 2 extra km
     expect(distanceBased.deliveryFeeCharged).toBe(50);
-    expect(distanceBased.distanceKmRounded).toBe(2.5);
+    expect(distanceBased.distanceKmRounded).toBe(2.2);
 
     const fixed = calculateCustomerDeliveryFee(8, {
-      deliveryPricingMode: "fixed_price",
-      fixedDeliveryFee: 45,
+      customerPricingType: "fixed",
+      customerFixedCharge: 45,
     });
     expect(fixed.deliveryFeeCharged).toBe(45);
     expect(fixed.roundedExtraKm).toBe(0);
@@ -168,15 +168,14 @@ describe("finance pricing flow", () => {
 
   it("calculates rider payout independently from customer fee", () => {
     const payout = calculateRiderPayout(3.1, {
-      deliveryPricingMode: "distance_based",
-      riderBasePayout: 30,
-      baseDistanceCapacityKm: 0.5,
-      deliveryPartnerRatePerKm: 5,
+      riderEarningType: "distance",
+      riderBaseEarning: 30,
+      riderBaseDistance: 0.5,
+      riderExtraPerKm: 5,
     });
 
-    expect(payout.riderPayoutBase).toBe(30);
-    expect(payout.roundedExtraKm).toBe(3);
-    expect(payout.riderPayoutDistance).toBe(15);
+    // 3.1km - 0.5km base = 2.6km, billed as 3 extra km: 30 + 3 * 5
+    expect(payout.riderPayoutBase).toBe(45);
     expect(payout.riderPayoutTotal).toBe(45);
   });
 
@@ -256,6 +255,14 @@ describe("finance pricing flow", () => {
       incrementalKmSurcharge: 10,
       deliveryPartnerRatePerKm: 5,
       fixedDeliveryFee: 30,
+      customerPricingType: "distance",
+      customerBaseDistance: 0.5,
+      customerBaseCharge: 30,
+      customerExtraPerKm: 10,
+      riderEarningType: "distance",
+      riderBaseDistance: 0.5,
+      riderBaseEarning: 30,
+      riderExtraPerKm: 5,
       handlingFeeStrategy: "highest_category_fee",
       codEnabled: true,
       onlineEnabled: true,

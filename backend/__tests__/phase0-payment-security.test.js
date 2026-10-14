@@ -16,9 +16,10 @@ const mockHandleOnlineOrderFinance = jest.fn();
 const mockAfterPlaceOrderV2 = jest.fn();
 const mockReleaseReservedStockForOrder = jest.fn();
 
-const mockPhonePePay = jest.fn();
-const mockPhonePeGetOrderStatus = jest.fn();
-const mockPhonePeValidateCallback = jest.fn();
+const mockInitiatePayment = jest.fn();
+const mockValidateWebhook = jest.fn();
+const mockDecodeWebhookPayload = jest.fn();
+const mockMapStatusToInternal = jest.fn();
 
 jest.unstable_mockModule("../app/models/order.js", () => ({
   default: {
@@ -56,46 +57,13 @@ jest.unstable_mockModule("../app/services/stockService.js", () => ({
   releaseReservedStockForOrder: mockReleaseReservedStockForOrder,
 }));
 
-jest.unstable_mockModule("@phonepe-pg/pg-sdk-node", () => ({
-  Env: {
-    PRODUCTION: "PRODUCTION",
-    SANDBOX: "SANDBOX",
-  },
-  StandardCheckoutClient: {
-    getInstance: jest.fn(() => ({
-      pay: mockPhonePePay,
-      getOrderStatus: mockPhonePeGetOrderStatus,
-      validateCallback: mockPhonePeValidateCallback,
-    })),
-  },
-  StandardCheckoutPayRequest: {
-    builder: jest.fn(() => {
-      const request = {};
-      return {
-        merchantOrderId(value) {
-          request.merchantOrderId = value;
-          return this;
-        },
-        amount(value) {
-          request.amount = value;
-          return this;
-        },
-        redirectUrl(value) {
-          request.redirectUrl = value;
-          return this;
-        },
-        build() {
-          return request;
-        },
-      };
-    }),
-  },
-}));
-
 const {
   createPaymentOrderForOrderRef,
-  processPhonePeWebhook,
+  processGatewayWebhook,
 } = await import("../app/services/paymentService.js");
+const { __setActivePaymentProviderForTests } = await import(
+  "../app/services/payment/providerRegistry.js"
+);
 
 describe("Phase 0 payment hardening", () => {
   beforeEach(() => {
@@ -103,10 +71,18 @@ describe("Phase 0 payment hardening", () => {
     process.env.RAZORPAY_KEY_ID = "rzp_test_key";
     process.env.RAZORPAY_KEY_SECRET = "rzp_test_secret";
     process.env.RAZORPAY_WEBHOOK_SECRET = "rzp_wh_secret";
-    process.env.PHONEPE_CLIENT_ID = "phonepe-client";
-    process.env.PHONEPE_CLIENT_SECRET = "phonepe-secret";
-    process.env.PHONEPE_CLIENT_VERSION = "1";
     process.env.FRONTEND_URL = "https://frontend.test";
+
+    __setActivePaymentProviderForTests(
+      {
+        providerName: "RAZORPAY",
+        initiatePayment: mockInitiatePayment,
+        validateWebhook: mockValidateWebhook,
+        decodeWebhookPayload: mockDecodeWebhookPayload,
+        mapStatusToInternal: mockMapStatusToInternal,
+      },
+      "razorpay",
+    );
 
     mockPaymentFindOne.mockImplementation((query) => {
       if (query?.idempotencyKey) {
@@ -130,7 +106,7 @@ describe("Phase 0 payment hardening", () => {
       paymentBreakdown: { grandTotal: 499 },
     });
     mockPaymentCountDocuments.mockResolvedValue(0);
-    mockPhonePePay.mockResolvedValue({
+    mockInitiatePayment.mockResolvedValue({
       redirectUrl: "https://pay.test/checkout",
     });
     mockPaymentCreate.mockResolvedValue({
@@ -154,9 +130,9 @@ describe("Phase 0 payment hardening", () => {
       correlationId: "corr-1",
     });
 
-    expect(mockPhonePePay).toHaveBeenCalledWith(
+    expect(mockInitiatePayment).toHaveBeenCalledWith(
       expect.objectContaining({
-        amount: 49900,
+        amountPaise: 49900,
       }),
     );
     expect(result.payment.amount).toBe(49900);
@@ -201,23 +177,19 @@ describe("Phase 0 payment hardening", () => {
   });
 
   it("treats duplicate webhook event id as idempotent", async () => {
+    mockValidateWebhook.mockResolvedValue(true);
+    mockDecodeWebhookPayload.mockResolvedValue({
+      eventId: "event-duplicate-1",
+      merchantOrderId: "gateway-order-1",
+      state: "captured",
+      transactionId: "pay_1",
+      raw: { event: "payment.captured" },
+    });
     mockWebhookEventCreate.mockRejectedValueOnce({ code: 11000 });
 
-    const callbackPayload = Buffer.from(
-      JSON.stringify({
-        state: "COMPLETED",
-        merchantOrderId: "gateway-order-1",
-        transactionId: "pay_1",
-      }),
-    ).toString("base64");
-
-    const payload = Buffer.from(JSON.stringify({ response: callbackPayload }));
-    mockPhonePeValidateCallback.mockResolvedValue(true);
-
-    const result = await processPhonePeWebhook({
-      rawBody: payload,
-      authorization: "phonepe-auth",
-      eventId: "event-duplicate-1",
+    const result = await processGatewayWebhook({
+      rawBody: Buffer.from("{}"),
+      authorization: "sig",
       correlationId: "corr-webhook",
     });
 
@@ -228,5 +200,52 @@ describe("Phase 0 payment hardening", () => {
       }),
     );
     expect(mockOrderUpdateOne).not.toHaveBeenCalled();
+  });
+
+  it("rejects webhooks with an invalid signature", async () => {
+    mockValidateWebhook.mockResolvedValue(false);
+
+    await expect(
+      processGatewayWebhook({ rawBody: Buffer.from("{}"), authorization: "bad" }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+    expect(mockWebhookEventCreate).not.toHaveBeenCalled();
+  });
+
+  it("acks unsupported webhook events without touching the database", async () => {
+    mockValidateWebhook.mockResolvedValue(true);
+    mockDecodeWebhookPayload.mockResolvedValue({
+      state: "ignored",
+      raw: { event: "refund.created" },
+    });
+
+    const result = await processGatewayWebhook({
+      rawBody: Buffer.from("{}"),
+      authorization: "sig",
+    });
+
+    expect(result).toEqual(expect.objectContaining({ accepted: true, ignored: true }));
+    expect(mockWebhookEventCreate).not.toHaveBeenCalled();
+    expect(mockPaymentFindOne).not.toHaveBeenCalled();
+  });
+
+  it("records a webhook event id even when the provider does not supply one", async () => {
+    mockValidateWebhook.mockResolvedValue(true);
+    mockDecodeWebhookPayload.mockResolvedValue({
+      merchantOrderId: "gateway-order-1",
+      state: "captured",
+      transactionId: "pay_1",
+      raw: { event: "payment.captured" },
+    });
+    mockWebhookEventCreate.mockRejectedValueOnce({ code: 11000 });
+
+    await processGatewayWebhook({
+      rawBody: Buffer.from("{}"),
+      authorization: "sig",
+      providerEventId: "evt_header_1",
+    });
+
+    expect(mockWebhookEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: "evt_header_1" }),
+    );
   });
 });

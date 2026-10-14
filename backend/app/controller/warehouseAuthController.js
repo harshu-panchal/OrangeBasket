@@ -300,9 +300,10 @@ export const resetWarehousePassword = async (req, res) => {
             return handleResponse(res, 400, "Password must be at least 8 characters long");
         }
 
-        verifyWarehouseVerificationToken({ channel, rawValue, token, purpose: "warehouse_reset" });
+        const verified = verifyWarehouseVerificationToken({ channel, rawValue, token, purpose: "warehouse_reset" });
 
-        const query = channel === "email" ? { email: rawValue.toLowerCase() } : { phone: rawValue };
+        // Look up by the normalized target the OTP was issued for.
+        const query = verified.channel === "email" ? { email: verified.target } : { phone: verified.target };
         const warehouse = await Warehouse.findOne(query);
 
         if (!warehouse) {
