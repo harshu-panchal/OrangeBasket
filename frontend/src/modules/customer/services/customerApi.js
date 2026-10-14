@@ -15,6 +15,7 @@ export const customerApi = {
     getWithDedupe("/categories", params, { ttl: 60 * 1000 }), // 1 min for categories
   getProducts: (params) => getWithDedupe("/products", params),
   getSearchSuggestions: (params) => getWithDedupe("/products/suggestions", params),
+  getRelatedProducts: (params) => getWithDedupe("/products/related", params),
   getProductById: (id, params) => getWithDedupe(`/products/${id}`, params),
 
   // Sellers & Location

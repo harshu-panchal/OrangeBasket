@@ -1813,3 +1813,102 @@ export const getSearchSuggestions = async (req, res) => {
     return handleResponse(res, 500, error.message);
   }
 };
+
+/* ===============================
+   RELATED PRODUCTS FOR SEARCH ("Show more")
+   Given the ids of the products a search returned, find other nearby
+   products that share brand / subcategory / category / name keywords.
+================================ */
+const RELATED_STOP_WORDS = new Set(["the", "and", "for", "with", "pack", "of", "in", "gm", "kg", "ml", "ltr"]);
+
+export const getRelatedSearchProducts = async (req, res) => {
+  try {
+    const { ids, search, lat, lng } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 30);
+    const emptyResult = { items: [] };
+
+    const baseIds = String(ids || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 50);
+    if (!baseIds.length) return handleResponse(res, 200, "Success", emptyResult);
+
+    const enforceRadius = isCustomerVisibilityRequest(req);
+    const coords = parseCustomerCoordinates({ lat, lng });
+    if (enforceRadius && !coords.valid) {
+      return handleResponse(res, 200, "Success", emptyResult);
+    }
+
+    const matched = await Product.find({ _id: { $in: baseIds } })
+      .select("name brand categoryId subcategoryId")
+      .lean();
+    if (!matched.length) return handleResponse(res, 200, "Success", emptyResult);
+
+    const brands = [...new Set(matched.map((p) => String(p.brand || "").trim()).filter(Boolean))];
+    const categoryIds = [...new Set(matched.map((p) => p.categoryId && String(p.categoryId)).filter(Boolean))];
+    const subcategoryIds = [...new Set(matched.map((p) => p.subcategoryId && String(p.subcategoryId)).filter(Boolean))];
+    const keywords = [
+      ...new Set(
+        `${search || ""} ${matched[0].name || ""}`
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter((w) => w.length >= 3 && !RELATED_STOP_WORDS.has(w) && !/^\d/.test(w)),
+      ),
+    ].slice(0, 6);
+
+    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const relatedOr = [];
+    if (brands.length) {
+      relatedOr.push({ brand: { $in: brands.map((b) => new RegExp(`^${escapeRe(b)}$`, "i")) } });
+    }
+    if (subcategoryIds.length) relatedOr.push({ subcategoryId: { $in: subcategoryIds } });
+    if (categoryIds.length) relatedOr.push({ categoryId: { $in: categoryIds } });
+    if (keywords.length) {
+      relatedOr.push({ name: new RegExp(keywords.map(escapeRe).join("|"), "i") });
+    }
+    if (!relatedOr.length) return handleResponse(res, 200, "Success", emptyResult);
+
+    const conditions = [{ _id: { $nin: baseIds } }, { $or: relatedOr }, { status: "active" }];
+    if (enforceRadius) {
+      const nearbySellerIds = await getNearbySellerIdsForCustomer(coords.lat, coords.lng);
+      if (!nearbySellerIds.length) return handleResponse(res, 200, "Success", emptyResult);
+      conditions.push({
+        $or: [{ sellerId: { $in: nearbySellerIds } }, { warehouseId: { $in: nearbySellerIds } }],
+      });
+      conditions.push(getApprovedOrLegacyFilter());
+    }
+
+    // Over-fetch, then rank in memory by how closely each product relates.
+    const candidates = await Product.find({ $and: conditions })
+      .select(
+        "name slug sku price salePrice stock brand weight mainImage galleryImages headerId categoryId subcategoryId sellerId warehouseId status approvalStatus isFeatured variants tags createdAt",
+      )
+      .limit(limit * 4)
+      .lean();
+
+    const brandSet = new Set(brands.map((b) => b.toLowerCase()));
+    const subSet = new Set(subcategoryIds);
+    const catSet = new Set(categoryIds);
+    const score = (p) => {
+      let s = 0;
+      if (p.brand && brandSet.has(String(p.brand).trim().toLowerCase())) s += 4;
+      if (p.subcategoryId && subSet.has(String(p.subcategoryId))) s += 3;
+      if (p.categoryId && catSet.has(String(p.categoryId))) s += 1;
+      const name = String(p.name || "").toLowerCase();
+      s += keywords.filter((k) => name.includes(k)).length * 0.5;
+      if (p.stock > 0) s += 0.25;
+      return s;
+    };
+
+    const items = candidates
+      .map((p) => ({ p, s: score(p) }))
+      .sort((a, b) => b.s - a.s)
+      .slice(0, limit)
+      .map(({ p }) => stripWarehouseOnlyOutput(p));
+
+    return handleResponse(res, 200, "Success", { items });
+  } catch (error) {
+    return handleResponse(res, 500, error.message);
+  }
+};

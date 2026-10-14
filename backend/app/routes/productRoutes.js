@@ -10,6 +10,7 @@ import {
     approveProduct,
     rejectProduct,
     getSearchSuggestions,
+    getRelatedSearchProducts,
 } from "../controller/productController.js";
 import { adjustStock, getStockHistory } from "../controller/stockController.js";
 import {
@@ -27,6 +28,7 @@ const router = express.Router();
 
 // Public routes with optional auth (to detect admin/seller vs customer)
 router.get("/suggestions", optionalVerifyToken, getSearchSuggestions);
+router.get("/related", optionalVerifyToken, getRelatedSearchProducts);
 router.get("/", optionalVerifyToken, getProducts);
 
 // Seller protected routes

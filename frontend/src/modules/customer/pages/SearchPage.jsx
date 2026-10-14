@@ -30,6 +30,11 @@ const SearchPage = () => {
     const [hasMoreSearch, setHasMoreSearch] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     
+    // Related Products State ("You may also like")
+    const [relatedProducts, setRelatedProducts] = useState([]);
+    const [showAllRelated, setShowAllRelated] = useState(false);
+    const RELATED_PREVIEW_COUNT = 5;
+
     // Lowest Price Section State
     const [lowestPriceProducts, setLowestPriceProducts] = useState([]);
     const [isLowestPriceLoading, setIsLowestPriceLoading] = useState(false);
@@ -263,6 +268,50 @@ const SearchPage = () => {
         };
         fetchSearchResults();
     }, [currentLocation?.latitude, currentLocation?.longitude, debouncedQuery, searchPage, sort, inStockOnly, debouncedBrand, debouncedMinPrice, debouncedMaxPrice]);
+
+    // Fetch related products once the first page of search results is in
+    const firstResultIds = useMemo(
+        () => searchResults.slice(0, 20).map((p) => p.id).join(','),
+        [searchResults]
+    );
+    useEffect(() => {
+        setShowAllRelated(false);
+        const hasValidLocation =
+            Number.isFinite(currentLocation?.latitude) &&
+            Number.isFinite(currentLocation?.longitude);
+        if (!firstResultIds || !hasValidLocation || query !== debouncedQuery) {
+            setRelatedProducts([]);
+            return;
+        }
+
+        let cancelled = false;
+        const fetchRelated = async () => {
+            try {
+                const response = await customerApi.getRelatedProducts({
+                    ids: firstResultIds,
+                    search: debouncedQuery.trim(),
+                    lat: currentLocation.latitude,
+                    lng: currentLocation.longitude,
+                    limit: 12,
+                });
+                if (cancelled || !response.data.success) return;
+                const items = response.data.result?.items || [];
+                setRelatedProducts(items.map(p => ({
+                    ...p,
+                    id: p._id,
+                    image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
+                    price: p.salePrice || p.price,
+                    originalPrice: p.price,
+                    weight: p.weight || '1 unit',
+                    deliveryTime: '8-15 mins'
+                })));
+            } catch (error) {
+                console.error('Error fetching related products:', error);
+            }
+        };
+        fetchRelated();
+        return () => { cancelled = true; };
+    }, [firstResultIds, debouncedQuery, query, currentLocation?.latitude, currentLocation?.longitude]);
 
     // Fetch Lowest Price Products (Only when no query is present)
     useEffect(() => {
@@ -642,6 +691,34 @@ const SearchPage = () => {
                                 {isSearchLoading && searchResults.length > 0 && (
                                     <div className="flex justify-center pt-8 pb-4">
                                         <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                    </div>
+                                )}
+
+                                {/* Related products */}
+                                {relatedProducts.length > 0 && !hasMoreSearch && (
+                                    <div className="mt-12">
+                                        <div className="flex justify-between items-center mb-5">
+                                            <div>
+                                                <h3 className="text-xl font-black text-slate-800 tracking-tight">You may also like</h3>
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Related to "{query}"</span>
+                                            </div>
+                                            {relatedProducts.length > RELATED_PREVIEW_COUNT && (
+                                                <button
+                                                    onClick={() => setShowAllRelated(v => !v)}
+                                                    className="flex items-center gap-1 px-4 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-full text-sm font-black text-primary transition-all"
+                                                >
+                                                    {showAllRelated ? 'Show less' : `Show more (${relatedProducts.length - RELATED_PREVIEW_COUNT})`}
+                                                    <ChevronRight size={14} strokeWidth={3} className={cn("transition-transform", showAllRelated && "-rotate-90")} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 md:gap-x-4 gap-y-6 md:gap-y-10">
+                                            {(showAllRelated ? relatedProducts : relatedProducts.slice(0, RELATED_PREVIEW_COUNT)).map((product) => (
+                                                <div key={product.id} className="h-full w-full">
+                                                    <ProductCard product={product} compact={isMobile} className="w-full" />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </>

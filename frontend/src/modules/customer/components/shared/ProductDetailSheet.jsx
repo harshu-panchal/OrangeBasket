@@ -15,6 +15,7 @@ import { customerApi } from '../../services/customerApi';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import ParticleBurst from './ParticleBurst';
+import ProductCard from './ProductCard';
 
 const AccordionItem = ({ title, children, id, icon, expandedSections, toggleSection }) => {
     const isOpen = expandedSections.includes(id);
@@ -101,6 +102,7 @@ const ProductDetailSheet = () => {
     const [extendedProduct, setExtendedProduct] = useState(null);
     const [expandedSections, setExpandedSections] = useState(['description']); // Start with description open
     const [showHeartPopup, setShowHeartPopup] = useState(false);
+    const [relatedProducts, setRelatedProducts] = useState([]);
     
     // Kit Add-ons State
     const [addons, setAddons] = useState([]);
@@ -191,6 +193,10 @@ const ProductDetailSheet = () => {
         }
         setActiveImageIndex(0);
         
+        // Reset related products & scroll back to top for the new product
+        setRelatedProducts([]);
+        document.querySelectorAll('[data-detail-scroll]').forEach((el) => el.scrollTo({ top: 0 }));
+
         // Reset Addons
         setAddons([]);
         setAddonQuantities({});
@@ -199,11 +205,52 @@ const ProductDetailSheet = () => {
             const pid = selectedProduct.id || selectedProduct._id;
             fetchReviews(pid);
             fetchExtendedProduct(pid);
+            fetchRelatedProducts(pid);
             if (selectedProduct.isMonthlyKit) {
                 fetchAddons(pid);
             }
         }
     }, [selectedProduct]);
+
+    const fetchRelatedProducts = async (productId) => {
+        const hasValidLocation =
+            Number.isFinite(currentLocation?.latitude) &&
+            Number.isFinite(currentLocation?.longitude);
+        if (!hasValidLocation) return;
+        try {
+            const res = await customerApi.getRelatedProducts({
+                ids: productId,
+                lat: currentLocation.latitude,
+                lng: currentLocation.longitude,
+                limit: 12,
+            });
+            const items = res?.data?.result?.items || [];
+            setRelatedProducts(items.map((p) => ({
+                ...p,
+                id: p._id,
+                image: p.mainImage || p.image || "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&q=80&w=400&h=400",
+                price: p.salePrice || p.price,
+                originalPrice: p.price,
+                weight: p.weight || '1 unit',
+                deliveryTime: '8-15 mins',
+            })));
+        } catch (error) {
+            console.error("Fetch related products error:", error);
+        }
+    };
+
+    const relatedSection = relatedProducts.length > 0 && (
+        <div className="mt-6">
+            <h3 className="text-base font-black text-slate-800 tracking-tight mb-3">Similar products</h3>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-1 px-1 pb-2 snap-x">
+                {relatedProducts.map((p) => (
+                    <div key={p.id} className="min-w-[140px] w-[140px] snap-start">
+                        <ProductCard product={p} compact className="h-full w-full" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     const fetchAddons = async (kitId) => {
         try {
@@ -717,7 +764,7 @@ const ProductDetailSheet = () => {
                             </div>
 
                             {/* Right: Product Info (scrollable for tall basket content) */}
-                            <div className="flex-1 flex flex-col bg-white min-h-0 overflow-y-auto overscroll-contain">
+                            <div className="flex-1 flex flex-col bg-white min-h-0 overflow-y-auto overscroll-contain" data-detail-scroll>
                                 <div className="flex-1 px-7 py-6 lg:px-8 lg:py-7 space-y-3">
 
                                     {/* Top badges row */}
@@ -1063,6 +1110,8 @@ const ProductDetailSheet = () => {
                                         </AccordionItem>
                                     </div>
 
+                                    {relatedSection}
+
                                     {/* Bottom spacer */}
                                     <div className="h-6" />
                                 </div>
@@ -1141,6 +1190,7 @@ const ProductDetailSheet = () => {
                                 "flex-1 overflow-x-hidden no-scrollbar pb-24 bg-white",
                                 isExpanded ? "overflow-y-auto" : "overflow-y-hidden"
                             )}
+                            data-detail-scroll
                             onScroll={handleScroll}
                             onWheel={handleWheel}
                         >
@@ -1434,6 +1484,7 @@ const ProductDetailSheet = () => {
                                                 </div>
                                             </AccordionItem>
                                         </div>
+                                        {relatedSection}
                                     </>
                                 ) : (
                                     <div className="mt-2 text-center">
