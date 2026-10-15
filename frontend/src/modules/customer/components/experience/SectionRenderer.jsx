@@ -4,6 +4,7 @@ import ProductCard from "../shared/ProductCard";
 import { cn } from "@/lib/utils";
 import ExperienceBannerCarousel from "./ExperienceBannerCarousel";
 import { setJSON, STORAGE_KEYS } from "@core/utils/storage";
+import { applyCloudinaryTransform, buildCloudinarySrcSet, isCloudinaryUrl } from "@/core/utils/imageUtils";
 
 const rememberExperienceReturn = (headerId, sectionId) =>
   setJSON(
@@ -152,10 +153,21 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                       className="relative rounded-2xl overflow-hidden cursor-pointer shadow-[0_8px_20px_-8px_rgba(0,0,0,0.1)] border border-slate-100 aspect-[4/3] sm:aspect-[16/9] md:aspect-[3/2] group"
                     >
                       <img
-                        src={banner.imageUrl}
+                        src={applyCloudinaryTransform(banner.imageUrl, "f_auto,q_auto,w_824,c_scale")}
+                        srcSet={
+                          isCloudinaryUrl(banner.imageUrl)
+                            ? buildCloudinarySrcSet(
+                                banner.imageUrl,
+                                [{ w: 400 }, { w: 600 }, { w: 824 }],
+                                "f_auto,q_auto,c_scale"
+                              )
+                            : undefined
+                        }
+                        sizes="(max-width: 640px) 85vw, (max-width: 768px) 75vw, 400px"
                         alt={banner.title || heading || "Banner"}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
+                        decoding="async"
                       />
                       {(banner.title || banner.subtitle) && (
                         <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 md:p-6">
@@ -215,8 +227,10 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                       <div className="relative aspect-square w-full rounded-2xl bg-[#F8F9FA] border border-slate-100/80 flex items-center justify-center overflow-hidden p-1 transition-all duration-200 group-hover:border-primary/40 group-hover:bg-white group-hover:shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
                         {cat.image ? (
                           <img
-                            src={cat.image}
+                            src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_160,c_scale")}
                             alt={cat.name}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-contain object-center mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
                           />
                         ) : (
@@ -294,8 +308,10 @@ const SectionRenderer = ({ sections = [], productsById = {}, categoriesById = {}
                       <div className="relative aspect-square w-full rounded-2xl bg-[#F8F9FA] border border-slate-100/80 flex items-center justify-center overflow-hidden p-1 transition-all duration-200 group-hover:border-primary/40 group-hover:bg-white group-hover:shadow-[0_10px_25px_rgba(15,23,42,0.08)]">
                         {cat.image ? (
                           <img
-                            src={cat.image}
+                            src={applyCloudinaryTransform(cat.image, "f_auto,q_auto,w_160,c_scale")}
                             alt={cat.name}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-contain object-center mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
                           />
                         ) : (
