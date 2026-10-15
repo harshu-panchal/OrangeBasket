@@ -72,6 +72,22 @@ export default defineConfig({
           if (!id.includes('node_modules')) return
 
           if (
+            id.includes('react/') ||
+            id.includes('react-dom/') ||
+            id.includes('scheduler/')
+          ) {
+            return 'vendor-react'
+          }
+
+          if (id.includes('react-router') || id.includes('@remix-run/router')) {
+            return 'vendor-router'
+          }
+
+          if (id.includes('lucide-react') || id.includes('react-icons')) {
+            return 'vendor-icons'
+          }
+
+          if (
             id.includes('@mui/material') ||
             id.includes('@mui/icons-material') ||
             id.includes('@emotion/react') ||
@@ -82,7 +98,12 @@ export default defineConfig({
 
           if (id.includes('framer-motion')) return 'vendor-motion'
           if (id.includes('firebase')) return 'vendor-firebase'
-          if (id.includes('recharts')) return 'vendor-charts'
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts'
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf'
+          if (id.includes('leaflet') || id.includes('@react-google-maps')) return 'vendor-maps'
+          if (id.includes('socket.io-client') || id.includes('engine.io-client')) return 'vendor-socket'
+          if (id.includes('@tanstack/react-query')) return 'vendor-query'
+          if (id.includes('date-fns')) return 'vendor-date'
         },
       },
     },
