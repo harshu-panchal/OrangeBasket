@@ -5,6 +5,7 @@ import {
   applyCloudinaryTransform,
   buildCloudinarySrcSet,
   isCloudinaryUrl,
+  getOptimizedVideoUrl,
 } from "@/core/utils/imageUtils";
 
 import { useNavigate } from "react-router-dom";
@@ -149,7 +150,8 @@ const ExperienceBannerCarouselContent = ({ section, items, fullWidth = false, sl
                     else el.pause();
                   }
                 }}
-                src={banner.videoUrl}
+                src={getOptimizedVideoUrl(banner.videoUrl)}
+                preload="metadata"
                 muted
                 playsInline
                 className={cn(
