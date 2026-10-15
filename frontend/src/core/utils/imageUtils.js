@@ -43,6 +43,16 @@ export function applyCloudinaryTransform(rawUrl, params = "f_auto,q_auto,w_400,d
   return url.replace(CLOUDINARY_UPLOAD_SEGMENT_REGEX, `/upload/${params}/$1/`);
 }
 
+/**
+ * Optimizes Cloudinary video delivery with compression, auto format & resolution limits.
+ */
+export function getOptimizedVideoUrl(rawUrl, params = "f_auto,q_auto,w_854,vc_auto") {
+  if (!rawUrl) return "";
+  const url = resolveMediaUrl(rawUrl);
+  if (!CLOUDINARY_REGEX.test(url)) return url;
+  return applyCloudinaryTransform(url, params);
+}
+
 export function isCloudinaryUrl(url) {
   return !!url && CLOUDINARY_REGEX.test(url);
 }

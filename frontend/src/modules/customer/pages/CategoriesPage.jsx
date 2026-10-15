@@ -62,15 +62,19 @@ const CategoriesBannerCarousel = ({ banners, fallbackImage }) => {
                         {b.buttonLink && b.buttonLink !== '/' ? (
                             <Link to={b.buttonLink} className="block w-full cursor-pointer">
                                 <img
-                                    src={b.image}
+                                    src={applyCloudinaryTransform(b.image, "f_auto,q_auto,w_800,c_scale")}
                                     alt={b.title || "Promotional Banner"}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-auto object-contain block"
                                 />
                             </Link>
                         ) : (
                             <img
-                                src={b.image}
+                                src={applyCloudinaryTransform(b.image, "f_auto,q_auto,w_800,c_scale")}
                                 alt={b.title || "Promotional Banner"}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-auto object-contain block"
                             />
                         )}
@@ -273,9 +277,10 @@ const CategoriesPage = () => {
                                         
                                         <div className="w-16 h-16 sm:w-20 sm:h-20 mb-2 flex items-center justify-center flex-shrink-0">
                                             <img
-                                                src={applyCloudinaryTransform(category.image)}
+                                                src={applyCloudinaryTransform(category.image, "f_auto,q_auto,w_160,c_scale")}
                                                 alt={category.name}
                                                 loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-contain mix-blend-multiply scale-[1.35]"
                                             />
                                         </div>
