@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@core/context/AuthContext';
 import { useSettings } from '@core/context/SettingsContext';
 import { useTranslation } from '@core/context/LanguageContext';
@@ -19,6 +19,7 @@ const CustomerAuth = () => {
     const dropdownRef = useRef(null);
     const appName = settings?.appName || 'App';
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [formData, setFormData] = useState({
         phone: '',
@@ -90,7 +91,8 @@ const CustomerAuth = () => {
             const { token, customer } = response.data.result;
             login({ ...customer, token, role: 'customer' });
             toast.success(t('loggedInSuccess'));
-            navigate('/', { replace: true });
+            const from = location.state?.from;
+            navigate(from ? `${from.pathname}${from.search || ''}` : '/', { replace: true });
         } catch (error) {
             const apiMessage = error?.response?.data?.message;
             toast.error(apiMessage || t('invalidOtp'));

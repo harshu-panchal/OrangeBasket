@@ -8,7 +8,7 @@ const DeliveryFooter = () => {
                     India's last<br/>minute app <span className="inline-block relative top-1">❤️</span>
                 </h3>
                 <p className="text-[22px] font-black text-[#d0dbe3] tracking-tighter mt-2">
-                    orangebasket
+                    orange basket
                 </p>
             </div>
             

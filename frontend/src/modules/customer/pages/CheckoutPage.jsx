@@ -204,29 +204,57 @@ const CheckoutPage = () => {
   const addressInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (user && !addressInitializedRef.current) {
+    if (!user || addressInitializedRef.current) return;
+
+    const toType = (label) => {
+      const t = label ? label.charAt(0).toUpperCase() + label.slice(1).toLowerCase() : "";
+      return ["Home", "Work", "Other"].includes(t) ? t : "Other";
+    };
+
+    const liveLat = Number(currentLocation?.latitude);
+    const liveLng = Number(currentLocation?.longitude);
+    const hasLive = Boolean(currentLocation?.name) && Number.isFinite(liveLat) && Number.isFinite(liveLng);
+
+    let defaultAddr;
+    if (hasLive) {
+      // Use the location the customer selected on the home page.
+      // If it matches a saved address (~100m), reuse that address's label.
+      const matched = (locationSavedAddresses || []).find((a) =>
+        a?.location &&
+        Math.abs(a.location.lat - liveLat) < 0.001 &&
+        Math.abs(a.location.lng - liveLng) < 0.001,
+      );
+      defaultAddr = {
+        type: matched ? toType(matched.label) : "Other",
+        name: user.name || "Customer",
+        address: currentLocation.name,
+        landmark: "",
+        city: [currentLocation.city, currentLocation.state, currentLocation.pincode].filter(Boolean).join(", "),
+        phone: user.phone || "",
+        location: { lat: liveLat, lng: liveLng },
+      };
+    } else {
       const savedAddr = (locationSavedAddresses && locationSavedAddresses.length > 0)
         ? locationSavedAddresses[0]
         : (user.addresses && user.addresses.length > 0)
           ? user.addresses[0]
           : null;
-
-      if (savedAddr || user.name || user.phone) {
-        const defaultAddr = {
-          type: savedAddr?.label ? (savedAddr.label.charAt(0).toUpperCase() + savedAddr.label.slice(1)) : "Home",
-          name: user.name || "Customer",
-          address: savedAddr?.fullAddress || "",
-          landmark: savedAddr?.landmark || "",
-          city: `${savedAddr?.city || ""} ${savedAddr?.pincode || ""}`.trim() || "",
-          phone: user.phone || "",
-          location: savedAddr?.location || currentLocation || undefined,
-        };
-
-        setCurrentAddress(defaultAddr);
-        setEditAddressForm(defaultAddr);
-        addressInitializedRef.current = true;
-      }
+      if (!savedAddr && !user.name && !user.phone) return;
+      defaultAddr = {
+        type: toType(savedAddr?.label),
+        name: user.name || "Customer",
+        // LocationContext addresses use `address`; raw profile addresses use `fullAddress`
+        address: savedAddr?.address || savedAddr?.fullAddress || "",
+        landmark: savedAddr?.landmark || "",
+        city: `${savedAddr?.city || ""} ${savedAddr?.pincode || ""}`.trim() || "",
+        phone: user.phone || "",
+        location: savedAddr?.location || undefined,
+      };
     }
+
+    setCurrentAddress(defaultAddr);
+    setEditAddressForm(defaultAddr);
+    addressInitializedRef.current = true;
   }, [user, locationSavedAddresses, currentLocation]);
 
   const paymentMethods = [
@@ -675,7 +703,8 @@ const CheckoutPage = () => {
         const res = await customerApi.getActiveCoupons();
         if (res.data.success) {
           const list = res.data.result || res.data.results || [];
-          setCoupons(list);
+          // Creator coupons are code-only; never list them (server already filters).
+          setCoupons(list.filter((c) => !c.isCreator));
         }
       } catch {
         // silently ignore
@@ -704,6 +733,9 @@ const CheckoutPage = () => {
       })),
       address: buildAddressForOrder(),
       discountTotal: discountAmount,
+      // Send the applied coupon so the server can validate it (required for creator coupons)
+      couponCode: selectedCoupon?.code || undefined,
+      couponId: selectedCoupon?.couponId || undefined,
       taxTotal: 0,
       tipAmount: selectedTip,
       paymentMode: selectedPayment === "online" ? "ONLINE" : "COD",
@@ -746,6 +778,7 @@ const CheckoutPage = () => {
     selectedTip,
     selectedTimeSlot,
     discountAmount,
+    selectedCoupon?.code,
     savedRecipient,
     currentAddress,
     currentLocation,
@@ -808,6 +841,8 @@ const CheckoutPage = () => {
         address: orderAddress,
         paymentMode: selectedPayment === "online" ? "ONLINE" : "COD",
         discountTotal: discountAmount,
+        couponCode: selectedCoupon?.code || undefined,
+        couponId: selectedCoupon?.couponId || undefined,
         taxTotal: taxAmount,
         tipAmount: selectedTip,
         timeSlot: selectedTimeSlot,

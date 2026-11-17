@@ -1,9 +1,10 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, CalendarCheck, Wallet, User, ShoppingCart } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, LayoutGrid, CalendarCheck, Wallet, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '../../context/CartContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import ViewCartPill from '../shared/ViewCartPill';
 
 const isRouteActive = (itemPath, currentPath) => {
     if (itemPath === '/') {
@@ -36,7 +37,6 @@ const isRouteActive = (itemPath, currentPath) => {
 
 const BottomNav = () => {
     const location = useLocation();
-    const navigate = useNavigate();
     const { cartCount } = useCart();
 
     const leftNavItems = [
@@ -57,22 +57,20 @@ const BottomNav = () => {
         >
             <div className="max-w-lg mx-auto px-2 pt-1.5 pb-1 flex items-center justify-between relative">
 
-                {/* Center Elevated Cart Button */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-20">
-                    <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigate(cartCount > 0 ? '/checkout' : '/orders')}
-                        className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff5500] to-[#ff7700] text-white flex items-center justify-center border-[3.5px] border-white shadow-[0_10px_25px_rgba(255,85,0,0.5)] transition-all cursor-pointer hover:scale-105 active:scale-95"
-                        title="View Cart"
-                    >
-                        <ShoppingCart size={19} className="text-white" strokeWidth={2.3} />
-                    </motion.button>
+                {/* View cart pill (shown when cart has items) */}
+                <AnimatePresence>
                     {cartCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white font-black text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-md pointer-events-none animate-in zoom-in">
-                            {cartCount > 99 ? '99+' : cartCount}
-                        </div>
+                        <motion.div
+                            initial={{ y: 30, opacity: 0, x: '-50%' }}
+                            animate={{ y: 0, opacity: 1, x: '-50%' }}
+                            exit={{ y: 30, opacity: 0, x: '-50%' }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            className="absolute left-1/2 bottom-full mb-3 z-20"
+                        >
+                            <ViewCartPill />
+                        </motion.div>
                     )}
-                </div>
+                </AnimatePresence>
 
                 {/* 5 Icons */}
                 <div className="flex items-center justify-between w-full">

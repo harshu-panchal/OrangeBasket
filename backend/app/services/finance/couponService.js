@@ -68,6 +68,23 @@ async function loadCoupon({ couponCode, couponId, session }) {
   return query.lean();
 }
 
+/**
+ * Creator (influencer) coupons must ALWAYS go through the server-side engine,
+ * even when SERVER_SIDE_COUPON_ENGINE is off, so the one-use-per-customer rule
+ * is enforced and the coupon is recorded on the order.
+ */
+export async function isCreatorCouponRef({ couponCode, couponId, session = null } = {}) {
+  if (!couponCode && !couponId) return false;
+  const coupon = await loadCoupon({ couponCode, couponId, session });
+  return Boolean(coupon?.isCreator);
+}
+
+export async function shouldUseServerCouponEngine({ engineEnabled, couponCode, couponId, session = null } = {}) {
+  if (!couponCode && !couponId) return false;
+  if (engineEnabled) return true;
+  return isCreatorCouponRef({ couponCode, couponId, session });
+}
+
 function computeCartSubtotalFromHydrated(hydratedItems = []) {
   return roundCurrency(
     (hydratedItems || []).reduce(
@@ -200,7 +217,20 @@ export async function computeOrderDiscount({
     throw makeError(400, "This coupon has reached its usage limit");
   }
 
-  if (customerId && Number.isFinite(Number(coupon.perUserLimit)) && Number(coupon.perUserLimit) > 0) {
+  if (coupon.isCreator) {
+    // Creator codes are strictly one use per logged-in customer.
+    if (!customerId) {
+      throw makeError(401, "Please log in to use this coupon");
+    }
+    const userUsage = await getUserCouponUsageCount({
+      customerId,
+      couponObjectId: coupon._id,
+      session,
+    });
+    if (userUsage >= 1) {
+      throw makeError(400, "You have already used this coupon");
+    }
+  } else if (customerId && Number.isFinite(Number(coupon.perUserLimit)) && Number(coupon.perUserLimit) > 0) {
     const userUsage = await getUserCouponUsageCount({
       customerId,
       couponObjectId: coupon._id,

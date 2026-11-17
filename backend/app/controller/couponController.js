@@ -4,13 +4,55 @@ import Order from "../models/order.js";
 import Cart from "../models/cart.js";
 import { buildSearchRegex } from "../utils/regex.js";
 import { isServerSideCouponEngineEnabled } from "../constants/finance.js";
-import { computeOrderDiscount } from "../services/finance/couponService.js";
+import { computeOrderDiscount, shouldUseServerCouponEngine } from "../services/finance/couponService.js";
 import { hydrateOrderItems } from "../services/finance/pricingService.js";
+
+const CANCELLED_STATUSES = ["cancelled", "Cancelled", "CANCELLED"];
+
+/** Normalize creator-coupon fields on create/update. Returns an error message or null. */
+function applyCreatorRules(data, { isUpdate = false } = {}) {
+    if (data.isCreator === undefined) return null;
+    data.isCreator = data.isCreator === true || data.isCreator === "true";
+    if (data.isCreator) {
+        data.creatorName = String(data.creatorName || "").trim();
+        data.creatorContact = String(data.creatorContact || "").trim();
+        if (!data.creatorName) return "Creator name is required for a creator coupon";
+        data.perUserLimit = 1; // one use per customer
+    } else if (!isUpdate) {
+        delete data.creatorName;
+        delete data.creatorContact;
+    } else {
+        data.creatorName = "";
+        data.creatorContact = "";
+    }
+    return null;
+}
+
+/** Customer-facing list: creator coupons are never exposed here. */
+export const listPublicCoupons = async (req, res) => {
+    try {
+        const now = new Date();
+        const coupons = await Coupon.find({
+            isCreator: { $ne: true },
+            isActive: true,
+            validFrom: { $lte: now },
+            validTill: { $gte: now },
+        })
+            .select("-creatorName -creatorContact -metadata")
+            .sort({ createdAt: -1 })
+            .lean();
+        return handleResponse(res, 200, "Coupons fetched successfully", coupons);
+    } catch (error) {
+        return handleResponse(res, 500, error.message);
+    }
+};
 
 export const listCoupons = async (req, res) => {
     try {
-        const { status, search } = req.query;
+        const { status, search, kind } = req.query;
         const query = {};
+        if (kind === "creator") query.isCreator = true;
+        else if (kind === "normal") query.isCreator = { $ne: true };
 
         if (status === "active") {
             const now = new Date();
@@ -33,6 +75,35 @@ export const listCoupons = async (req, res) => {
         }
 
         const coupons = await Coupon.find(query).sort({ createdAt: -1 }).lean();
+
+        // Creator performance: orders, unique customers and sales per creator code.
+        const creatorIds = coupons.filter((c) => c.isCreator).map((c) => c._id);
+        if (creatorIds.length) {
+            const rows = await Order.aggregate([
+                { $match: { coupon: { $in: creatorIds }, status: { $nin: CANCELLED_STATUSES } } },
+                {
+                    $group: {
+                        _id: "$coupon",
+                        orders: { $sum: 1 },
+                        customers: { $addToSet: "$customer" },
+                        sales: { $sum: { $ifNull: ["$pricing.total", 0] } },
+                        discount: { $sum: { $ifNull: ["$couponSnapshot.discountAmount", 0] } },
+                    },
+                },
+            ]);
+            const byId = new Map(rows.map((r) => [String(r._id), r]));
+            for (const c of coupons) {
+                if (!c.isCreator) continue;
+                const r = byId.get(String(c._id));
+                c.creatorStats = {
+                    orders: r?.orders || 0,
+                    customers: r?.customers?.length || 0,
+                    sales: Math.round((r?.sales || 0) * 100) / 100,
+                    discountGiven: Math.round((r?.discount || 0) * 100) / 100,
+                };
+            }
+        }
+
         return handleResponse(res, 200, "Coupons fetched successfully", coupons);
     } catch (error) {
         return handleResponse(res, 500, error.message);
@@ -42,7 +113,11 @@ export const listCoupons = async (req, res) => {
 export const createCoupon = async (req, res) => {
     try {
         const data = { ...req.body };
-        
+        delete data.usedCount;
+        delete data.creatorStats;
+        const creatorError = applyCreatorRules(data);
+        if (creatorError) return handleResponse(res, 400, creatorError);
+
         if (data.validFrom) {
             const from = new Date(data.validFrom);
             from.setUTCHours(0, 0, 0, 0);
@@ -68,7 +143,11 @@ export const updateCoupon = async (req, res) => {
     try {
         const { id } = req.params;
         const data = { ...req.body };
-        
+        delete data.usedCount;
+        delete data.creatorStats;
+        const creatorError = applyCreatorRules(data, { isUpdate: true });
+        if (creatorError) return handleResponse(res, 400, creatorError);
+
         if (data.validFrom) {
             const from = new Date(data.validFrom);
             from.setUTCHours(0, 0, 0, 0);
@@ -128,8 +207,13 @@ export const validateCoupon = async (req, res) => {
         //      the cart server-side first.
         // When the flag is OFF the legacy code path below runs
         // unchanged, preserving every existing client integration.
-        if (isServerSideCouponEngineEnabled()) {
-            const effectiveCustomerId = customerId || req.user?.id || null;
+        if (
+            await shouldUseServerCouponEngine({
+                engineEnabled: isServerSideCouponEngineEnabled(),
+                couponCode: code,
+            })
+        ) {
+            const effectiveCustomerId = req.user?.id || customerId || null;
             let hydratedItems = [];
 
             if (effectiveCustomerId) {

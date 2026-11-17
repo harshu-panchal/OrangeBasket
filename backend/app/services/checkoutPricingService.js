@@ -13,7 +13,7 @@ import {
   generateOrderPaymentBreakdown,
   hydrateOrderItems,
 } from "./finance/pricingService.js";
-import { computeOrderDiscount } from "./finance/couponService.js";
+import { computeOrderDiscount, shouldUseServerCouponEngine } from "./finance/couponService.js";
 
 function normalizeLocation(location = null) {
   const lat = Number(location?.lat);
@@ -443,7 +443,14 @@ export async function buildCheckoutPricingSnapshot({
   let resolvedCouponSnapshot = null;
   let resolvedCoupon = null;
   let applyFreeDelivery = false;
-  if (isServerSideCouponEngineEnabled() && (couponCode || couponId)) {
+  if (
+    await shouldUseServerCouponEngine({
+      engineEnabled: isServerSideCouponEngineEnabled(),
+      couponCode,
+      couponId,
+      session,
+    })
+  ) {
     const couponResult = await computeOrderDiscount({
       couponCode,
       couponId,

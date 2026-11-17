@@ -716,10 +716,9 @@ export async function placeOrderAtomic({
     // the coupon level. When the flag is OFF, this block is a no-op
     // and the legacy post-commit fire-and-forget block (below) runs
     // instead.
-    if (
-      isServerSideCouponEngineEnabled() &&
-      pricingSnapshot.couponSnapshot?.couponId
-    ) {
+    // couponSnapshot only exists when the server engine validated the coupon
+    // (engine flag on, or a creator coupon) — increment inside the transaction.
+    if (pricingSnapshot.couponSnapshot?.couponId) {
       await incrementCouponUsage({
         couponId: pricingSnapshot.couponSnapshot.couponId,
         session,
@@ -746,7 +745,7 @@ export async function placeOrderAtomic({
     // the wire-level semantics of the legacy code path are preserved
     // bit-for-bit.
     const couponId = normalizedPayload.couponId;
-    if (couponId && !isServerSideCouponEngineEnabled()) {
+    if (couponId && !isServerSideCouponEngineEnabled() && !pricingSnapshot.couponSnapshot?.couponId) {
       Coupon.updateOne(
         { _id: couponId },
         [

@@ -88,6 +88,21 @@ const couponSchema = new mongoose.Schema(
         metadata: {
             type: Object,
         },
+        // Creator (influencer) coupon: hidden from the checkout list, customer must
+        // type/paste the code, always validated server-side, one use per customer.
+        isCreator: {
+            type: Boolean,
+            default: false,
+            index: true,
+        },
+        creatorName: {
+            type: String,
+            trim: true,
+        },
+        creatorContact: {
+            type: String,
+            trim: true,
+        },
     },
     { timestamps: true }
 );

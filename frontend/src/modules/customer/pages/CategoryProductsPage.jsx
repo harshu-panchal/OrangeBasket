@@ -12,7 +12,6 @@ import ProductCard from '../components/shared/ProductCard';
 import ProductDetailSheet from '../components/shared/ProductDetailSheet';
 import { useProductDetail } from '../context/ProductDetailContext';
 import { customerApi } from '../services/customerApi';
-import MiniCart from '../components/shared/MiniCart';
 import SectionRenderer from "../components/experience/SectionRenderer";
 import { useLocation as useAppLocation } from '../context/LocationContext';
 import { useSettings } from '@core/context/SettingsContext';
@@ -289,7 +288,6 @@ const CategoryProductsPage = () => {
                 </div>
             )}
 
-            <MiniCart />
             <ProductDetailSheet />
 
             <style dangerouslySetInnerHTML={{

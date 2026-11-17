@@ -199,7 +199,18 @@ const AppRouter = () => {
                     element: <div className="flex h-screen items-center justify-center font-outfit">Unauthorized Access</div>,
                 },
                 {
+                    // Public customer pages: legal pages (store compliance) and the payment gateway return page.
                     element: <CustomerLayoutWrapper />,
+                    children: [
+                        { path: 'support', element: <TermsPage /> },
+                        { path: 'privacy', element: <PrivacyPage /> },
+                        { path: 'about', element: <AboutPage /> },
+                        { path: 'payment-status', element: <PaymentStatusPage /> },
+                    ]
+                },
+                {
+                    // Everything else in the customer panel requires login.
+                    element: <ProtectedRoute><CustomerLayoutWrapper /></ProtectedRoute>,
                     children: [
                         { index: true, element: <Home /> },
                         { path: 'categories', element: <CategoriesPage /> },
@@ -207,26 +218,22 @@ const AppRouter = () => {
                         { path: 'subcategory/:subcategoryId', element: <CategoryProductsPage /> },
                         { path: 'product/:id', element: <ProductDetailPage /> },
                         { path: 'kit/:id', element: <KitDetailPage /> },
-                        { path: 'support', element: <TermsPage /> },
-                        { path: 'privacy', element: <PrivacyPage /> },
-                        { path: 'about', element: <AboutPage /> },
                         { path: 'offers', element: <OffersPage /> },
                         { path: 'shop-by-store', element: <ShopByStorePage /> },
-                        { path: 'wishlist', element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
-                        { path: 'orders', element: <ProtectedRoute><OrdersPage /></ProtectedRoute> },
-                        { path: 'orders/:orderId', element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
-                        { path: 'transactions', element: <ProtectedRoute><OrderTransactionsPage /></ProtectedRoute> },
-                        { path: 'addresses', element: <ProtectedRoute><AddressesPage /></ProtectedRoute> },
-                        { path: 'settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
-                        { path: 'help', element: <ProtectedRoute><SupportPage /></ProtectedRoute> },
-                        { path: 'chat', element: <ProtectedRoute><ChatPage /></ProtectedRoute> },
-                        { path: 'checkout', element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
-                        { path: 'payment-status', element: <PaymentStatusPage /> },
-                        { path: 'profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
-                        { path: 'profile/edit', element: <ProtectedRoute><EditProfilePage /></ProtectedRoute> },
-                        { path: 'wallet', element: <ProtectedRoute><WalletPage /></ProtectedRoute> },
-                        { path: 'notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
                         { path: 'search', element: <SearchPage /> },
+                        { path: 'wishlist', element: <WishlistPage /> },
+                        { path: 'orders', element: <OrdersPage /> },
+                        { path: 'orders/:orderId', element: <OrderDetailPage /> },
+                        { path: 'transactions', element: <OrderTransactionsPage /> },
+                        { path: 'addresses', element: <AddressesPage /> },
+                        { path: 'settings', element: <SettingsPage /> },
+                        { path: 'help', element: <SupportPage /> },
+                        { path: 'chat', element: <ChatPage /> },
+                        { path: 'checkout', element: <CheckoutPage /> },
+                        { path: 'profile', element: <ProfilePage /> },
+                        { path: 'profile/edit', element: <EditProfilePage /> },
+                        { path: 'wallet', element: <WalletPage /> },
+                        { path: 'notifications', element: <NotificationsPage /> },
                     ]
                 },
                 {

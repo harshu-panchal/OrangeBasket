@@ -49,7 +49,12 @@ const CouponManagement = () => {
 
     const [coupons, setCoupons] = useState([]);
 
+    const [kindFilter, setKindFilter] = useState('all');
+
     const [formData, setFormData] = useState({
+        isCreator: false,
+        creatorName: '',
+        creatorContact: '',
         code: '',
         title: '',
         couponType: 'generic',
@@ -72,7 +77,7 @@ const CouponManagement = () => {
             fetchCoupons();
         }, 500);
         return () => clearTimeout(timer);
-    }, [statusFilter, searchTerm]);
+    }, [statusFilter, searchTerm, kindFilter]);
 
     const fetchCoupons = async () => {
         try {
@@ -80,6 +85,7 @@ const CouponManagement = () => {
             const res = await adminApi.getCoupons({
                 status: statusFilter === 'all' ? undefined : statusFilter,
                 search: searchTerm.trim() || undefined,
+                kind: kindFilter === 'all' ? undefined : kindFilter,
             });
             if (res.data.success) {
                 const list = res.data.result || res.data.results || [];
@@ -119,6 +125,9 @@ const CouponManagement = () => {
         if (coupon) {
             setEditingCoupon(coupon);
             setFormData({
+                isCreator: !!coupon.isCreator,
+                creatorName: coupon.creatorName || '',
+                creatorContact: coupon.creatorContact || '',
                 code: coupon.code || '',
                 title: coupon.title || '',
                 couponType: coupon.couponType || 'generic',
@@ -138,6 +147,9 @@ const CouponManagement = () => {
         } else {
             setEditingCoupon(null);
             setFormData({
+                isCreator: false,
+                creatorName: '',
+                creatorContact: '',
                 code: '',
                 title: '',
                 discountType: 'percentage',
@@ -167,7 +179,10 @@ const CouponManagement = () => {
                 minOrderValue: formData.minOrderValue ? Number(formData.minOrderValue) : 0,
                 maxDiscount: formData.maxDiscount ? Number(formData.maxDiscount) : undefined,
                 usageLimit: formData.usageLimit ? Number(formData.usageLimit) : undefined,
-                perUserLimit: formData.perUserLimit ? Number(formData.perUserLimit) : 1,
+                perUserLimit: formData.isCreator ? 1 : (formData.perUserLimit ? Number(formData.perUserLimit) : 1),
+                isCreator: formData.isCreator,
+                creatorName: formData.isCreator ? formData.creatorName.trim() : '',
+                creatorContact: formData.isCreator ? formData.creatorContact.trim() : '',
                 validFrom: formData.validFrom,
                 validTill: formData.validTill,
                 applicableCategories: formData.applicableCategories,
@@ -194,11 +209,7 @@ const CouponManagement = () => {
             }
             setIsModalOpen(false);
             setEditingCoupon(null);
-            const res = await adminApi.getCoupons();
-            if (res.data.success) {
-                const list = res.data.result || res.data.results || [];
-                setCoupons(list);
-            }
+            await fetchCoupons();
         } catch (error) {
             showToast(error.response?.data?.message || 'Failed to save coupon', 'error');
         }
@@ -289,6 +300,20 @@ const CouponManagement = () => {
                                 </button>
                             ))}
                         </div>
+                        <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+                            {[['all', 'All types'], ['normal', 'Normal'], ['creator', 'Creator']].map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    onClick={() => setKindFilter(value)}
+                                    className={cn(
+                                        "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                        kindFilter === value ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                    )}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -321,7 +346,19 @@ const CouponManagement = () => {
                                                 <HiOutlineTicket className="h-6 w-6" />
                                             </div>
                                             <div>
-                                                <span className="text-sm font-black text-slate-900 tracking-wider bg-slate-100 px-2 py-1 rounded-lg border-2 border-dashed border-slate-300">{c.code}</span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-sm font-black text-slate-900 tracking-wider bg-slate-100 px-2 py-1 rounded-lg border-2 border-dashed border-slate-300">{c.code}</span>
+                                                    {c.isCreator && (
+                                                        <span className="text-[9px] font-black uppercase tracking-widest bg-purple-100 text-purple-700 px-2 py-1 rounded-lg">
+                                                            Creator
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {c.isCreator && (
+                                                    <p className="text-[11px] font-black text-purple-700 mt-1">
+                                                        {c.creatorName}{c.creatorContact ? ` · ${c.creatorContact}` : ''}
+                                                    </p>
+                                                )}
                                                 <p className="text-[10px] font-bold text-slate-400 mt-1">{c.title}</p>
                                                 <p className="text-[10px] font-medium text-slate-400 mt-0.5 line-clamp-2">{c.description}</p>
                                             </div>
@@ -350,6 +387,12 @@ const CouponManagement = () => {
                                                     style={{ width: c.usageLimit ? `${((c.usedCount || 0) / c.usageLimit) * 100}%` : '0%' }}
                                                 />
                                             </div>
+                                            {c.isCreator && c.creatorStats && (
+                                                <div className="text-[10px] font-bold text-slate-500 leading-relaxed">
+                                                    <p>{c.creatorStats.orders} orders · {c.creatorStats.customers} customers</p>
+                                                    <p>Sales ₹{c.creatorStats.sales.toLocaleString('en-IN')} · Discount ₹{c.creatorStats.discountGiven.toLocaleString('en-IN')}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-4 py-6">
@@ -445,6 +488,62 @@ const CouponManagement = () => {
                 footer={null}
             >
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Coupon kind toggle */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Coupon Type</label>
+                        <div className="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                            {[
+                                { value: false, label: 'Normal Coupon', hint: 'Shown on checkout' },
+                                { value: true, label: 'Creator Coupon', hint: 'Hidden · code only' },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.label}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, isCreator: opt.value })}
+                                    className={cn(
+                                        "py-3 rounded-xl transition-all text-center",
+                                        formData.isCreator === opt.value ? "bg-white shadow-sm ring-1 ring-primary/30" : "hover:bg-white/50"
+                                    )}
+                                >
+                                    <span className={cn("block text-[11px] font-black uppercase tracking-widest", formData.isCreator === opt.value ? "text-slate-900" : "text-slate-400")}>
+                                        {opt.label}
+                                    </span>
+                                    <span className="block text-[10px] font-bold text-slate-400 mt-0.5">{opt.hint}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {formData.isCreator && (
+                        <div className="space-y-4 p-4 rounded-2xl bg-purple-50 ring-1 ring-purple-100">
+                            <p className="text-[11px] font-bold text-purple-700 leading-relaxed">
+                                Creator coupons are not listed on checkout. Customers must type or paste the code.
+                                Each customer can use it only once.
+                            </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Creator Name</label>
+                                    <input
+                                        required
+                                        value={formData.creatorName}
+                                        onChange={(e) => setFormData({ ...formData, creatorName: e.target.value })}
+                                        placeholder="E.g. Rahul Sharma"
+                                        className="w-full px-4 py-3 bg-white border-none rounded-2xl text-xs font-black outline-none ring-1 ring-purple-100 focus:ring-purple-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Phone / Instagram (optional)</label>
+                                    <input
+                                        value={formData.creatorContact}
+                                        onChange={(e) => setFormData({ ...formData, creatorContact: e.target.value })}
+                                        placeholder="E.g. @rahul.eats"
+                                        className="w-full px-4 py-3 bg-white border-none rounded-2xl text-xs font-black outline-none ring-1 ring-purple-100 focus:ring-purple-300"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Promo Code</label>
@@ -601,11 +700,15 @@ const CouponManagement = () => {
                             <input
                                 type="number"
                                 min={1}
+                                disabled={formData.isCreator}
                                 onWheel={(e) => e.currentTarget.blur()}
-                                value={formData.perUserLimit}
+                                value={formData.isCreator ? 1 : formData.perUserLimit}
                                 onChange={(e) => setFormData({ ...formData, perUserLimit: Number(e.target.value) })}
-                                className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none"
+                                className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-xs font-black outline-none disabled:opacity-60"
                             />
+                            {formData.isCreator && (
+                                <p className="text-[10px] text-slate-400">Fixed at 1 for creator coupons.</p>
+                            )}
                         </div>
                     </div>
 
