@@ -270,14 +270,28 @@ const settingSchema = new mongoose.Schema(
             reopenTime: { type: String, default: "" },
             message: { type: String, default: "Store closed" }
         },
-        // Delivery service area: customers outside the circle are blocked.
+        // Delivery service areas: customers outside every active city are blocked.
+        // Defaults (Nagpur) are applied in serviceAreaService.normalizeServiceArea.
         serviceArea: {
-            isEnabled: { type: Boolean, default: true },
-            cityName: { type: String, default: "Nagpur" },
-            centerLat: { type: Number, default: 21.1458 },
-            centerLng: { type: Number, default: 79.0882 },
-            radiusKm: { type: Number, default: 25 },
-            message: { type: String, default: "Only available in Nagpur" },
+            isEnabled: { type: Boolean },
+            cities: [
+                {
+                    _id: false,
+                    name: { type: String, trim: true },
+                    centerLat: { type: Number },
+                    centerLng: { type: Number },
+                    radiusKm: { type: Number },
+                    isActive: { type: Boolean, default: true },
+                },
+            ],
+            // Optional override; when empty the message is built from active cities.
+            customMessage: { type: String, trim: true },
+            // Legacy single-city fields (converted into `cities` when present)
+            cityName: { type: String },
+            centerLat: { type: Number },
+            centerLng: { type: Number },
+            radiusKm: { type: Number },
+            message: { type: String },
         },
     },
     {

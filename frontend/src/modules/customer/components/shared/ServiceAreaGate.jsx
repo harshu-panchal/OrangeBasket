@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, LocateFixed } from 'lucide-react';
 import { useSettings } from '@core/context/SettingsContext';
-import { isInServiceArea } from '@core/context/SettingsDefaults';
+import { isInServiceArea, getServiceAreaMessage } from '@core/context/SettingsDefaults';
 import { useLocation as useAppLocation } from '../../context/LocationContext';
 import LocationDrawer from './LocationDrawer';
 
@@ -18,7 +18,7 @@ const ServiceAreaGate = () => {
     if (loading) return null;
     if (isInServiceArea(area, currentLocation?.latitude, currentLocation?.longitude)) return null;
 
-    const message = area?.message || 'Only available in Nagpur';
+    const message = getServiceAreaMessage(area);
 
     return (
         <>

@@ -26,8 +26,11 @@ import {
     Cloud,
     CloudLightning,
     Wind,
-    Smile
+    Smile,
+    Plus,
+    Trash2
 } from 'lucide-react';
+import { getServiceAreaMessage } from '@core/context/SettingsDefaults';
 import { cn } from '@/lib/utils';
 import { useToast } from '@shared/components/ui/Toast';
 import { adminApi } from '../services/adminApi';
@@ -118,11 +121,8 @@ const AdminSettings = () => {
         },
         serviceArea: {
             isEnabled: true,
-            cityName: 'Nagpur',
-            centerLat: 21.1458,
-            centerLng: 79.0882,
-            radiusKm: 25,
-            message: 'Only available in Nagpur',
+            cities: [{ name: 'Nagpur', centerLat: 21.173187, centerLng: 79.128415, radiusKm: 20, isActive: true }],
+            customMessage: '',
         },
     };
     const [settings, setSettings] = useState(defaultSettings);
@@ -171,12 +171,48 @@ const AdminSettings = () => {
         fetchSettings();
     }, [showToast]);
 
+    // ── Service area cities ──
+    const serviceCities = Array.isArray(settings.serviceArea?.cities) ? settings.serviceArea.cities : [];
+    const setServiceCities = (updater) => setSettings(prev => {
+        const current = Array.isArray(prev.serviceArea?.cities) ? prev.serviceArea.cities : [];
+        return { ...prev, serviceArea: { ...prev.serviceArea, cities: updater(current) } };
+    });
+    const updateServiceCity = (index, key, value) =>
+        setServiceCities(list => list.map((c, i) => (i === index ? { ...c, [key]: value } : c)));
+    const addServiceCity = () =>
+        setServiceCities(list => [...list, { name: '', centerLat: '', centerLng: '', radiusKm: 25, isActive: true }]);
+    const removeServiceCity = (index) =>
+        setServiceCities(list => (list.length <= 1 ? list : list.filter((_, i) => i !== index)));
+
     const handleSave = async () => {
+        // Validate service-area cities before sending
+        if (settings.serviceArea?.isEnabled !== false) {
+            const bad = serviceCities.findIndex(c =>
+                !String(c.name || '').trim() ||
+                !Number.isFinite(Number(c.centerLat)) || c.centerLat === '' ||
+                !Number.isFinite(Number(c.centerLng)) || c.centerLng === '' ||
+                !(Number(c.radiusKm) > 0));
+            if (bad !== -1) {
+                showToast(`Service area city #${bad + 1}: fill name, latitude, longitude and radius`, 'error');
+                return;
+            }
+        }
         try {
             setIsSaving(true);
             const payload = {
                 ...settings,
                 keywords: Array.isArray(settings.keywords) ? settings.keywords : (settings.metaKeywords ? settings.metaKeywords.split(',').map(k => k.trim()).filter(Boolean) : []),
+                serviceArea: {
+                    isEnabled: settings.serviceArea?.isEnabled !== false,
+                    cities: serviceCities.map(c => ({
+                        name: String(c.name || '').trim(),
+                        centerLat: Number(c.centerLat),
+                        centerLng: Number(c.centerLng),
+                        radiusKm: Number(c.radiusKm),
+                        isActive: c.isActive !== false,
+                    })),
+                    customMessage: String(settings.serviceArea?.customMessage || '').trim(),
+                },
             };
             const res = await adminApi.updateSettings(payload);
             const updatedData = res.data?.result ?? res.data;
@@ -700,41 +736,90 @@ const AdminSettings = () => {
                                     </div>
 
                                     {settings.serviceArea?.isEnabled && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-sky-100/50">
-                                            {[
-                                                { key: 'cityName', label: 'City Name', type: 'text', placeholder: 'Nagpur' },
-                                                { key: 'radiusKm', label: 'Radius from City Centre (km)', type: 'number', placeholder: '25' },
-                                                { key: 'centerLat', label: 'City Centre Latitude', type: 'number', placeholder: '21.1458' },
-                                                { key: 'centerLng', label: 'City Centre Longitude', type: 'number', placeholder: '79.0882' },
-                                            ].map((f) => (
-                                                <div key={f.key} className="space-y-3">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.label}</label>
-                                                    <input
-                                                        type={f.type}
-                                                        step="any"
-                                                        placeholder={f.placeholder}
-                                                        onWheel={(e) => e.currentTarget.blur()}
-                                                        value={settings.serviceArea?.[f.key] ?? ''}
-                                                        onChange={(e) => {
-                                                            const v = f.type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value;
-                                                            setSettings(prev => ({ ...prev, serviceArea: { ...prev.serviceArea, [f.key]: v } }));
-                                                        }}
-                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
-                                                    />
+                                        <div className="space-y-4 pt-4 border-t border-sky-100/50">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    Cities ({serviceCities.length})
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={addServiceCity}
+                                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-sky-200 text-xs font-black text-sky-700 hover:bg-sky-50 transition-all"
+                                                >
+                                                    <Plus className="h-4 w-4" /> Add city
+                                                </button>
+                                            </div>
+
+                                            {serviceCities.map((city, i) => (
+                                                <div key={i} className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 shadow-sm">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="City name, e.g. Pune"
+                                                            value={city.name ?? ''}
+                                                            onChange={(e) => updateServiceCity(i, 'name', e.target.value)}
+                                                            className="flex-1 px-3 py-2 bg-slate-50 border-none rounded-lg text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20"
+                                                        />
+                                                        <label className="flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer whitespace-nowrap">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={city.isActive !== false}
+                                                                onChange={(e) => updateServiceCity(i, 'isActive', e.target.checked)}
+                                                                className="h-4 w-4 rounded border-slate-300"
+                                                            />
+                                                            Live
+                                                        </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeServiceCity(i)}
+                                                            disabled={serviceCities.length <= 1}
+                                                            title={serviceCities.length <= 1 ? 'At least one city is required (turn the switch off to allow all locations)' : 'Remove city'}
+                                                            className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                        {[
+                                                            { key: 'centerLat', label: 'Centre Latitude', placeholder: '21.1458' },
+                                                            { key: 'centerLng', label: 'Centre Longitude', placeholder: '79.0882' },
+                                                            { key: 'radiusKm', label: 'Radius (km)', placeholder: '25' },
+                                                        ].map((f) => (
+                                                            <div key={f.key} className="space-y-1.5">
+                                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.label}</label>
+                                                                <input
+                                                                    type="number"
+                                                                    step="any"
+                                                                    placeholder={f.placeholder}
+                                                                    onWheel={(e) => e.currentTarget.blur()}
+                                                                    value={city[f.key] ?? ''}
+                                                                    onChange={(e) => updateServiceCity(i, f.key, e.target.value === '' ? '' : Number(e.target.value))}
+                                                                    className="w-full px-3 py-2 bg-slate-50 border-none rounded-lg text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20"
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             ))}
-                                            <div className="space-y-3 md:col-span-2">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Message for Customers Outside</label>
+                                            <p className="text-[11px] font-bold text-slate-500">
+                                                Tip: find a city centre on Google Maps → right-click the spot → click the coordinates to copy them.
+                                            </p>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Custom Message (optional)</label>
                                                 <input
                                                     type="text"
-                                                    placeholder="Only available in Nagpur"
-                                                    value={settings.serviceArea?.message || ''}
+                                                    placeholder={getServiceAreaMessage({ cities: serviceCities })}
+                                                    value={settings.serviceArea?.customMessage || ''}
                                                     onChange={(e) => setSettings(prev => ({
                                                         ...prev,
-                                                        serviceArea: { ...prev.serviceArea, message: e.target.value }
+                                                        serviceArea: { ...prev.serviceArea, customMessage: e.target.value }
                                                     }))}
                                                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
                                                 />
+                                                <p className="text-[11px] font-bold text-slate-500">
+                                                    Customers outside will see: <span className="text-slate-800">“{getServiceAreaMessage({ cities: serviceCities, customMessage: settings.serviceArea?.customMessage })}”</span>
+                                                </p>
                                             </div>
                                         </div>
                                     )}

@@ -51,29 +51,48 @@ export const DEFAULT_SETTINGS = {
   // Keep in sync with backend/app/services/serviceAreaService.js
   serviceArea: {
     isEnabled: true,
-    cityName: "Nagpur",
-    centerLat: 21.1458,
-    centerLng: 79.0882,
-    radiusKm: 25,
+    // Centred on the Nagpur warehouse with its 20 km delivery radius
+    cities: [{ name: "Nagpur", centerLat: 21.173187, centerLng: 79.128415, radiusKm: 20, isActive: true }],
+    customMessage: "",
     message: "Only available in Nagpur",
   },
 };
 
-/** Is (lat, lng) inside the configured service area? Unknown coordinates are not blocked. */
+function serviceAreaCities(serviceArea) {
+  const list = Array.isArray(serviceArea?.cities) && serviceArea.cities.length
+    ? serviceArea.cities
+    : DEFAULT_SETTINGS.serviceArea.cities;
+  return list.filter(
+    (c) => c && c.isActive !== false && c.name &&
+      Number.isFinite(Number(c.centerLat)) && Number.isFinite(Number(c.centerLng)) && Number(c.radiusKm) > 0,
+  );
+}
+
+function kmBetween(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/** Is (lat, lng) inside any active service city? Unknown coordinates are not blocked. */
 export function isInServiceArea(serviceArea, lat, lng) {
-  const a = { ...DEFAULT_SETTINGS.serviceArea, ...(serviceArea || {}) };
-  if (a.isEnabled === false) return true;
+  if (serviceArea?.isEnabled === false) return true;
   const la = Number(lat);
   const ln = Number(lng);
   if (!Number.isFinite(la) || !Number.isFinite(ln)) return true;
-  const toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(Number(a.centerLat) - la);
-  const dLng = toRad(Number(a.centerLng) - ln);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(la)) * Math.cos(toRad(Number(a.centerLat))) * Math.sin(dLng / 2) ** 2;
-  const km = 2 * 6371 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-  return km <= Number(a.radiusKm || 25);
+  return serviceAreaCities(serviceArea).some(
+    (c) => kmBetween(la, ln, Number(c.centerLat), Number(c.centerLng)) <= Number(c.radiusKm),
+  );
+}
+
+/** Message for customers outside: custom text, else "Only available in Nagpur and Pune". */
+export function getServiceAreaMessage(serviceArea) {
+  if (serviceArea?.customMessage) return serviceArea.customMessage;
+  const names = serviceAreaCities(serviceArea).map((c) => c.name);
+  if (!names.length) return "Delivery is currently not available";
+  return `Only available in ${names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`}`;
 }
 
 /**

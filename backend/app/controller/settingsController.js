@@ -170,11 +170,20 @@ const updateSettingsSchema = Joi.object({
   }).unknown(false),
   serviceArea: Joi.object({
     isEnabled: Joi.boolean(),
-    cityName: Joi.string().trim().min(1).max(100),
-    centerLat: Joi.number().min(-90).max(90),
-    centerLng: Joi.number().min(-180).max(180),
-    radiusKm: Joi.number().greater(0).max(500),
-    message: Joi.string().trim().min(1).max(200),
+    cities: Joi.array()
+      .max(100)
+      .items(
+        Joi.object({
+          name: Joi.string().trim().min(1).max(100).required(),
+          centerLat: Joi.number().min(-90).max(90).required(),
+          centerLng: Joi.number().min(-180).max(180).required(),
+          radiusKm: Joi.number().greater(0).max(500).required(),
+          isActive: Joi.boolean().default(true),
+        }).unknown(false),
+      ),
+    customMessage: Joi.string().trim().allow("").max(200),
+    // Derived by the server; accepted (and ignored) so a full settings round-trip validates.
+    message: Joi.any().strip(),
   }).unknown(false),
 }).unknown(false);
 
