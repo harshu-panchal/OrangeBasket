@@ -428,8 +428,8 @@ const Home = () => {
   const hydrateSelectedSectionProducts = async (sections = []) => {
     if (!Array.isArray(sections) || !sections.length) return;
     const selectedProductIds = Array.from(new Set(sections.flatMap((s) => s?.displayType === "products" ? (s?.config?.products?.productIds || []) : []).map((id) => String(id || "").trim()).filter(Boolean)));
-    const locLat = Number.isFinite(currentLocation?.latitude) ? currentLocation.latitude : 22.711140989838025;
-    const locLng = Number.isFinite(currentLocation?.longitude) ? currentLocation.longitude : 75.9001552518043;
+    const locLat = Number.isFinite(currentLocation?.latitude) ? currentLocation.latitude : 21.1458;
+    const locLng = Number.isFinite(currentLocation?.longitude) ? currentLocation.longitude : 79.0882;
     const locationParams = { lat: locLat, lng: locLng };
     
     // 1. Fetch missing specific products

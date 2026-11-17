@@ -7,6 +7,7 @@ import {
   DEFAULT_PRODUCT_APPROVAL_CONFIG,
   normalizeProductApprovalConfig,
 } from "../services/productModerationService.js";
+import { normalizeServiceArea, clearServiceAreaCache } from "../services/serviceAreaService.js";
 
 /** Allowed keys for settings update (strip unknown keys) */
 const ALLOWED_KEYS = [
@@ -56,6 +57,7 @@ const ALLOWED_KEYS = [
   "homeVideoBanner",
   "weather",
   "storeStatus",
+  "serviceArea",
 ];
 
 function flattenForMongoSet(prefix, value, target) {
@@ -166,6 +168,14 @@ const updateSettingsSchema = Joi.object({
     reopenTime: Joi.string().allow("").max(100),
     message: Joi.string().allow("").max(500),
   }).unknown(false),
+  serviceArea: Joi.object({
+    isEnabled: Joi.boolean(),
+    cityName: Joi.string().trim().min(1).max(100),
+    centerLat: Joi.number().min(-90).max(90),
+    centerLng: Joi.number().min(-180).max(180),
+    radiusKm: Joi.number().greater(0).max(500),
+    message: Joi.string().trim().min(1).max(200),
+  }).unknown(false),
 }).unknown(false);
 
 /**
@@ -186,7 +196,7 @@ export const getPublicSettings = async (req, res) => {
       async () => {
         const existing = await Setting.findOne(filter)
           .select(
-            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor footerMessage footerEmoji returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather storeStatus createdAt",
+            "appName supportEmail supportPhone currencySymbol currencyCode timezone logoUrl faviconUrl primaryColor secondaryColor footerMessage footerEmoji returnDeliveryCommission deliveryPricingMode pricingMode customerBaseDeliveryFee riderBasePayout baseDeliveryCharge baseDistanceCapacityKm incrementalKmSurcharge deliveryPartnerRatePerKm fleetCommissionRatePerKm fixedDeliveryFee handlingFeeStrategy codEnabled onlineEnabled lowStockAlertsEnabled productApproval categoriesBanner homeVideoBanner weather storeStatus serviceArea createdAt",
           )
           .lean();
         return existing || null;
@@ -201,6 +211,7 @@ export const getPublicSettings = async (req, res) => {
     }
 
     settings.productApproval = normalizeProductApprovalConfig(settings || {});
+    settings.serviceArea = normalizeServiceArea(settings.serviceArea);
 
     return handleResponse(res, 200, "Settings fetched successfully", settings);
   } catch (error) {
@@ -254,8 +265,10 @@ export const updateSettings = async (req, res) => {
       { new: true, upsert: true },
     );
     await invalidate("cache:platform:settings:*");
+    clearServiceAreaCache();
 
     const result = settings?.toObject?.() || settings || {};
+    result.serviceArea = normalizeServiceArea(result.serviceArea);
     if (!result.productApproval) {
       result.productApproval = { ...DEFAULT_PRODUCT_APPROVAL_CONFIG };
     } else {

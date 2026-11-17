@@ -3,6 +3,7 @@ import Header from './Header';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
 import MiniCart from '../shared/MiniCart';
+import ServiceAreaGate from '../shared/ServiceAreaGate';
 import ProductDetailSheet from '../shared/ProductDetailSheet';
 import VariantSelectionSheet from '../shared/VariantSelectionSheet';
 import MobileFooterMessage from './MobileFooterMessage';
@@ -83,6 +84,8 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
     const hideHeaderRoutes = ['/', '/categories', '/orders', '/transactions', '/profile', '/profile/edit', '/wishlist', '/addresses', '/wallet', '/help', '/privacy', '/about', '/support', '/checkout', '/search', '/chat', '/notifications'];
     const hideBottomNavRoutes = ['/checkout', '/search', '/chat'];
     const hideCartRoutes = ['/checkout', '/search', '/chat'];
+    // Pages reachable from outside the service area (legal info, payment return, managing addresses/account)
+    const serviceAreaExemptRoutes = ['/support', '/privacy', '/about', '/payment-status', '/profile', '/profile/edit', '/addresses'];
 
     // If props are passed, use them. Otherwise, use route-based logic.
     const showHeader = showHeaderProp !== undefined ? showHeaderProp : (!hideHeaderRoutes.includes(path) && !path.startsWith('/category') && !path.startsWith('/subcategory') && !path.startsWith('/orders'));
@@ -122,6 +125,7 @@ const CustomerLayout = ({ children, showHeader: showHeaderProp, fullHeight = fal
             </main>
 
             {showCart && <MiniCart />}
+            {!serviceAreaExemptRoutes.includes(path) && <ServiceAreaGate />}
             <ProductDetailSheet />
             <VariantSelectionSheet />
 

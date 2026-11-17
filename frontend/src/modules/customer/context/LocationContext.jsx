@@ -20,13 +20,13 @@ const LOCATION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const LocationProvider = ({ children }) => {
   // Default location (used until we can resolve a better one)
   const [currentLocation, setCurrentLocation] = useState({
-    name: "214, Rajshri Palace Colony, Pipliyahana, Indore, Madhya Pradesh 452018, India",
+    name: "Sitabuldi, Nagpur, Maharashtra 440012, India",
     time: "12-15 mins",
-    city: "Indore",
-    state: "Madhya Pradesh",
-    pincode: "452018",
-    latitude: 22.711140989838025,
-    longitude: 75.9001552518043,
+    city: "Nagpur",
+    state: "Maharashtra",
+    pincode: "440012",
+    latitude: 21.1458,
+    longitude: 79.0882,
   });
 
   // Address list for drawer UI – will be hydrated from profile API.
@@ -102,9 +102,9 @@ export const LocationProvider = ({ children }) => {
       const fallbackFromCoords = (latitude, longitude) => ({
         name: `Lat ${Number(latitude).toFixed(5)}, Lng ${Number(longitude).toFixed(5)}`,
         time: "12-15 mins",
-        city: currentLocation?.city || "Indore",
-        state: currentLocation?.state || "Madhya Pradesh",
-        pincode: currentLocation?.pincode || "452018",
+        city: currentLocation?.city || "Nagpur",
+        state: currentLocation?.state || "Maharashtra",
+        pincode: currentLocation?.pincode || "440012",
         latitude,
         longitude,
       });
@@ -297,7 +297,9 @@ export const LocationProvider = ({ children }) => {
   useEffect(() => {
     const parsed = getJSON(STORAGE_KEY, null);
     const addressName = parsed?.address || parsed?.name;
-    if (parsed && addressName) {
+    // Ignore the old hardcoded Indore fallback saved by earlier versions
+    const isOldIndoreFallback = Number(parsed?.latitude) === 22.711140989838025;
+    if (parsed && addressName && !isOldIndoreFallback) {
       updateLocation(
         {
           name: addressName,

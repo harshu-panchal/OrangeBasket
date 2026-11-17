@@ -27,6 +27,10 @@ jest.unstable_mockModule("../app/services/finance/financeSettingsService.js", ()
   getOrCreateFinanceSettings: mockGetOrCreateFinanceSettings,
 }));
 
+jest.unstable_mockModule("../app/services/serviceAreaService.js", () => ({
+  assertInServiceArea: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
 const { buildCheckoutPricingSnapshot } = await import(
   "../app/services/checkoutPricingService.js"
 );

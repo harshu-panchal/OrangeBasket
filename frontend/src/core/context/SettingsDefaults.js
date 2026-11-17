@@ -48,7 +48,33 @@ export const DEFAULT_SETTINGS = {
     reopenTime: "",
     message: "",
   },
+  // Keep in sync with backend/app/services/serviceAreaService.js
+  serviceArea: {
+    isEnabled: true,
+    cityName: "Nagpur",
+    centerLat: 21.1458,
+    centerLng: 79.0882,
+    radiusKm: 25,
+    message: "Only available in Nagpur",
+  },
 };
+
+/** Is (lat, lng) inside the configured service area? Unknown coordinates are not blocked. */
+export function isInServiceArea(serviceArea, lat, lng) {
+  const a = { ...DEFAULT_SETTINGS.serviceArea, ...(serviceArea || {}) };
+  if (a.isEnabled === false) return true;
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return true;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(Number(a.centerLat) - la);
+  const dLng = toRad(Number(a.centerLng) - ln);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(la)) * Math.cos(toRad(Number(a.centerLat))) * Math.sin(dLng / 2) ** 2;
+  const km = 2 * 6371 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  return km <= Number(a.radiusKm || 25);
+}
 
 /**
  * Applies theme CSS variables to document root from settings.

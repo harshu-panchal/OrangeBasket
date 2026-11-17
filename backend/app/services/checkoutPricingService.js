@@ -14,6 +14,7 @@ import {
   hydrateOrderItems,
 } from "./finance/pricingService.js";
 import { computeOrderDiscount, shouldUseServerCouponEngine } from "./finance/couponService.js";
+import { assertInServiceArea } from "./serviceAreaService.js";
 
 function normalizeLocation(location = null) {
   const lat = Number(location?.lat);
@@ -423,6 +424,9 @@ export async function buildCheckoutPricingSnapshot({
   customerId = null,
   session = null,
 }) {
+  // Block delivery addresses outside the configured service area (e.g. Nagpur only).
+  await assertInServiceArea(address?.location, { session });
+
   const hydratedItems = await hydrateOrderItems(orderItems, {
     session,
     enforceServerPricing: true,

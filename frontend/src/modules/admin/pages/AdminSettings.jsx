@@ -116,6 +116,14 @@ const AdminSettings = () => {
             reopenTime: '',
             message: 'Store closed',
         },
+        serviceArea: {
+            isEnabled: true,
+            cityName: 'Nagpur',
+            centerLat: 21.1458,
+            centerLng: 79.0882,
+            radiusKm: 25,
+            message: 'Only available in Nagpur',
+        },
     };
     const [settings, setSettings] = useState(defaultSettings);
 
@@ -146,6 +154,10 @@ const AdminSettings = () => {
                         storeStatus: {
                             ...prev.storeStatus,
                             ...(data.storeStatus || {}),
+                        },
+                        serviceArea: {
+                            ...prev.serviceArea,
+                            ...(data.serviceArea || {}),
                         },
                     }));
                 }
@@ -648,6 +660,78 @@ const AdminSettings = () => {
                                                     onChange={(e) => setSettings(prev => ({
                                                         ...prev,
                                                         storeStatus: { ...prev.storeStatus, message: e.target.value }
+                                                    }))}
+                                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Service Area (delivery city restriction) */}
+                                <div className="md:col-span-2 rounded-2xl bg-sky-50/50 border border-sky-100 px-5 py-4 space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900">Service Area (Delivery City)</p>
+                                            <p className="text-xs font-bold text-slate-500 mt-1">
+                                                Customers outside this area see the message below and cannot place orders.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={settings.serviceArea?.isEnabled}
+                                            onClick={() => setSettings(prev => ({
+                                                ...prev,
+                                                serviceArea: { ...prev.serviceArea, isEnabled: !prev.serviceArea?.isEnabled }
+                                            }))}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200",
+                                                settings.serviceArea?.isEnabled ? "bg-emerald-500" : "bg-slate-300"
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-200",
+                                                    settings.serviceArea?.isEnabled ? "translate-x-7" : "translate-x-1"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    {settings.serviceArea?.isEnabled && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-sky-100/50">
+                                            {[
+                                                { key: 'cityName', label: 'City Name', type: 'text', placeholder: 'Nagpur' },
+                                                { key: 'radiusKm', label: 'Radius from City Centre (km)', type: 'number', placeholder: '25' },
+                                                { key: 'centerLat', label: 'City Centre Latitude', type: 'number', placeholder: '21.1458' },
+                                                { key: 'centerLng', label: 'City Centre Longitude', type: 'number', placeholder: '79.0882' },
+                                            ].map((f) => (
+                                                <div key={f.key} className="space-y-3">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{f.label}</label>
+                                                    <input
+                                                        type={f.type}
+                                                        step="any"
+                                                        placeholder={f.placeholder}
+                                                        onWheel={(e) => e.currentTarget.blur()}
+                                                        value={settings.serviceArea?.[f.key] ?? ''}
+                                                        onChange={(e) => {
+                                                            const v = f.type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value;
+                                                            setSettings(prev => ({ ...prev, serviceArea: { ...prev.serviceArea, [f.key]: v } }));
+                                                        }}
+                                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                            ))}
+                                            <div className="space-y-3 md:col-span-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Message for Customers Outside</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Only available in Nagpur"
+                                                    value={settings.serviceArea?.message || ''}
+                                                    onChange={(e) => setSettings(prev => ({
+                                                        ...prev,
+                                                        serviceArea: { ...prev.serviceArea, message: e.target.value }
                                                     }))}
                                                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-brand-500/20 transition-all shadow-sm"
                                                 />
