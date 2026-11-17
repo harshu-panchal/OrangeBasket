@@ -102,8 +102,11 @@ async function computeDistanceKmForSeller({ sellerId, addressLocation, session =
   const radius = Number(seller.serviceRadius || 5);
   if (distanceKm > radius) {
     const storeName = seller.shopName || seller.name || "Store";
-    const err = new Error(`${storeName} does not deliver to your current location (Distance: ${distanceKm}km, Service Radius: ${radius}km)`);
+    const err = new Error(`Some items in your cart are from ${storeName}, which does not deliver to this address. Please remove them to continue.`);
     err.statusCode = 400;
+    err.code = "STORE_OUT_OF_RANGE";
+    // Lets the checkout highlight / remove the exact cart items from this store.
+    err.data = { code: "STORE_OUT_OF_RANGE", storeId: String(sellerId), storeName, distanceKm, radiusKm: radius };
     throw err;
   }
 

@@ -159,6 +159,8 @@ const CheckoutPage = () => {
   const [pricingPreview, setPricingPreview] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
+  // Set when the server says a store in the cart can't deliver to the chosen address
+  const [outOfRangeStore, setOutOfRangeStore] = useState(null);
   const postOrderNavigateRef = useRef(null);
   const previewDebounceRef = useRef(null);
   const [currentAddress, setCurrentAddress] = useState({
@@ -201,10 +203,13 @@ const CheckoutPage = () => {
     }
   }, [cart.length === 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const addressInitializedRef = useRef(false);
+  // "auto": follow the home-page location (also after it loads from storage on refresh).
+  // "manual": the customer picked/edited an address on this page — stop auto-syncing.
+  const addressSourceRef = useRef("auto");
+  const markAddressManual = () => { addressSourceRef.current = "manual"; };
 
   useEffect(() => {
-    if (!user || addressInitializedRef.current) return;
+    if (!user || addressSourceRef.current === "manual") return;
 
     const toType = (label) => {
       const t = label ? label.charAt(0).toUpperCase() + label.slice(1).toLowerCase() : "";
@@ -252,9 +257,15 @@ const CheckoutPage = () => {
       };
     }
 
-    setCurrentAddress(defaultAddr);
+    setCurrentAddress((prev) => {
+      const same =
+        prev?.address === defaultAddr.address &&
+        prev?.type === defaultAddr.type &&
+        prev?.location?.lat === defaultAddr.location?.lat &&
+        prev?.location?.lng === defaultAddr.location?.lng;
+      return same ? prev : defaultAddr;
+    });
     setEditAddressForm(defaultAddr);
-    addressInitializedRef.current = true;
   }, [user, locationSavedAddresses, currentLocation]);
 
   const paymentMethods = [
@@ -416,6 +427,7 @@ const CheckoutPage = () => {
   };
 
   const handleSelectSavedAddress = async (addr) => {
+    markAddressManual();
     const rawText = addr?.address || "";
     const addrLoc = addr?.location;
     const hasLoc = isValidLatLng(addrLoc);
@@ -493,6 +505,7 @@ const CheckoutPage = () => {
   };
 
   const handleSaveEditedAddress = async () => {
+    markAddressManual();
     if (
       !editAddressForm.name.trim() ||
       !editAddressForm.address.trim() ||
@@ -557,6 +570,7 @@ const CheckoutPage = () => {
   };
 
   const handleUseCurrentLiveLocation = async () => {
+    markAddressManual();
     const result = await refreshLocation();
 
     if (result?.ok && result.location) {
@@ -680,6 +694,20 @@ const CheckoutPage = () => {
 
   const getCartItem = (productId) => cart.find((item) => item.id === productId);
 
+  // Cart items fulfilled by the out-of-range store (same rule as the server: sellerId, else warehouseId)
+  const unavailableItems = useMemo(() => {
+    if (!outOfRangeStore?.storeId) return [];
+    const storeOf = (item) => String(item?.sellerId?._id || item?.sellerId || item?.warehouseId?._id || item?.warehouseId || "");
+    return cart.filter((item) => storeOf(item) === String(outOfRangeStore.storeId));
+  }, [cart, outOfRangeStore]);
+
+  const handleRemoveUnavailableItems = async () => {
+    for (const item of unavailableItems) {
+      await removeFromCart(item.id, item.variantSku || "");
+    }
+    showToast("Removed items that can't be delivered here", "success");
+  };
+
   // Stable key for recommended products effect — only changes when product IDs change
   const cartProductIdKey = useMemo(
     () =>
@@ -750,6 +778,7 @@ const CheckoutPage = () => {
         if (res.data?.success) {
           setPricingPreview(res.data.result?.breakdown ?? null);
           setPreviewError(null);
+          setOutOfRangeStore(null);
         } else {
           setPricingPreview(null);
           setPreviewError(res.data?.message || "Unable to calculate order total");
@@ -762,6 +791,8 @@ const CheckoutPage = () => {
           error?.message ||
           "Unable to calculate order total. Please check your delivery address.";
         setPreviewError(message);
+        const errData = error?.response?.data?.result;
+        setOutOfRangeStore(errData?.code === "STORE_OUT_OF_RANGE" ? errData : null);
       } finally {
         setIsPreviewLoading(false);
       }
@@ -1122,6 +1153,37 @@ const CheckoutPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Items that can't be delivered to the chosen address */}
+            {outOfRangeStore && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                <p className="font-black text-red-700 text-sm">
+                  {unavailableItems.length > 0
+                    ? `${unavailableItems.length} item${unavailableItems.length > 1 ? "s" : ""} can't be delivered to this address`
+                    : "Some items can't be delivered to this address"}
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  {outOfRangeStore.storeName || "This store"} does not deliver here. Remove these items or change the address.
+                </p>
+                {unavailableItems.length > 0 && (
+                  <>
+                    <ul className="mt-3 space-y-1">
+                      {unavailableItems.map((item) => (
+                        <li key={`${item.id}-${item.variantSku || ""}`} className="text-xs font-semibold text-slate-700">
+                          • {item.name}{item.variantName ? ` (${item.variantName})` : ""} × {item.quantity}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={handleRemoveUnavailableItems}
+                      className="mt-3 h-10 px-5 rounded-full bg-red-600 text-white text-sm font-extrabold hover:bg-red-700 active:scale-95 transition-all"
+                    >
+                      Remove {unavailableItems.length > 1 ? "these items" : "this item"}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Address Section */}
             <CheckoutAddressSection

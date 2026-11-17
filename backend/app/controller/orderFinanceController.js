@@ -70,7 +70,7 @@ export const previewCheckoutFinance = async (req, res) => {
       ...(distanceDebug ? { distanceDebug } : {}),
     });
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
 
@@ -126,7 +126,7 @@ export const createOrderWithFinancialSnapshot = async (req, res) => {
       },
     );
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
 
@@ -149,7 +149,7 @@ export const verifyOnlineOrderPayment = async (req, res) => {
       transactionId: verification.payment.gatewayPaymentId,
     });
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
 
@@ -203,7 +203,7 @@ export const markCodCollectedAfterDelivery = async (req, res) => {
 
     return handleResponse(res, 200, "COD amount marked as collected", updated);
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
 
@@ -256,7 +256,7 @@ export const markOrderDeliveredAndSettle = async (req, res) => {
 
     return handleResponse(res, 200, "Order delivered and settlement queued", updated);
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
 
@@ -298,6 +298,6 @@ export const reconcileCodCashSubmission = async (req, res) => {
 
     return handleResponse(res, 200, "COD cash reconciled successfully", updated);
   } catch (error) {
-    return handleResponse(res, error.statusCode || 500, error.message);
+    return handleResponse(res, error.statusCode || 500, error.message, error.data || {});
   }
 };
