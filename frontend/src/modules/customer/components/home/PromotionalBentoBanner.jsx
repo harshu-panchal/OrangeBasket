@@ -53,6 +53,8 @@ const BentoCard = ({ item, colSpan, rowSpan, onClick }) => {
   }
 
   const hasImage = Boolean(item.imageUrl);
+  // Discount text shown like the big card's "40% OFF". Falls back to the old badge fields so saved data still shows.
+  const discountText = item.subtitle || [item.discountPrefix, item.discountBadge].filter(Boolean).join(" ");
 
   return (
     <div 
@@ -65,49 +67,17 @@ const BentoCard = ({ item, colSpan, rowSpan, onClick }) => {
         !item.bgColor && "bg-gradient-to-br from-[#f1e5df] to-[#dfceb9]"
       )}
     >
-      {/* Badge */}
-      {!isLarge && (item.discountPrefix || item.discountBadge) && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 flex items-center z-20 shadow-sm">
-          {item.discountPrefix ? (
-            <>
-              <span 
-                style={item.prefixBgColor ? { backgroundColor: item.prefixBgColor } : undefined}
-                className="bg-[#3d3d3d] text-white text-[8px] md:text-[9px] font-bold px-1.5 md:px-2 py-0.5 rounded-bl-md tracking-wider"
-              >
-                {item.discountPrefix}
-              </span>
-              <span 
-                style={item.badgeBgColor ? { backgroundColor: item.badgeBgColor } : undefined}
-                className="bg-[#ba9686] text-white text-[8px] md:text-[9px] font-bold px-1.5 md:px-2 py-0.5 rounded-br-md tracking-wider"
-              >
-                {item.discountBadge || ""}
-              </span>
-            </>
-          ) : item.discountBadge ? (
-            <span 
-              style={item.badgeBgColor ? { backgroundColor: item.badgeBgColor } : undefined}
-              className="bg-[#3d3d3d] text-white text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-b-md"
-            >
-              {item.discountBadge}
-            </span>
-          ) : null}
-        </div>
-      )}
-
       {/* Content */}
       <div className={cn(
         "relative z-10 flex flex-col items-center text-center px-1 md:px-3 w-full",
-        isLarge ? "pt-5 md:pt-6" : (hasImage ? "pt-4 md:pt-5 h-[45%] overflow-hidden" : "pt-4 flex-1 justify-center")
+        isLarge ? "pt-5 md:pt-6" : (hasImage ? "pt-3 md:pt-5 shrink-0" : "pt-4 flex-1 justify-center")
       )}>
-        {item.subtitle && (
-          <h4 
+        {discountText && (
+          <h4
             style={item.textColor ? { color: item.textColor } : undefined}
-            className={cn(
-              "font-bold uppercase tracking-wider mb-1 text-[#692934]",
-              isLarge ? "text-[12px] md:text-sm tracking-widest" : "text-[10px] md:text-xs"
-            )}
+            className="font-bold uppercase mb-1 text-[#692934] text-[12px] md:text-sm tracking-widest"
           >
-            {item.subtitle}
+            {discountText}
           </h4>
         )}
         
@@ -150,7 +120,7 @@ const BentoCard = ({ item, colSpan, rowSpan, onClick }) => {
 
       {/* Image */}
       {hasImage && (
-        <div className={cn("z-0 w-full flex items-end justify-center p-1", isLarge ? "relative flex-1 mt-2" : "absolute inset-x-0 bottom-0 h-[55%]")}>
+        <div className={cn("z-0 w-full flex items-end justify-center p-1", isLarge ? "relative flex-1 mt-2" : "relative flex-1 min-h-0")}>
           <img 
             src={item.imageUrl} 
             alt={item.title || "Deal"} 
