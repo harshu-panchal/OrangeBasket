@@ -152,7 +152,12 @@ export default function HeroCategoriesPerPage() {
       );
       setFormPromotionalBanners(
         promoItems.length
-          ? promoItems.map((b, i) => i === 4 ? { ...b, subtitle: "", discountPrefix: "", discountBadge: "", originalPrice: "", offerPrice: "", isUploading: false } : { ...b, isUploading: false })
+          ? promoItems.map((b) => ({
+              ...b,
+              // Old badge fields ("upto" + "20") are merged into the single discount text.
+              subtitle: b.subtitle || [b.discountPrefix, b.discountBadge].filter(Boolean).join(" "),
+              isUploading: false,
+            }))
           : [emptyPromotionalBannerItem()]
       );
       setFormCategoryIds(Array.isArray(catIds) ? catIds : []);
@@ -252,33 +257,13 @@ export default function HeroCategoriesPerPage() {
 
     const promoItems = formPromotionalBanners
       .filter((b) => b.title || b.imageUrl || b.ctaText || b.subtitle || b.discountBadge || b.discountPrefix)
-      .map((b, idx) => {
-        if (idx === 4) {
-          return {
-            imageUrl: b.imageUrl || "",
-            title: b.title || "",
-            subtitle: "",
-            discountPrefix: "",
-            discountBadge: "",
-            originalPrice: 0,
-            offerPrice: 0,
-            ctaText: b.ctaText || "",
-            icon: b.icon || "",
-            cardSize: b.cardSize || "square",
-            bgColor: b.bgColor || "",
-            textColor: b.textColor || "",
-            badgeBgColor: b.badgeBgColor || "",
-            linkType: b.linkType || "none",
-            linkValue: b.linkValue || "",
-            status: b.status || "active",
-          };
-        }
+      .map((b) => {
         return {
           imageUrl: b.imageUrl || "",
           title: b.title || "",
           subtitle: b.subtitle || "",
-          discountPrefix: b.discountPrefix || "",
-          discountBadge: b.discountBadge || "",
+          discountPrefix: "",
+          discountBadge: "",
           originalPrice: Number(b.originalPrice) || 0,
           offerPrice: Number(b.offerPrice) || 0,
           ctaText: b.ctaText || "",
@@ -667,91 +652,27 @@ export default function HeroCategoriesPerPage() {
                                 : "Size: 1200 × 300 px (Strip 4:1)"}
                             </span>
                           </div>
-                          {idx !== 4 && (
-                            <div className={`grid gap-3 ${idx === 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                            <div className={`grid gap-3 ${idx <= 4 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                               <input
                                 value={item.title || ""}
                                 onChange={(e) => updatePromoBannerItem(idx, { title: e.target.value })}
                                 className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
                                 placeholder="Title (e.g. Tote Bag)"
                               />
-                              {idx === 0 && (
+                              {idx <= 4 && (
                                 <input
                                   value={item.subtitle || ""}
                                   onChange={(e) => updatePromoBannerItem(idx, { subtitle: e.target.value })}
                                   className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
-                                  placeholder="Subtitle (e.g. TOP DEALS)"
+                                  placeholder={idx === 0 ? "Discount text (e.g. 40% OFF)" : "Discount text (e.g. UPTO 20% OFF)"}
                                 />
                               )}
                             </div>
-                          )}
                         </div>
                       </div>
 
-                      {(idx === 0 || (idx >= 1 && idx <= 3)) && (
+                      {idx === 0 && (
                         <div className="grid gap-3 grid-cols-2 mt-3">
-                          {idx >= 1 && idx <= 3 && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <label className="text-[10px] font-bold text-slate-500">Badge Prefix</label>
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      type="color"
-                                      value={item.prefixBgColor || "#3d3d3d"}
-                                      onChange={(e) => updatePromoBannerItem(idx, { prefixBgColor: e.target.value })}
-                                      className="w-4 h-4 rounded border border-slate-200 cursor-pointer p-0 bg-white"
-                                      title="Prefix Color"
-                                    />
-                                    {item.prefixBgColor && (
-                                      <button
-                                        type="button"
-                                        onClick={() => updatePromoBannerItem(idx, { prefixBgColor: "" })}
-                                        className="text-[9px] text-slate-400 hover:text-slate-600"
-                                      >
-                                        ✕
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                                <input
-                                  value={item.discountPrefix || ""}
-                                  onChange={(e) => updatePromoBannerItem(idx, { discountPrefix: e.target.value })}
-                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
-                                  placeholder="e.g. Up to"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <label className="text-[10px] font-bold text-slate-500">Discount Badge</label>
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      type="color"
-                                      value={item.badgeBgColor || "#ba9686"}
-                                      onChange={(e) => updatePromoBannerItem(idx, { badgeBgColor: e.target.value })}
-                                      className="w-4 h-4 rounded border border-slate-200 cursor-pointer p-0 bg-white"
-                                      title="Badge Color"
-                                    />
-                                    {item.badgeBgColor && (
-                                      <button
-                                        type="button"
-                                        onClick={() => updatePromoBannerItem(idx, { badgeBgColor: "" })}
-                                        className="text-[9px] text-slate-400 hover:text-slate-600"
-                                      >
-                                        ✕
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                                <input
-                                  value={item.discountBadge || ""}
-                                  onChange={(e) => updatePromoBannerItem(idx, { discountBadge: e.target.value })}
-                                  className="w-full p-2 bg-white rounded-lg text-xs border border-slate-200 outline-none"
-                                  placeholder="e.g. 65% OFF"
-                                />
-                              </div>
-                            </>
-                          )}
                           {idx === 0 && (
                             <>
                               <div className="space-y-1">
