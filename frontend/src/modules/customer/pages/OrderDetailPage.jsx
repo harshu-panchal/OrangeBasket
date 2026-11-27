@@ -9,6 +9,11 @@ import OrderProgressTracker from "../components/order/OrderProgressTracker";
 import ReturnProgressTracker from "../components/order/ReturnProgressTracker";
 import { applyCloudinaryTransform } from "@/core/utils/imageUtils";
 import {
+  decodePolyline,
+  routeProgress,
+  remainingDurationSeconds,
+} from "@/core/utils/routeProgress";
+import {
   ChevronLeft,
   Package,
   Truck,
@@ -65,8 +70,10 @@ const hasValidLatLng = (location) =>
   Number.isFinite(location.lng);
 
 const DEFAULT_CITY_SPEED_KMPH = 24;
-const ROUTE_REFRESH_THRESHOLD_M = 150;
-const ROUTE_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+// Re-fetch only when the rider has left the known road route (or it's stale).
+const OFF_ROUTE_THRESHOLD_M = 60;
+const ROUTE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const ROUTE_REFETCH_MIN_GAP_MS = 20 * 1000;
 
 const toRadians = (value) => (value * Math.PI) / 180;
 
@@ -490,7 +497,12 @@ const OrderDetailPage = () => {
     order.paymentMode === "ONLINE" &&
     order.paymentStatus !== "PAID" &&
     status !== "cancelled";
-  const sellerLocation = coordsToLatLng(order?.seller?.location?.coordinates);
+  const sellerCoordsKey = String(order?.seller?.location?.coordinates || "");
+  const sellerLocation = useMemo(
+    () => coordsToLatLng(order?.seller?.location?.coordinates),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sellerCoordsKey],
+  );
   const routePhase = getTrackingRoutePhase(order);
   const routeMatchesPhase =
     routePhase === "pickup"
@@ -499,6 +511,20 @@ const OrderDetailPage = () => {
         : !!routePolyline?.polyline
       : routePolyline?.phase === routePhase;
   const activeRoutePolyline = routeMatchesPhase ? routePolyline : null;
+
+  const activeRoutePath = useMemo(
+    () => decodePolyline(activeRoutePolyline?.polyline),
+    [activeRoutePolyline?.polyline],
+  );
+  /** Rider's position along the road route → remaining distance for live ETA. */
+  const riderProgress = useMemo(
+    () =>
+      hasValidLatLng(liveLocation) && activeRoutePath.length >= 2
+        ? routeProgress(activeRoutePath, liveLocation)
+        : null,
+    [activeRoutePath, liveLocation],
+  );
+
   const estimatedArrival = useMemo(() => {
     if (!order) {
       return {
@@ -518,11 +544,15 @@ const OrderDetailPage = () => {
       routePhase === "delivery" ? order?.address?.location : sellerLocation;
 
     let minutes = null;
-    const routeDurationSeconds = Number(activeRoutePolyline?.duration);
+    const fullDurationSeconds = Number(activeRoutePolyline?.duration);
+    const routeDurationSeconds =
+      remainingDurationSeconds(fullDurationSeconds, riderProgress) ??
+      fullDurationSeconds;
     if (Number.isFinite(routeDurationSeconds) && routeDurationSeconds > 0) {
       minutes = routeDurationSeconds / 60;
     } else {
-      const routeDistanceMeters = Number(activeRoutePolyline?.distanceMeters);
+      const routeDistanceMeters =
+        riderProgress?.remainingMeters ?? Number(activeRoutePolyline?.distanceMeters);
       minutes =
         estimateMinutesFromDistance(routeDistanceMeters) ??
         estimateMinutesFromDistance(distanceMeters(liveLocation, targetLocation));
@@ -533,9 +563,9 @@ const OrderDetailPage = () => {
     }
 
     const arrivalMs = clockTick + minutes * 60 * 1000;
-    const routeDistanceMeters = Number(
-      activeRoutePolyline?.distanceMeters ?? activeRoutePolyline?.distance,
-    );
+    const routeDistanceMeters =
+      riderProgress?.remainingMeters ??
+      Number(activeRoutePolyline?.distanceMeters ?? activeRoutePolyline?.distance);
     return {
       arrivalTimeText: formatArrivalTime(arrivalMs),
       arrivingInText: formatArrivingIn(minutes),
@@ -546,7 +576,9 @@ const OrderDetailPage = () => {
     };
   }, [
     activeRoutePolyline?.distanceMeters,
+    activeRoutePolyline?.distance,
     activeRoutePolyline?.duration,
+    riderProgress,
     liveLocation,
     order,
     routePhase,
@@ -565,29 +597,27 @@ const OrderDetailPage = () => {
 
     if (!currentOrigin || !hasValidLatLng(currentOrigin)) return;
 
-    const originDrift =
-      routeOriginRef.current && hasValidLatLng(routeOriginRef.current)
-        ? distanceMeters(routeOriginRef.current, currentOrigin)
-        : null;
-    const routeIsFresh =
-      activeRoutePolyline?.polyline &&
-      originDrift !== null &&
-      originDrift < ROUTE_REFRESH_THRESHOLD_M &&
-      routePhase === activeRoutePolyline?.phase;
-
-    if (routeIsFresh) return;
-
     const now = Date.now();
-    if (
-      routeRequestRef.current.phase === routePhase &&
-      now - routeRequestRef.current.startedAt < ROUTE_REFRESH_INTERVAL_MS &&
-      (originDrift === null || originDrift < ROUTE_REFRESH_THRESHOLD_M)
-    ) {
+    const last = routeRequestRef.current;
+    const hasRoute = Boolean(activeRoutePolyline?.polyline);
+    const offRoute =
+      riderProgress && riderProgress.offRouteMeters > OFF_ROUTE_THRESHOLD_M;
+    // Route was built from the seller fallback; rider GPS is now known.
+    const builtFromFallback =
+      hasValidLatLng(liveLocation) &&
+      routeOriginRef.current &&
+      !routeOriginRef.current.fromRider;
+    const stale = now - (last.startedAt || 0) > ROUTE_REFRESH_INTERVAL_MS;
+
+    const needsRoute =
+      last.phase !== routePhase || !hasRoute || offRoute || builtFromFallback || stale;
+    if (!needsRoute) return;
+    if (last.phase === routePhase && now - (last.startedAt || 0) < ROUTE_REFETCH_MIN_GAP_MS) {
       return;
     }
 
     routeRequestRef.current = { phase: routePhase, startedAt: now };
-    let ignore = false;
+    const requestedPhase = routePhase;
 
     customerApi
       .getOrderRoute(orderId, {
@@ -597,23 +627,26 @@ const OrderDetailPage = () => {
         _t: now,
       })
       .then((response) => {
-        if (ignore) return;
+        // Don't drop the response just because the rider moved meanwhile;
+        // only discard it if the order moved to a different leg.
+        if (routeRequestRef.current.phase !== requestedPhase) return;
         const nextRoute = response.data?.result;
         if (nextRoute?.polyline) {
-          setRoutePolyline(nextRoute);
-          routeOriginRef.current = currentOrigin;
+          setRoutePolyline({ ...nextRoute, phase: nextRoute.phase || requestedPhase });
+          routeOriginRef.current = {
+            ...currentOrigin,
+            fromRider: hasValidLatLng(liveLocation),
+          };
         }
       })
       .catch(() => { });
-
-    return () => {
-      ignore = true;
-    };
   }, [
     activeRoutePolyline?.polyline,
+    riderProgress,
     liveLocation,
     orderId,
     routePhase,
+    sellerLocation,
     status,
   ]);
 
